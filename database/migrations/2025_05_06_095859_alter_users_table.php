@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->enum('role', ['customer', 'admin'])->default('customer');
+            $table->string('mobile')->unique();
+            $table->string('address_line_1')->nullable();
+            $table->string('address_line_2')->nullable();
+            $table->string('state')->nullable();
+            $table->string('city')->nullable();
+            $table->string('pincode')->nullable();
+            $table->enum('is_active', ['true', 'false'])->default('false');
+            $table->enum('is_logged_in', ['true', 'false'])->default('false');
+            $table->timestamp('is_deleted')->nullable();
+            $table->string('country')->default('INDIA'); // ✅ new country column
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            //
+        });
+    }
+};
