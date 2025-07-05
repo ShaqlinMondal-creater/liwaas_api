@@ -45,7 +45,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('delete/{id}', [ProductReviewController::class, 'deleteReview']); // Delete review by id
         
         Route::get('/reviews', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
-        Route::get('/carts', [CartController::class, 'getAllCartsForAdmin']); // For Carts
+        Route::post('/carts', [CartController::class, 'getAllCartsForAdmin']); // For Carts
         Route::get('/wishlists', [WishlistController::class, 'getAllWishlists']); // For Wishlist
         
         // Route::get('/users', [AdminController::class, 'getAllUsers']); // Get all User

@@ -275,7 +275,75 @@ class CartController extends Controller
         ], 200);
     }
 
-    public function getAllCartsForAdmin()
+    // public function getAllCartsForAdmin()
+    // {
+    //     // Optional: Admin check
+    //     if (!auth()->user() || auth()->user()->role !== 'admin') {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Unauthorized. Only admins can access all carts.'
+    //         ], 403);
+    //     }
+
+    //     // Fetch all carts with relationships
+    //     $carts = Cart::with(['user', 'product', 'variation'])->get();
+
+    //     // Map the response
+    //     $formatted = $carts->map(function ($cart) {
+    //         $variation = $cart->variation;
+    //         $imageUrls = [];
+
+    //         if ($variation && $variation->images_id) {
+    //             $ids = explode(',', $variation->images_id);
+    //             $uploads = \App\Models\Upload::whereIn('id', $ids)->get();
+
+    //             $imageUrls = $uploads->map(function ($upload) {
+    //                 return $upload->url ?? asset('uploads/' . $upload->path);
+    //             })->toArray();
+    //         }
+
+    //         return [
+    //             'id' => $cart->id,
+    //             'user_id' => $cart->user_id,
+    //             'cart' => $cart ? [
+    //                 'user_name' => $cart->user->name ?? null,
+    //                 'product_id' => $cart->products_id,
+    //                 'variation_uid' => $cart->uid,
+    //                 'variation_aid' => $cart->aid,
+    //                 'quantity' => $cart->quantity,
+    //                 'regular_price' => $cart->regular_price,
+    //                 'sell_price' => $cart->sell_price,
+    //                 'total_price' => $cart->total_price,
+    //                 'created_at' => $cart->created_at,
+    //                 'updated_at' => $cart->updated_at,
+    //                 'product' => $cart->product ? [
+    //                     'id' => $cart->product->id,
+    //                     'name' => $cart->product->name,
+    //                     'aid' => $cart->product->aid
+    //                 ] : null,
+    //                 'variation' => $variation ? [
+    //                     'id' => $variation->id,
+    //                     'uid' => $variation->uid,
+    //                     'aid' => $variation->aid,
+    //                     'color' => $variation->color,
+    //                     'size' => $variation->size,
+    //                     'regular_price' => $variation->regular_price,
+    //                     'sell_price' => $variation->sell_price,
+    //                     'stock' => $variation->stock,
+    //                     'images' => $imageUrls
+    //                 ] : null,
+    //             ] : null
+    //         ];
+    //     });
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'All carts retrieved successfully.',
+    //         'data' => $formatted
+    //     ], 200);
+    // }
+
+    public function getAllCartsForAdmin(Request $request)
     {
         // Optional: Admin check
         if (!auth()->user() || auth()->user()->role !== 'admin') {
@@ -285,10 +353,20 @@ class CartController extends Controller
             ], 403);
         }
 
-        // Fetch all carts with relationships
-        $carts = Cart::with(['user', 'product', 'variation'])->get();
+        // Get limit and offset from request body (JSON)
+        $limit = $request->input('limit', 10);    // default: 10
+        $offset = $request->input('offset', 0);   // default: 0
 
-        // Map the response
+        // Prepare base query
+        $query = Cart::with(['user', 'product', 'variation']);
+
+        // Get total before pagination
+        $total = $query->count();
+
+        // Apply pagination
+        $carts = $query->skip($offset)->take($limit)->get();
+
+        // Format cart data
         $formatted = $carts->map(function ($cart) {
             $variation = $cart->variation;
             $imageUrls = [];
@@ -297,15 +375,15 @@ class CartController extends Controller
                 $ids = explode(',', $variation->images_id);
                 $uploads = \App\Models\Upload::whereIn('id', $ids)->get();
 
-                $imageUrls = $uploads->map(function ($upload) {
-                    return $upload->url ?? asset('uploads/' . $upload->path);
-                })->toArray();
+                $imageUrls = $uploads->map(fn($upload) =>
+                    $upload->url ?? asset('uploads/' . $upload->path)
+                )->toArray();
             }
 
             return [
                 'id' => $cart->id,
                 'user_id' => $cart->user_id,
-                'cart' => $cart ? [
+                'cart' => [
                     'user_name' => $cart->user->name ?? null,
                     'product_id' => $cart->products_id,
                     'variation_uid' => $cart->uid,
@@ -316,11 +394,7 @@ class CartController extends Controller
                     'total_price' => $cart->total_price,
                     'created_at' => $cart->created_at,
                     'updated_at' => $cart->updated_at,
-                    'product' => $cart->product ? [
-                        'id' => $cart->product->id,
-                        'name' => $cart->product->name,
-                        'aid' => $cart->product->aid
-                    ] : null,
+                    'product' => optional($cart->product)->only(['id', 'name', 'aid']),
                     'variation' => $variation ? [
                         'id' => $variation->id,
                         'uid' => $variation->uid,
@@ -332,14 +406,19 @@ class CartController extends Controller
                         'stock' => $variation->stock,
                         'images' => $imageUrls
                     ] : null,
-                ] : null
+                ]
             ];
         });
 
         return response()->json([
             'success' => true,
             'message' => 'All carts retrieved successfully.',
-            'data' => $formatted
+            'data' => $formatted,
+            'meta' => [
+                'total' => $total,
+                'limit' => (int) $limit,
+                'offset' => (int) $offset
+            ]
         ], 200);
     }
 

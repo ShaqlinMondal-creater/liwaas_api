@@ -187,13 +187,6 @@ class ProductController extends Controller
             ]);
 
             // Filters
-            // if ($request->filled('search')) {
-            //     $query->where(function ($q) use ($request) {
-            //         $q->where('name', 'like', '%' . $request->search . '%')
-            //             ->orWhere('keyword', 'like', '%' . $request->search . '%')
-            //             ->orWhere('slug', 'like', '%' . $request->search . '%');
-            //     });
-            // }
             if ($request->filled('search')) {
                 $query->where(function ($q) use ($request) {
                     $search = $request->search;
