@@ -48,7 +48,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/carts', [CartController::class, 'getAllCartsForAdmin']); // For Carts
         Route::get('/wishlists', [WishlistController::class, 'getAllWishlists']); // For Wishlist
         
-        Route::get('/users', [AdminController::class, 'getAllUsers']); // Get all User
+        // Route::get('/users', [AdminController::class, 'getAllUsers']); // Get all User
+        Route::post('/users', [AdminController::class, 'getAllUsers']); // now accepts body
+
         Route::post('/getAllAddress', [AddressController::class, 'getAllAddress']); // get all address
         Route::delete('/delete-address/{address_id}', [AddressController::class, 'adminDeleteAddress']); // delete address by admin
         

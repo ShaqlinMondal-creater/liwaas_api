@@ -60,3 +60,7 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 "# liwaas_api" 
+
+
+<!-- use this for run a;; device with same connection locally -->
+<!-- php artisan serve --host=0.0.0.0 --port=8000 -->
