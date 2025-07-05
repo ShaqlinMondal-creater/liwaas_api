@@ -187,13 +187,25 @@ class ProductController extends Controller
             ]);
 
             // Filters
+            // if ($request->filled('search')) {
+            //     $query->where(function ($q) use ($request) {
+            //         $q->where('name', 'like', '%' . $request->search . '%')
+            //             ->orWhere('keyword', 'like', '%' . $request->search . '%')
+            //             ->orWhere('slug', 'like', '%' . $request->search . '%');
+            //     });
+            // }
             if ($request->filled('search')) {
                 $query->where(function ($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->search . '%')
-                        ->orWhere('keyword', 'like', '%' . $request->search . '%')
-                        ->orWhere('slug', 'like', '%' . $request->search . '%');
+                    $search = $request->search;
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('keyword', 'like', "%{$search}%")
+                        ->orWhere('slug', 'like', "%{$search}%")
+                        ->orWhere('aid', 'like', "%{$search}%");
+                })->orWhereHas('variations', function ($q) use ($request) {
+                    $q->where('uid', 'like', '%' . $request->search . '%');
                 });
             }
+
 
             if ($request->filled('aid')) {
                 $query->where('aid', $request->aid);
