@@ -145,8 +145,8 @@ class UploadController extends Controller
         ]);
 
         $brand = Brand::find($request->brand_id);
-
         $file = $request->file('file');
+
         $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
         $destination = public_path('uploads/brands');
 
@@ -155,9 +155,20 @@ class UploadController extends Controller
         }
 
         $file->move($destination, $fileName);
-        $url = url('uploads/brands/' . $fileName);
 
-        $brand->logo = $url;
+        // Prepare upload record
+        $relativePath = 'uploads/brands/' . $fileName;
+        $url = url($relativePath);
+
+        $upload = Upload::create([
+            'path' => $relativePath,
+            'url' => $url,
+            'file_name' => $fileName,
+            'extension' => $file->getClientOriginalExtension(),
+        ]);
+
+        // Save upload ID to brand
+        $brand->logo = $upload->id;
         $brand->save();
 
         return response()->json([
@@ -166,12 +177,46 @@ class UploadController extends Controller
             'data' => [
                 'brand_id' => $brand->id,
                 'name' => $brand->name,
-                'logo_url' => $brand->logo
+                'upload_id' => $upload->id,
+                'logo_url' => $upload->url
             ]
         ]);
     }
 
     // Upload category image
+    // public function uploadCategoryImages(Request $request)
+    // {
+    //     $request->validate([
+    //         'category_id' => 'required|integer|exists:categories,id',
+    //         'file' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240' // max 10MB
+    //     ]);
+
+    //     $category = Category::find($request->category_id);
+
+    //     $file = $request->file('file');
+    //     $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+    //     $destination = public_path('uploads/categories');
+
+    //     if (!File::exists($destination)) {
+    //         File::makeDirectory($destination, 0755, true);
+    //     }
+
+    //     $file->move($destination, $fileName);
+    //     $url = url('uploads/categories/' . $fileName);
+
+    //     $category->logo = $url;
+    //     $category->save();
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Category image uploaded and updated successfully.',
+    //         'data' => [
+    //             'category_id' => $category->id,
+    //             'name' => $category->name,
+    //             'logo_url' => $category->logo
+    //         ]
+    //     ]);
+    // }
     public function uploadCategoryImages(Request $request)
     {
         $request->validate([
@@ -180,8 +225,8 @@ class UploadController extends Controller
         ]);
 
         $category = Category::find($request->category_id);
-
         $file = $request->file('file');
+
         $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
         $destination = public_path('uploads/categories');
 
@@ -190,9 +235,20 @@ class UploadController extends Controller
         }
 
         $file->move($destination, $fileName);
-        $url = url('uploads/categories/' . $fileName);
 
-        $category->logo = $url;
+        $relativePath = 'uploads/categories/' . $fileName;
+        $url = url($relativePath);
+
+        // Save in uploads table
+        $upload = Upload::create([
+            'path' => $relativePath,
+            'url' => $url,
+            'file_name' => $fileName,
+            'extension' => $file->getClientOriginalExtension(),
+        ]);
+
+        // Save upload ID to category
+        $category->logo = $upload->id;
         $category->save();
 
         return response()->json([
@@ -201,7 +257,8 @@ class UploadController extends Controller
             'data' => [
                 'category_id' => $category->id,
                 'name' => $category->name,
-                'logo_url' => $category->logo
+                'upload_id' => $upload->id,
+                'logo_url' => $upload->url
             ]
         ]);
     }
