@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\Category;
+use App\Models\Upload;
 
 class CategoryController extends Controller
 {
@@ -56,15 +57,36 @@ class CategoryController extends Controller
 
         $categories = $query->skip($offset)->take($limit)->get(['id', 'name', 'logo']);
 
+        // Modify each category to add logo_id and resolve the logo URL
+        $resolvedCategories = $categories->map(function ($category) {
+            $logoId = $category->logo;
+            $logoUrl = null;
+
+            if (is_numeric($logoId)) {
+                $upload = \App\Models\Upload::find((int) $logoId);
+                $logoUrl = $upload ? $upload->url : null;
+            } else {
+                $logoUrl = $logoId; // already a URL or null
+            }
+
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+                'logo_id' => is_numeric($logoId) ? (int) $logoId : null,
+                'logo' => $logoUrl,
+            ];
+        });
+
         return response()->json([
             'success' => true,
             'message' => 'Categories fetched successfully.',
-            'data' => $categories,
+            'data' => $resolvedCategories,
             'total_categories' => $total,
             'limit' => $limit,
             'offset' => $offset
         ], 200);
     }
+
 
     // Update Category
     public function updateCategory(Request $request, $id)
@@ -85,29 +107,43 @@ class CategoryController extends Controller
 
         // Handle logo upload
         if ($request->hasFile('logo')) {
-            // Delete old logo file if it exists
+            // Optionally delete old file (if you want to)
             if ($category->logo) {
-                $oldPath = public_path(parse_url($category->logo, PHP_URL_PATH));
-                if (File::exists($oldPath)) {
-                    File::delete($oldPath);
+                $oldUpload = Upload::find($category->logo);
+                if ($oldUpload) {
+                    $oldPath = public_path($oldUpload->path);
+                    if (File::exists($oldPath)) {
+                        File::delete($oldPath);
+                    }
+                    $oldUpload->delete(); // remove from uploads table
                 }
             }
 
             $file = $request->file('logo');
             $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-            $destination = public_path('uploads/categories');
+            $destinationPath = public_path('uploads/categories');
 
-            if (!File::exists($destination)) {
-                File::makeDirectory($destination, 0755, true);
+            if (!File::exists($destinationPath)) {
+                File::makeDirectory($destinationPath, 0755, true);
             }
 
-            $file->move($destination, $fileName);
-            $logoUrl = url('uploads/categories/' . $fileName);
+            $file->move($destinationPath, $fileName);
+            $url = url('uploads/categories/' . $fileName);
+            $path = 'uploads/categories/' . $fileName;
 
-            $category->logo = $logoUrl;
+            // Save to uploads table
+            $upload = Upload::create([
+                'path' => $path,
+                'url' => $url,
+                'file_name' => $fileName,
+                'extension' => $file->getClientOriginalExtension(),
+            ]);
+
+            // Save upload ID in logo column
+            $category->logo = $upload->id;
         }
 
-        // Update name if provided
+        // Update name
         if (isset($validated['name'])) {
             $category->name = $validated['name'];
         }
@@ -120,7 +156,8 @@ class CategoryController extends Controller
             'data' => [
                 'id' => $category->id,
                 'name' => $category->name,
-                'logo' => $category->logo,
+                'logo_upload_id' => $category->logo,
+                'logo_url' => optional(Upload::find($category->logo))->url,
             ]
         ], 200);
     }

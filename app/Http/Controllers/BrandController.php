@@ -40,7 +40,7 @@ class BrandController extends Controller
         ], 201);
     }
 
-    // POST /brands/allBrands?limit=10&offset=0
+    // POST /brands/allBrands
     public function getAllBrands(Request $request)
     {
         $limit = (int) $request->input('limit', 10);
@@ -57,10 +57,30 @@ class BrandController extends Controller
 
         $brands = $query->skip($offset)->take($limit)->get(['id', 'name', 'logo']);
 
+        // Modify each brand to add logo_id and resolve the logo URL
+        $resolvedBrands = $brands->map(function ($brand) {
+            $logoId = $brand->logo;
+            $logoUrl = null;
+
+            if (is_numeric($logoId)) {
+                $upload = \App\Models\Upload::find((int) $logoId);
+                $logoUrl = $upload ? $upload->url : null;
+            } else {
+                $logoUrl = $logoId; // Already a URL or null
+            }
+
+            return [
+                'id' => $brand->id,
+                'name' => $brand->name,
+                'logo_id' => is_numeric($logoId) ? (int) $logoId : null,
+                'logo' => $logoUrl,
+            ];
+        });
+
         return response()->json([
             'success' => true,
             'message' => 'Brands fetched successfully.',
-            'data' => $brands,
+            'data' => $resolvedBrands,
             'total_brands' => $total,
             'limit' => $limit,
             'offset' => $offset
@@ -72,73 +92,72 @@ class BrandController extends Controller
     {
         // Validate input
         $validated = $request->validate([
-            'id' => 'required|integer|exists:brands,id', // Ensure the brand ID exists
-            'name' => 'sometimes|string', // Name is optional now
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240', // Logo is optional
+            'id' => 'required|integer|exists:brands,id',
+            'name' => 'sometimes|string',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
         ]);
-    
-        // Find the brand
+
         $brand = Brand::find($validated['id']);
-    
+
         if (!$brand) {
             return response()->json([
                 'success' => false,
                 'message' => 'Brand not found.'
             ], 404);
         }
-    
-        // Check for duplicate brand name (case-insensitive) only if 'name' is provided
+
+        // Check for duplicate brand name
         if (isset($validated['name'])) {
             $exists = Brand::whereRaw('LOWER(name) = ?', [strtolower($validated['name'])])
                 ->where('id', '!=', $validated['id'])
                 ->first();
-    
+
             if ($exists) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Another brand with the same name already exists.'
                 ], 409);
             }
+
+            $brand->name = $validated['name'];
         }
-    
-        // Handle logo upload only if a new logo is provided
+
+        // Handle logo upload
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
             $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-            $destination = public_path('uploads/brands');
-    
-            // Create directory if it doesn't exist
-            if (!File::exists($destination)) {
-                File::makeDirectory($destination, 0755, true);
+            $destinationPath = public_path('uploads/brands');
+
+            if (!File::exists($destinationPath)) {
+                File::makeDirectory($destinationPath, 0755, true);
             }
-    
-            // Move the uploaded logo
-            $file->move($destination, $fileName);
-            $logoUrl = url('uploads/brands/' . $fileName);
-    
-            // Update the logo URL
-            $brand->logo = $logoUrl;
-        } else {
-            // If no logo is provided, retain the existing one
-            $logoUrl = $brand->logo;
+
+            $file->move($destinationPath, $fileName);
+            $url = url('uploads/brands/' . $fileName);
+            $path = 'uploads/brands/' . $fileName;
+
+            // Save upload info to uploads table
+            $upload = Upload::create([
+                'path' => $path,
+                'url' => $url,
+                'file_name' => $fileName,
+                'extension' => $file->getClientOriginalExtension(),
+            ]);
+
+            // Set logo to new upload ID
+            $brand->logo = $upload->id;
         }
-    
-        // Update name only if provided
-        if (isset($validated['name'])) {
-            $brand->name = $validated['name'];
-        }
-    
-        // Save updated brand data
+
         $brand->save();
-    
-        // Return the response with updated brand data
+
         return response()->json([
             'success' => true,
             'message' => 'Brand updated successfully.',
             'data' => [
                 'id' => $brand->id,
                 'name' => $brand->name,
-                'logo' => $brand->logo,
+                'logo_upload_id' => $brand->logo,
+                'logo_url' => isset($upload) ? $upload->url : optional(Upload::find($brand->logo))->url,
             ]
         ], 200);
     }

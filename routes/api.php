@@ -47,7 +47,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/reviews', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
         Route::post('/carts', [CartController::class, 'getAllCartsForAdmin']); // For Carts
         Route::get('/wishlists', [WishlistController::class, 'getAllWishlists']); // For Wishlist
-        
+        Route::post('/shipping-by', [OrderController::class, 'shipBy']); // For Select Shipping
+
         // Route::get('/users', [AdminController::class, 'getAllUsers']); // Get all User
         Route::post('/users', [AdminController::class, 'getAllUsers']); // now accepts body
 

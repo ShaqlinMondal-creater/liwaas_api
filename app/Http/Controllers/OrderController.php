@@ -23,6 +23,7 @@ use Barryvdh\DomPDF\Facade\Pdf; // <- This one often causes issues if not proper
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderPlacedMail;
 use App\Mail\OrderStatusUpdated;
+use App\Services\ShiprocketService;
 
 class OrderController extends Controller
 {
@@ -68,7 +69,7 @@ class OrderController extends Controller
                 'invoice_link' => null,
                 'shipping' => 'Pending',
                 'shipping_type' => 'home delivery',
-                'shipping_by' => 'Delhivery',
+                'shipping_by' => 'not_select',
                 'shipping_id' => $request->shipping_id, // <-- use the ID directly
                 'shipping_charge' => $shippingCharge,
                 'tax_price' => $tax,
@@ -350,7 +351,79 @@ class OrderController extends Controller
 
         return $qrImageName;
     }
-    // 
+
+
+    // Set Shipping Delivery
+    public function shipBy(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'required|exists:orders,id',
+            'shipping_by' => 'required|in:shiprocket,delhivery,bluedart,not_select',
+        ]);
+
+        $order = Order::findOrFail($validated['id']);
+        $shippingBy = strtolower($validated['shipping_by']);
+
+        // Update the shipping method on the order
+        $order->shipping_by = $shippingBy;
+        $order->save();
+
+        switch ($shippingBy) {
+            case 'shiprocket':
+                $shiprocket = new ShiprocketService();
+                $payload = $this->generateShiprocketOrderPayload($order);
+                $response = $shiprocket->createOrder($payload);
+                return response()->json(['status' => 'success', 'message' => 'Order shipped via Shiprocket', 'data' => $response]);
+
+            case 'delhivery':
+                // TODO: Add Delhivery Integration
+                return response()->json(['status' => 'pending', 'message' => 'Delhivery integration coming soon']);
+
+            case 'bluedart':
+                // TODO: Add BlueDart Integration
+                return response()->json(['status' => 'pending', 'message' => 'BlueDart integration coming soon']);
+
+            case 'not_select':
+                return response()->json(['status' => 'info', 'message' => 'Shipping not selected']);
+
+            default:
+                return response()->json(['status' => 'error', 'message' => 'Invalid shipping method'], 400);
+        }
+    }
+
+    private function generateShiprocketOrderPayload($order)
+    {
+        // You can map $order details to payload here
+        return [
+            "order_id" => $order->id,
+            "order_date" => now()->toDateString(),
+            "pickup_location" => "My Pickup Point",
+            "billing_customer_name" => $order->customer_name ?? 'John',
+            "billing_last_name" => '',
+            "billing_address" => $order->address ?? 'Test Address',
+            "billing_city" => $order->city ?? 'Delhi',
+            "billing_pincode" => $order->pincode ?? '110015',
+            "billing_state" => $order->state ?? 'Delhi',
+            "billing_country" => "India",
+            "billing_email" => $order->email ?? 'john@example.com',
+            "billing_phone" => $order->phone ?? '9876543210',
+            "shipping_is_billing" => true,
+            "order_items" => [
+                [
+                    "name" => "Product Sample",
+                    "sku" => "SKU001",
+                    "units" => 1,
+                    "selling_price" => $order->amount ?? 500,
+                ]
+            ],
+            "payment_method" => $order->payment_method ?? "Prepaid",
+            "sub_total" => $order->amount ?? 500,
+            "length" => 10,
+            "breadth" => 10,
+            "height" => 10,
+            "weight" => 1
+        ];
+    }
 
 }
 
