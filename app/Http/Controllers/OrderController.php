@@ -23,7 +23,7 @@ use Barryvdh\DomPDF\Facade\Pdf; // <- This one often causes issues if not proper
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderPlacedMail;
 use App\Mail\OrderStatusUpdated;
-use App\Services\ShiprocketService;
+// use App\Services\ShiprocketService;
 
 class OrderController extends Controller
 {
@@ -352,78 +352,180 @@ class OrderController extends Controller
         return $qrImageName;
     }
 
-
     // Set Shipping Delivery
-    public function shipBy(Request $request)
-    {
-        $validated = $request->validate([
-            'id' => 'required|exists:orders,id',
-            'shipping_by' => 'required|in:shiprocket,delhivery,bluedart,not_select',
-        ]);
+    // public function shipBy(Request $request)
+    // {
+    //     $request->validate([
+    //         'id' => 'required|integer',
+    //         'ship-by' => 'required|in:shiprocket,bluedart,delhivery,not_selected',
+    //         'length' => 'nullable|numeric',
+    //         'breadth' => 'nullable|numeric',
+    //         'height' => 'nullable|numeric',
+    //         'weight' => 'nullable|numeric',
+    //     ]);
 
-        $order = Order::findOrFail($validated['id']);
-        $shippingBy = strtolower($validated['shipping_by']);
+    //     if ($request->input('ship-by') === 'shiprocket') {
+    //         return $this->punchToShiprocketWithCurl(
+    //             $request->input('id'),
+    //             $request->only(['length', 'breadth', 'height', 'weight'])
+    //         );
+    //     }
 
-        // Update the shipping method on the order
-        $order->shipping_by = $shippingBy;
-        $order->save();
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Shipping method updated to: ' . $request->input('ship-by')
+    //     ]);
+    // }
 
-        switch ($shippingBy) {
-            case 'shiprocket':
-                $shiprocket = new ShiprocketService();
-                $payload = $this->generateShiprocketOrderPayload($order);
-                $response = $shiprocket->createOrder($payload);
-                return response()->json(['status' => 'success', 'message' => 'Order shipped via Shiprocket', 'data' => $response]);
+    // private function punchToShiprocketWithCurl($orderId, $dimensions = [])
+    // {
+    //     $token = $this->getShiprocketToken();
 
-            case 'delhivery':
-                // TODO: Add Delhivery Integration
-                return response()->json(['status' => 'pending', 'message' => 'Delhivery integration coming soon']);
+    //     if (!$token) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Unable to authenticate with Shiprocket.'
+    //         ], 500);
+    //     }
 
-            case 'bluedart':
-                // TODO: Add BlueDart Integration
-                return response()->json(['status' => 'pending', 'message' => 'BlueDart integration coming soon']);
+    //     // ✅ Get the Order
+    //     $order = \App\Models\Orders::with(['user', 'items.product', 'items.variation'])->find($orderId);
+    //     if (!$order) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Order not found.'
+    //         ], 404);
+    //     }
 
-            case 'not_select':
-                return response()->json(['status' => 'info', 'message' => 'Shipping not selected']);
+    //     // ✅ Get the User
+    //     $fullName = $order->user->name ?? 'Unknown Name';
+    //     $nameParts = explode(' ', $fullName, 2);
+    //     $firstName = $nameParts[0];
+    //     $lastName = $nameParts[1] ?? '';
 
-            default:
-                return response()->json(['status' => 'error', 'message' => 'Invalid shipping method'], 400);
-        }
-    }
+    //     // ✅ Get Shipping Address
+    //     $address = \App\Models\AddressModel::find($order->shipping_id);
+    //     if (!$address) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Shipping address not found.'
+    //         ], 404);
+    //     }
 
-    private function generateShiprocketOrderPayload($order)
-    {
-        // You can map $order details to payload here
-        return [
-            "order_id" => $order->id,
-            "order_date" => now()->toDateString(),
-            "pickup_location" => "My Pickup Point",
-            "billing_customer_name" => $order->customer_name ?? 'John',
-            "billing_last_name" => '',
-            "billing_address" => $order->address ?? 'Test Address',
-            "billing_city" => $order->city ?? 'Delhi',
-            "billing_pincode" => $order->pincode ?? '110015',
-            "billing_state" => $order->state ?? 'Delhi',
-            "billing_country" => "India",
-            "billing_email" => $order->email ?? 'john@example.com',
-            "billing_phone" => $order->phone ?? '9876543210',
-            "shipping_is_billing" => true,
-            "order_items" => [
-                [
-                    "name" => "Product Sample",
-                    "sku" => "SKU001",
-                    "units" => 1,
-                    "selling_price" => $order->amount ?? 500,
-                ]
-            ],
-            "payment_method" => $order->payment_method ?? "Prepaid",
-            "sub_total" => $order->amount ?? 500,
-            "length" => 10,
-            "breadth" => 10,
-            "height" => 10,
-            "weight" => 1
-        ];
-    }
+    //     // ✅ Prepare Items Array
+    //     $items = [];
+    //     foreach ($order->items as $item) {
+    //         $items[] = [
+    //             "name" => $item->product->name ?? 'Unknown Product',
+    //             "sku" => $item->uid, // SKU from uid
+    //             "units" => $item->quantity,
+    //             "selling_price" => $item->total,
+    //         ];
+    //     }
+
+    //     // ✅ Build Final Shiprocket Payload
+    //     $orderData = [
+    //         "order_id" => $order->order_code ?? ('ORD' . $order->id),
+    //         "order_date" => now()->format('Y-m-d'),
+    //         "pickup_location" => "work", // must match your pickup location in Shiprocket panel
+    //         "billing_customer_name" => $firstName,
+    //         "billing_last_name" => $lastName,
+    //         "billing_address" => trim($address->address_line_1 . ' ' . $address->address_line_2),
+    //         "billing_city" => $address->city,
+    //         "billing_pincode" => $address->pincode,
+    //         "billing_state" => $address->state,
+    //         "billing_country" => $address->country,
+    //         "billing_email" => $address->email,
+    //         "billing_phone" => $address->mobile,
+    //         "shipping_is_billing" => true,
+    //         "order_items" => $items,
+    //         "payment_method" => strtoupper($order->payment_type ?? 'COD'),
+    //         "sub_total" => ($order->grand_total ?? 0) - ($order->shipping_charge ?? 0),
+    //         "shipping_charges" => $order->shipping_charge ?? 0,
+    //         "length" => $dimensions['length'] ?? 10,
+    //         "breadth" => $dimensions['breadth'] ?? 10,
+    //         "height" => $dimensions['height'] ?? 10,
+    //         "weight" => $dimensions['weight'] ?? 0.5,
+    //     ];
+
+    //     // ✅ Send to Shiprocket via cURL
+    //     $ch = curl_init();
+
+    //     curl_setopt_array($ch, [
+    //         CURLOPT_URL => "https://apiv2.shiprocket.in/v1/external/orders/create/adhoc",
+    //         CURLOPT_RETURNTRANSFER => true,
+    //         CURLOPT_POST => true,
+    //         CURLOPT_POSTFIELDS => json_encode($orderData),
+    //         CURLOPT_HTTPHEADER => [
+    //             "Content-Type: application/json",
+    //             "Authorization: Bearer $token"
+    //         ],
+    //         CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // adjust if needed
+    //         CURLOPT_TIMEOUT => 30,
+    //     ]);
+
+    //     $response = curl_exec($ch);
+    //     $error = curl_error($ch);
+    //     curl_close($ch);
+
+    //     if ($error) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'cURL Error: ' . $error
+    //         ], 500);
+    //     }
+
+    //     $decoded = json_decode($response, true);
+
+    //     // ✅ Optionally: Save shipment_id into order
+    //     if (isset($decoded['shipment_id'])) {
+    //         $order->shipping_by = 'shiprocket';
+    //         $order->ship_delivery_id = $decoded['shipment_id'];
+    //         $order->save();
+    //     }
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Shiprocket order punched (via cURL)',
+    //         'shiprocket_response' => $decoded
+    //     ]);
+    // }
+
+    // private function getShiprocketToken()
+    // {
+    //     $email = env('SHIPROCKET_EMAIL');
+    //     $password = env('SHIPROCKET_PASSWORD');
+
+    //     $ch = curl_init();
+
+    //     curl_setopt_array($ch, [
+    //         CURLOPT_URL => "https://apiv2.shiprocket.in/v1/external/auth/login",
+    //         CURLOPT_RETURNTRANSFER => true,
+    //         CURLOPT_POST => true,
+    //         CURLOPT_POSTFIELDS => json_encode([
+    //             "email" => $email,
+    //             "password" => $password,
+    //         ]),
+    //         CURLOPT_HTTPHEADER => [
+    //             "Content-Type: application/json"
+    //         ],
+    //         CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // Make sure this matches your setup
+    //         CURLOPT_TIMEOUT => 30,
+    //     ]);
+
+    //     $response = curl_exec($ch);
+    //     $error = curl_error($ch);
+    //     curl_close($ch);
+
+    //     if ($error) {
+    //         \Log::error('Shiprocket login cURL error: ' . $error);
+    //         return null;
+    //     }
+
+    //     $result = json_decode($response, true);
+
+    //     return $result['token'] ?? null;
+    // }
 
 }
 

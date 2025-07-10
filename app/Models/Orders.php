@@ -15,6 +15,7 @@ class Orders extends Model
         'invoice_no',
         'invoice_link',
         'shipping',
+        'ship_delivery_id',
         'shipping_type',
         'shipping_by',
         'shipping_id',

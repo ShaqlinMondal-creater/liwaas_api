@@ -13,6 +13,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ShippingController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -47,7 +48,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/reviews', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
         Route::post('/carts', [CartController::class, 'getAllCartsForAdmin']); // For Carts
         Route::get('/wishlists', [WishlistController::class, 'getAllWishlists']); // For Wishlist
-        Route::post('/shipping-by', [OrderController::class, 'shipBy']); // For Select Shipping
+
+        Route::post('/shipping-by', [ShippingController::class, 'shipBy']); // For Select Shipping
+        Route::get('/shiprocket-orders', [ShippingController::class, 'getShiprocketOrders']); //For get all shipping order
+        Route::get('/shiprocket/orders', [ShippingController::class, 'fetchAllShiprocketOrders']);
+        Route::post('/shiprocket/order-cancel', [ShippingController::class, 'cancelShiprocketOrder']);
+        Route::get('/shiprocket/track', [ShippingController::class, 'trackShipment']);
 
         // Route::get('/users', [AdminController::class, 'getAllUsers']); // Get all User
         Route::post('/users', [AdminController::class, 'getAllUsers']); // now accepts body

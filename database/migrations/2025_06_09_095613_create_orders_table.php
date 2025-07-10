@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('order_code', 9)->unique(); // Format: XXXX-YYYY
             $table->string('invoice_no')->nullable();
             $table->string('invoice_link')->nullable();
-
+            $table->string('ship_delivery_id')->nullable();
             $table->enum('shipping', ['Pending', 'Approved', 'Completed'])->default('Pending');
             $table->string('shipping_type')->nullable();
             $table->string('shipping_by')->nullable();
