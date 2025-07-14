@@ -156,6 +156,7 @@ class ShippingController extends Controller
             'shiprocket_response' => $decoded
         ]);
     }
+    
     // Ship Rocket token
     private function getShiprocketToken()
     {
@@ -192,6 +193,7 @@ class ShippingController extends Controller
 
         return $result['token'] ?? null;
     }
+
     // Ship Rocket All Orders
     public function getShiprocketOrders(Request $request)
     {
@@ -273,42 +275,101 @@ class ShippingController extends Controller
         ]);
     }
 
-    // var template = `
-    // <style type="text/css">
-    //     .tftable {font-size:14px;color:#333333;width:100%;border-width: 1px;border-color: #87ceeb;border-collapse: collapse;}
-    //     .tftable th {font-size:18px;background-color:#87ceeb;border-width: 1px;padding: 8px;border-style: solid;border-color: #87ceeb;text-align:left;}
-    //     .tftable tr {background-color:#ffffff;}
-    //     .tftable td {font-size:14px;border-width: 1px;padding: 8px;border-style: solid;border-color: #87ceeb;}
-    //     .tftable tr:hover {background-color:#e0ffff;}
-    // </style>
-    // <table class="tftable" border="1">
-    //     <tr>
-    //         <th>Order ID</th>
-    //         <th>Customer Name</th>
-    //         <th>Customer Email</th>
-    //         <th>Payment Status</th>
-    //         <th>Total</th>
-    //         <th>Status</th>
-    //     </tr>
-        
-    //     {{#each response.data.data}}
-    //         <tr>
-    //             <td>{{id}}</td>
-    //             <td>{{customer_name}}</td>
-    //             <td>{{customer_email}}</td>
-    //             <td>{{payment_status}}</td>
-    //             <td>{{total}}</td>
-    //             <td>{{status}}</td>
-    //         </tr>
-    //     {{/each}}
-    // </table>
-    // `;
+    // Shipment Stats
+    public function getMonthlyShippingStats()
+    {
+        $token = $this->getShiprocketToken();
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication failed with Shiprocket.'
+            ], 500);
+        }
 
-    // function constructVisualizerPayload() {
-    //     var res = pm.response.json();
-    //     return {response: res};
-    // }
-    // pm.visualizer.set(template, constructVisualizerPayload());
+        // Step 1: Initialize all months with null
+        $monthlyOrders = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $monthName = \Carbon\Carbon::create()->month($i)->format('F');
+            $monthlyOrders[$monthName] = null;
+        }
+
+        $statusSummary = [
+            'new' => 0,
+            'cancelled' => 0,
+            'delivered' => 0,
+        ];
+
+        $orders = $this->allShiprocketOrders($token);
+        $totalOrders = count($orders);
+
+        foreach ($orders as $order) {
+            if (!isset($order['created_at'])) {
+                continue;
+            }
+
+            try {
+                $orderDate = \Carbon\Carbon::parse($order['created_at']);
+                if ($orderDate->year !== now()->year) {
+                    continue;
+                }
+
+                $monthName = $orderDate->format('F');
+
+                // ✅ Increment monthly count
+                $monthlyOrders[$monthName] = ($monthlyOrders[$monthName] ?? 0) + 1;
+
+                // ✅ Clean up status
+                $status = strtolower(trim($order['status'] ?? 'new'));
+                if (isset($statusSummary[$status])) {
+                    $statusSummary[$status]++;
+                } else {
+                    $statusSummary[$status] = 1;
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Shiprocket order_date parse error', [
+                    'order_id' => $order['order_id'] ?? null,
+                    'order_date' => $order['order_date'] ?? null,
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'monthly_orders' => $monthlyOrders,
+            'total_orders' => $totalOrders,
+            'status_summary' => $statusSummary
+        ]);
+    }
+
+    private function allShiprocketOrders($token)
+    {
+        $url = "https://apiv2.shiprocket.in/v1/external/orders?per_page=100";
+
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                "Authorization: Bearer $token",
+                "Content-Type: application/json"
+            ],
+            CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // Update to match your setup
+            CURLOPT_TIMEOUT => 30,
+        ]);
+
+        $response = curl_exec($ch);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            \Log::error("Shiprocket cURL Error: $error");
+            return [];
+        }
+
+        $data = json_decode($response, true);
+
+        return $data['data'] ?? [];
+    }
 
     // Cancel Both Orders and shipping
     public function cancelShiprocketOrder(Request $request)
@@ -439,101 +500,4 @@ class ShippingController extends Controller
             'tracking' => $decoded
         ]);
     }
-
-    // Shipment Stats
-    public function getMonthlyShippingStats()
-    {
-        $token = $this->getShiprocketToken();
-        if (!$token) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Authentication failed with Shiprocket.'
-            ], 500);
-        }
-
-        // Step 1: Initialize all months with null
-        $monthlyOrders = [];
-        for ($i = 1; $i <= 12; $i++) {
-            $monthName = \Carbon\Carbon::create()->month($i)->format('F');
-            $monthlyOrders[$monthName] = null;
-        }
-
-        $statusSummary = [
-            'new' => 0,
-            'cancelled' => 0,
-            'delivered' => 0,
-        ];
-
-        $orders = $this->allShiprocketOrders($token);
-        $totalOrders = count($orders);
-
-        foreach ($orders as $order) {
-            if (!isset($order['created_at'])) {
-                continue;
-            }
-
-            try {
-                $orderDate = \Carbon\Carbon::parse($order['created_at']);
-                if ($orderDate->year !== now()->year) {
-                    continue;
-                }
-
-                $monthName = $orderDate->format('F');
-
-                // ✅ Increment monthly count
-                $monthlyOrders[$monthName] = ($monthlyOrders[$monthName] ?? 0) + 1;
-
-                // ✅ Clean up status
-                $status = strtolower(trim($order['status'] ?? 'new'));
-                if (isset($statusSummary[$status])) {
-                    $statusSummary[$status]++;
-                } else {
-                    $statusSummary[$status] = 1;
-                }
-            } catch (\Exception $e) {
-                \Log::warning('Shiprocket order_date parse error', [
-                    'order_id' => $order['order_id'] ?? null,
-                    'order_date' => $order['order_date'] ?? null,
-                ]);
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'monthly_orders' => $monthlyOrders,
-            'total_orders' => $totalOrders,
-            'status_summary' => $statusSummary
-        ]);
-    }
-
-    private function allShiprocketOrders($token)
-    {
-        $url = "https://apiv2.shiprocket.in/v1/external/orders?per_page=100";
-
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => [
-                "Authorization: Bearer $token",
-                "Content-Type: application/json"
-            ],
-            CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // Update to match your setup
-            CURLOPT_TIMEOUT => 30,
-        ]);
-
-        $response = curl_exec($ch);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($error) {
-            \Log::error("Shiprocket cURL Error: $error");
-            return [];
-        }
-
-        $data = json_decode($response, true);
-
-        return $data['data'] ?? [];
-    }
-
 }
