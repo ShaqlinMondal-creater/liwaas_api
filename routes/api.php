@@ -49,12 +49,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/carts', [CartController::class, 'getAllCartsForAdmin']); // For Carts
         Route::get('/wishlists', [WishlistController::class, 'getAllWishlists']); // For Wishlist
 
+        // For Products
+        Route::prefix('shiprocket')->group(function () {
+            Route::get('/orders', [ShippingController::class, 'fetchAllShiprocketOrders']);
+            Route::post('/order-cancel', [ShippingController::class, 'cancelShiprocketOrder']);
+            Route::get('/track', [ShippingController::class, 'trackShipment']);
+            Route::get('/stats', [ShippingController::class, 'getMonthlyShippingStats']);
+        });
         Route::post('/shipping-by', [ShippingController::class, 'shipBy']); // For Select Shipping
         Route::get('/shiprocket-orders', [ShippingController::class, 'getShiprocketOrders']); //For get all shipping order
-        Route::get('/shiprocket/orders', [ShippingController::class, 'fetchAllShiprocketOrders']);
-        Route::post('/shiprocket/order-cancel', [ShippingController::class, 'cancelShiprocketOrder']);
-        Route::get('/shiprocket/track', [ShippingController::class, 'trackShipment']);
-        Route::get('/shiprocket/stats', [ShippingController::class, 'getMonthlyShippingStats']);
+        
 
         // Route::get('/users', [AdminController::class, 'getAllUsers']); // Get all User
         Route::post('/users', [AdminController::class, 'getAllUsers']); // now accepts body

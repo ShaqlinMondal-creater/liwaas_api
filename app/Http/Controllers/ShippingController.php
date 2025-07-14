@@ -194,7 +194,7 @@ class ShippingController extends Controller
         return $result['token'] ?? null;
     }
 
-    // Ship Rocket All Orders
+    // Ship Rocket All Orders (Dupli)
     public function getShiprocketOrders(Request $request)
     {
         $limit = $request->input('limit', 10);
@@ -210,6 +210,7 @@ class ShippingController extends Controller
         ]);
     }
 
+    // Ship Rocket All Orders With Filters
     public function fetchAllShiprocketOrders(Request $request)
     {
         $token = $this->getShiprocketToken();
