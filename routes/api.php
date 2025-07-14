@@ -54,6 +54,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/shiprocket/orders', [ShippingController::class, 'fetchAllShiprocketOrders']);
         Route::post('/shiprocket/order-cancel', [ShippingController::class, 'cancelShiprocketOrder']);
         Route::get('/shiprocket/track', [ShippingController::class, 'trackShipment']);
+        Route::get('/shiprocket/stats', [ShippingController::class, 'getMonthlyShippingStats']);
 
         // Route::get('/users', [AdminController::class, 'getAllUsers']); // Get all User
         Route::post('/users', [AdminController::class, 'getAllUsers']); // now accepts body
