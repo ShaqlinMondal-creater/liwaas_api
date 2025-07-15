@@ -14,6 +14,7 @@ use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ShippingController;
+use App\Http\Controllers\ExtrasController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -48,6 +49,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/reviews', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
         Route::post('/carts', [CartController::class, 'getAllCartsForAdmin']); // For Carts
         Route::get('/wishlists', [WishlistController::class, 'getAllWishlists']); // For Wishlist
+
+        // Extras File
+        Route::prefix('extras')->group(function () { 
+            Route::post('/add', [ExtrasController::class, 'addExtras']); 
+            Route::post('/getall', [ExtrasController::class, 'getAllExtras']);  
+            Route::delete('/delete/{id}', [ExtrasController::class, 'deleteExtras']); 
+        });
 
         // For Products
         Route::prefix('shiprocket')->group(function () {
