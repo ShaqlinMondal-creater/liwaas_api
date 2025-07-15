@@ -125,6 +125,7 @@ class BrandController extends Controller
 
         // Handle logo upload
         if ($request->hasFile('logo')) {
+            
             $file = $request->file('logo');
             $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
             $destinationPath = public_path('uploads/brands');

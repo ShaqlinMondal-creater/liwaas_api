@@ -56,7 +56,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/track', [ShippingController::class, 'trackShipment']);
             Route::get('/stats', [ShippingController::class, 'getMonthlyShippingStats']);
         });
-        
+
         Route::post('/shipping-by', [ShippingController::class, 'shipBy']); // For Select Shipping
         Route::get('/shiprocket-orders', [ShippingController::class, 'getShiprocketOrders']); //For get all shipping order
         
@@ -85,7 +85,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // For Category
         Route::prefix('categories')->group(function () {
             Route::post('/add', [CategoryController::class, 'addCategory']); // add category
-            Route::post('/update/{id}', [CategoryController::class, 'updateCategory']); // update catgeory
+            Route::post('/update', [CategoryController::class, 'updateCategory']); // update catgeory
             Route::delete('/delete/{id}', [CategoryController::class, 'deleteCategory']); // delete category
         });
 

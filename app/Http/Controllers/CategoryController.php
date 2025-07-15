@@ -87,16 +87,16 @@ class CategoryController extends Controller
         ], 200);
     }
 
-
     // Update Category
-    public function updateCategory(Request $request, $id)
+    public function updateCategory(Request $request)
     {
         $validated = $request->validate([
+            'id' => 'required|exists:categories,id',
             'name' => 'sometimes|string',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240'
         ]);
 
-        $category = Category::find($id);
+        $category = Category::find($validated['id']);
 
         if (!$category) {
             return response()->json([
@@ -105,8 +105,14 @@ class CategoryController extends Controller
             ], 404);
         }
 
+        // Update name
+        if (isset($validated['name'])) {
+            $category->name = $validated['name'];
+        }
+
         // Handle logo upload
         if ($request->hasFile('logo')) {
+
             // Optionally delete old file (if you want to)
             if ($category->logo) {
                 $oldUpload = Upload::find($category->logo);
@@ -141,11 +147,6 @@ class CategoryController extends Controller
 
             // Save upload ID in logo column
             $category->logo = $upload->id;
-        }
-
-        // Update name
-        if (isset($validated['name'])) {
-            $category->name = $validated['name'];
         }
 
         $category->save();
