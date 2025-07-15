@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Brand;
+use App\Models\Upload;
 use Illuminate\Support\Str; // for form data
 use Illuminate\Support\Facades\File; // for file upload
 

@@ -56,6 +56,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/track', [ShippingController::class, 'trackShipment']);
             Route::get('/stats', [ShippingController::class, 'getMonthlyShippingStats']);
         });
+        
         Route::post('/shipping-by', [ShippingController::class, 'shipBy']); // For Select Shipping
         Route::get('/shiprocket-orders', [ShippingController::class, 'getShiprocketOrders']); //For get all shipping order
         
