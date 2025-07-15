@@ -15,6 +15,8 @@ class Extra extends Model
     // Allow mass assignment for these fields
     protected $fillable = [
         'purpose_name',
+        'comments',
+        'highlights',
         'file_name',
         'file_path',
         'show_status',

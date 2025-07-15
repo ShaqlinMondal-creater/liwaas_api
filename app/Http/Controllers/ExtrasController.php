@@ -16,6 +16,8 @@ class ExtrasController extends Controller
             'purpose_name' => 'required|string',
             'file' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'show_status' => 'nullable|boolean', // ✅ optional
+            'comments' => 'nullable|string',
+            'highlights' => 'nullable|string',
         ]);
 
         $file = $request->file('file');
@@ -29,14 +31,15 @@ class ExtrasController extends Controller
         $file->move($destinationPath, $fileName);
 
         // ✅ Build full URL like http://192.168.1.100:8000/extras/filename.jpg
-        $baseUrl = config('app.url'); // should be set correctly in .env
-        $fileUrl = $baseUrl . '/extras/' . $fileName;
+        $fileUrl = url('extras/' . $fileName);
 
         $extra = Extra::create([
             'purpose_name' => $validated['purpose_name'],
             'file_name' => $fileName,
             'file_path' => $fileUrl, // ✅ store full URL
             'show_status' => $request->input('show_status', 0), // ✅ default to 0
+            'comments' => $request->input('comments'),
+            'highlights' => $request->input('highlights'),
         ]);
 
         return response()->json([
@@ -51,24 +54,23 @@ class ExtrasController extends Controller
     {
         $query = Extra::query();
 
-        // Optional filter: show_status (0 or 1)
-        if ($request->has('show_status')) {
+        // Filter only if show_status is not null or empty
+        if ($request->filled('show_status') || $request->show_status === '0') {
             $query->where('show_status', $request->show_status);
         }
 
-        // Optional filter: purpose_name (partial match)
-        if ($request->has('purpose_name')) {
+        // Filter purpose_name only if it's not empty
+        if ($request->filled('purpose_name')) {
             $query->where('purpose_name', 'like', '%' . $request->purpose_name . '%');
         }
 
-        // ✅ Optional filter: file_name (partial match)
-        if ($request->has('file_name')) {
+        // Filter file_name only if it's not empty
+        if ($request->filled('file_name')) {
             $query->where('file_name', 'like', '%' . $request->file_name . '%');
         }
 
         $extras = $query->orderByDesc('created_at')->get();
 
-        // Optionally hide timestamps (if not handled in model)
         $extras->makeHidden(['created_at', 'updated_at']);
 
         return response()->json([
@@ -103,4 +105,30 @@ class ExtrasController extends Controller
             'message' => 'Extra deleted successfully.'
         ]);
     }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'show_status' => 'required|boolean',
+        ]);
+
+        $extra = Extra::find($id);
+
+        if (!$extra) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Extra not found.',
+            ], 404);
+        }
+
+        $extra->show_status = $request->show_status;
+        $extra->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Extra status updated successfully.',
+            'data' => $extra->only(['id', 'purpose_name', 'file_name', 'file_path', 'show_status']),
+        ]);
+    }
+
 }

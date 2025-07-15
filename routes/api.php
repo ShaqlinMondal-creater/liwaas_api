@@ -32,7 +32,7 @@ use App\Http\Controllers\ExtrasController;
 
     Route::post('/allBrands', [BrandController::class, 'getAllBrands']); //All brand showing
     Route::post('/allCategories', [CategoryController::class, 'getAllCategories']); //All category showing
-
+    Route::post('/extras/getall', [ExtrasController::class, 'getAllExtras']);  //For Get Extras with Filter
 
 Route::middleware(['auth:sanctum'])->group(function () {
 
@@ -52,9 +52,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // Extras File
         Route::prefix('extras')->group(function () { 
-            Route::post('/add', [ExtrasController::class, 'addExtras']); 
-            Route::post('/getall', [ExtrasController::class, 'getAllExtras']);  
-            Route::delete('/delete/{id}', [ExtrasController::class, 'deleteExtras']); 
+            Route::post('/add', [ExtrasController::class, 'addExtras']); //For Add Extras
+            Route::delete('/delete/{id}', [ExtrasController::class, 'deleteExtras']); //For Delete Extras
+            Route::put('/update-status/{id}', [ExtrasController::class, 'updateStatus']); //For update Status
         });
 
         // For Products
