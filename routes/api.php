@@ -59,6 +59,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/cat-products/{category_id}', [SectionViewController::class, 'getCategoryProducts']); //get category wise products
         });
 
+        // Operations with Sections Table
+        Route::prefix('sections')->group(function () { 
+            Route::post('/add', [SectionViewController::class, 'addSection']); 
+            Route::post('/getsections', [SectionViewController::class, 'getSections']); 
+            Route::delete('/delete/{id}', [SectionViewController::class, 'deleteSections']);
+            Route::put('/update/{id}', [SectionViewController::class, 'updateSection']);
+
+        });
+
         // Extras File
         Route::prefix('extras')->group(function () { 
             Route::post('/add', [ExtrasController::class, 'addExtras']); //For Add Extras

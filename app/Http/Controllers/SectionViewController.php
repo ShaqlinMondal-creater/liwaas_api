@@ -9,6 +9,7 @@ use App\Models\ProductVariations;
 use App\Models\ProductReview;
 use App\Models\Upload;
 use App\Models\Category;
+use App\Models\SectionView;
 use Carbon\Carbon;
 
 
@@ -27,53 +28,60 @@ class SectionViewController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $filtered = $products->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'aid' => $product->aid,
-                'name' => $product->name,
-                'gender' => $product->gender,
-                'image_url' => $product->image_url,
-                'upload_id' => $product->upload_id,
-                'product_status' => $product->product_status,
-                'brand' => $product->brand ? [
-                    'id' => $product->brand->id,
-                    'name' => $product->brand->name,
-                ] : null,
-                'category' => $product->category ? [
-                    'id' => $product->category->id,
-                    'name' => $product->category->name,
-                ] : null,
-                'upload' => $product->upload ? [
-                    'id' => $product->upload->id,
-                    'url' => $product->upload->url,
-                ] : null,
-                'variations' => $product->variations->map(function ($var) {
-                    return [
-                        'id' => $var->id,
-                        'uid' => $var->uid,
-                        'aid' => $var->aid,
-                        'color' => $var->color,
-                        'size' => $var->size,
-                        'regular_price' => $var->regular_price,
-                        'sell_price' => $var->sell_price,
-                        'images_id' => $var->images_id,
-                    ];
-                }),
-            ];
-        });
+        $flattened = [];
+        $count = 0;
+
+        foreach ($products as $product) {
+            foreach ($product->variations as $variation) {
+                if ($count >= 15) break 2; // stop both loops
+
+                $flattened[] = [
+                    'aid' => $product->aid,
+                    'id' => $product->id,                    
+                    'name' => $product->name,
+                    // 'gender' => $product->gender,
+                    // 'image_url' => $product->image_url,
+                    // 'upload_id' => $product->upload_id,
+                    // 'product_status' => $product->product_status,
+                    // 'brand' => $product->brand ? [
+                    //     'id' => $product->brand->id,
+                    //     'name' => $product->brand->name,
+                    // ] : null,
+                    // 'category' => $product->category ? [
+                    //     'id' => $product->category->id,
+                    //     'name' => $product->category->name,
+                    // ] : null,
+                    // 'upload' => $product->upload ? [
+                    //     'id' => $product->upload->id,
+                    //     'url' => $product->upload->url,
+                    // ] : null,
+                    'variation' => [
+                        'id' => $variation->id,
+                        'uid' => $variation->uid,
+                        // 'aid' => $variation->aid,
+                        'color' => $variation->color,
+                        'size' => $variation->size,
+                        // 'regular_price' => $variation->regular_price,
+                        // 'sell_price' => $variation->sell_price,
+                        // 'images_id' => $variation->images_id,
+                    ]
+                ];
+
+                $count++;
+            }
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'New arrivals fetched successfully.',
-            'data' => $filtered,
+            'data' => $flattened,
         ]);
     }
 
     // Trending Products
     public function getTrendings(Request $request)
     {
-        $minQty = $request->query('min_qty', 10); // default to 10
+        $minQty = $request->query('min_qty', 15); // default to 10
 
         // Step 1: Get UID with quantity sum > threshold
         $trendingUIDs = OrderItems::select('uid')
@@ -108,34 +116,34 @@ class SectionViewController extends Controller
                 'id' => $product->id,
                 'aid' => $product->aid,
                 'name' => $product->name,
-                'gender' => $product->gender,
-                'image_url' => $product->image_url,
-                'upload_id' => $product->upload_id,
-                'product_status' => $product->product_status,
-                'brand' => $product->brand ? [
-                    'id' => $product->brand->id,
-                    'name' => $product->brand->name,
-                ] : null,
-                'category' => $product->category ? [
-                    'id' => $product->category->id,
-                    'name' => $product->category->name,
-                ] : null,
-                'upload' => $product->upload ? [
-                    'id' => $product->upload->id,
-                    'url' => $product->upload->url,
-                ] : null,
+                // 'gender' => $product->gender,
+                // 'image_url' => $product->image_url,
+                // 'upload_id' => $product->upload_id,
+                // 'product_status' => $product->product_status,
+                // 'brand' => $product->brand ? [
+                //     'id' => $product->brand->id,
+                //     'name' => $product->brand->name,
+                // ] : null,
+                // 'category' => $product->category ? [
+                //     'id' => $product->category->id,
+                //     'name' => $product->category->name,
+                // ] : null,
+                // 'upload' => $product->upload ? [
+                //     'id' => $product->upload->id,
+                //     'url' => $product->upload->url,
+                // ] : null,
                 'variations' => $product->variations
                     ->whereIn('uid', $trendingUIDs)
                     ->map(function ($var) {
                         return [
                             'id' => $var->id,
                             'uid' => $var->uid,
-                            'aid' => $var->aid,
+                            // 'aid' => $var->aid,
                             'color' => $var->color,
                             'size' => $var->size,
-                            'regular_price' => $var->regular_price,
-                            'sell_price' => $var->sell_price,
-                            'images_id' => $var->images_id,
+                            // 'regular_price' => $var->regular_price,
+                            // 'sell_price' => $var->sell_price,
+                            // 'images_id' => $var->images_id,
                         ];
                     })->values()
             ];
@@ -329,16 +337,136 @@ class SectionViewController extends Controller
             'data' => $response
         ]);
     }
-
     //////////////////////////      FETCH PRODUCTS ONLY     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 
     //////////////////////////      IMPORT ABOVE IN PRODUCTS SECTION TABLE     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
+    // Add section 
+    public function addSection(Request $request)
+    {
+        $validated = $request->validate([
+            'section_name' => 'required|string',
+            'uid' => 'required|integer',
+            'status' => 'nullable|boolean',
+            'force_status' => 'nullable|boolean',
+        ]);
 
+        // ✅ Check if section_name + uid already exists
+        $exists = SectionView::where('section_name', $validated['section_name'])
+            ->where('uid', $validated['uid'])
+            ->exists();
 
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This section already exists for the user.'
+            ], 409); // Conflict
+        }
 
+        $section = SectionView::create([
+            'section_name' => $validated['section_name'],
+            'uid' => $validated['uid'],
+            'status' => $request->input('status', 0),
+            'force_status' => $request->input('force_status', 0)
+        ]);
 
+        return response()->json([
+            'success' => true,
+            'message' => 'Section created successfully.',
+            'data' => $section->makeHidden(['created_at', 'updated_at'])
+        ]);
+    }
+
+    // Get Sections Datas With filters
+    public function getSections(Request $request)
+    {
+        $limit = (int) $request->input('limit', 15);
+        $offset = (int) $request->input('offset', 0);
+
+        $query = SectionView::query();
+
+        // ✅ Filter by section_name (exact or partial match)
+        if ($request->has('section')) {
+            $query->where('section_name', 'like', '%' . $request->input('section') . '%');
+        }
+
+        // ✅ Filter by uid
+        if ($request->has('search')) {
+            $query->where('uid', $request->input('search'));
+        }
+
+        // ✅ Filter by status
+        if ($request->has('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        // ✅ Filter by force_status
+        if ($request->has('force')) {
+            $query->where('force_status', $request->input('force'));
+        }
+
+        $total = $query->count(); // total count before pagination
+
+        $sections = $query->orderByDesc('created_at')
+            ->skip($offset)
+            ->take($limit)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sections fetched successfully.',
+            'data' => $sections->makeHidden(['created_at', 'updated_at']),
+            'total' => $total
+        ]);
+    }
+
+    // Delete Section through ID's
+    public function deleteSections($id)
+    {
+        $section = SectionView::find($id);
+
+        if (!$section) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Section not found.'
+            ], 404);
+        }
+
+        $section->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Section deleted successfully.'
+        ]);
+    }
+
+    // Update Sections
+    public function updateSection(Request $request, $id)
+    {
+        $section = SectionView::find($id);
+
+        if (!$section) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Section not found.'
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'section_name'  => 'sometimes|string',
+            'status'        => 'sometimes|boolean',
+            'force_status'  => 'sometimes|boolean',
+        ]);
+
+        $section->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Section updated successfully.',
+            'data'    => $section->makeHidden(['created_at', 'updated_at'])
+        ]);
+    }
     //////////////////////////      IMPORT ABOVE IN PRODUCTS SECTION TABLE     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 }
