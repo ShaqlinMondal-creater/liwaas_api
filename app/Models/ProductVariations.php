@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProductVariations extends Model
 {
+    protected $table = 'product_variations';
+
     protected $fillable = [
         'aid', 'uid', 'regular_price', 'sell_price', 'currency',
         'gst', 'stock', 'images_id', 'color', 'size'
@@ -20,6 +22,4 @@ class ProductVariations extends Model
     {
         return $this->hasMany(Cart::class, 'uid', 'uid');
     }
-
-    
 }

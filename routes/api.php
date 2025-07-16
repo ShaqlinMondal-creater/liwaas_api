@@ -15,6 +15,7 @@ use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\ExtrasController;
+use App\Http\Controllers\SectionViewController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -49,6 +50,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/reviews', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
         Route::post('/carts', [CartController::class, 'getAllCartsForAdmin']); // For Carts
         Route::get('/wishlists', [WishlistController::class, 'getAllWishlists']); // For Wishlist
+
+        // Sections Get API DATA no Table
+        Route::prefix('fetch')->group(function () { 
+            Route::get('/newarrivals', [SectionViewController::class, 'getNewArriaval']); // get New arrival
+            Route::get('/trendings', [SectionViewController::class, 'getTrendings']); // get trending 
+            Route::get('/gallery', [SectionViewController::class, 'getGallery']); //get gallary
+            Route::post('/cat-products/{category_id}', [SectionViewController::class, 'getCategoryProducts']); //get category wise products
+        });
 
         // Extras File
         Route::prefix('extras')->group(function () { 
