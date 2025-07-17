@@ -177,8 +177,8 @@ class SectionViewController extends Controller
                 'aid' => $product->aid,
                 'product_id' => $product->id,
                 'product_name' => $product->name,
-                'gender' => $product->gender,
-                'product_status' => $product->product_status,
+                // 'gender' => $product->gender,
+                // 'product_status' => $product->product_status,
                 // 'upload_id' => $product->upload_id,
                 // 'upload' => $product->upload ? [
                 //     'id' => $product->upload->id,
@@ -214,12 +214,12 @@ class SectionViewController extends Controller
 
                     return [
                         'id' => $review->id,
-                        // 'user' => [
-                        //     'id' => $review->user->id,
-                        //     'name' => $review->user->name,
-                        // ],
+                        'user' => [
+                            'id' => $review->user->id,
+                            'name' => $review->user->name,
+                        ],
                         'total_star' => $review->total_star,
-                        // 'comments' => $review->comments,
+                        'comments' => $review->comments,
                         // 'upload' => $uploadImageIds,
                         'review_images' => $reviewImages,
                     ];
@@ -250,6 +250,7 @@ class SectionViewController extends Controller
         // Step 2: Fetch products in that category with brand, upload, and variations
         $products = Product::with(['brand', 'category', 'upload', 'variations'])
             ->where('category_id', $category_id)
+            ->take(5) // ✅ Limit to 5 products
             ->get();
 
         // Step 3: Format response with variations included
@@ -258,8 +259,8 @@ class SectionViewController extends Controller
                 'id' => $product->id,
                 'aid' => $product->aid,
                 'name' => $product->name,
-                'brand_id' => $product->brand_id,
-                'category_id' => $product->category_id,
+                // 'brand_id' => $product->brand_id,
+                // 'category_id' => $product->category_id,
                 // 'slug' => $product->slug,
                 // 'description' => $product->description,
                 // 'specification' => $product->specification,
@@ -292,12 +293,12 @@ class SectionViewController extends Controller
                     // 'updated_at' => $product->category->updated_at,
                 ] : null,
 
-                'upload' => $product->upload ? [
-                    'id' => $product->upload->id,
-                    'url' => $product->upload->url,
-                ] : null,
+                // 'upload' => $product->upload ? [
+                //     'id' => $product->upload->id,
+                //     'url' => $product->upload->url,
+                // ] : null,
 
-                'variations' => $product->variations->map(function ($variation) {
+                'variations' => $product->variations->take(1)->map(function ($variation) {
                     // Convert comma-separated string into array of IDs
                     $imageIds = explode(',', $variation->images_id);
                     $imageIds = array_filter($imageIds); // remove empty values
@@ -316,8 +317,8 @@ class SectionViewController extends Controller
                     return [
                         'id' => $variation->id,
                         'uid' => $variation->uid,
-                        'regular_price' => $variation->regular_price,
-                        'sell_price' => $variation->sell_price,
+                        // 'regular_price' => $variation->regular_price,
+                        // 'sell_price' => $variation->sell_price,
                         // 'currency' => $variation->currency,
                         // 'gst' => $variation->gst,
                         // 'stock' => $variation->stock,
