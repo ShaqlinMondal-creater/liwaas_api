@@ -17,8 +17,7 @@ class SectionViewController extends Controller
 {
     //////////////////////////      FETCH PRODUCTS ONLY     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-    // New Arriaval Products
-    public function getNewArriaval()
+    public function getNewArriaval() // New Arriaval Products
     {
         $cutoffDate = Carbon::now()->subHours(72);
 
@@ -77,9 +76,8 @@ class SectionViewController extends Controller
             'data' => $flattened,
         ]);
     }
-
-    // Trending Products
-    public function getTrendings(Request $request)
+    
+    public function getTrendings(Request $request) // Trending Products
     {
         $minQty = $request->query('min_qty', 15); // default to 10
 
@@ -155,9 +153,8 @@ class SectionViewController extends Controller
             'data' => $filtered,
         ]);
     }
-
-    // Gallery Products
-    public function getGallery()
+    
+    public function getGallery() // Gallery Products
     {
         $reviewedUids = ProductReview::pluck('uid')->unique();
 
@@ -233,9 +230,8 @@ class SectionViewController extends Controller
             'data' => $response
         ]);
     }
-
-    // Category Wise
-    public function getCategoryProducts($category_id)
+    
+    public function getCategoryProducts($category_id) // Category Wise
     {
         // Step 1: Fetch the category
         $category = Category::find($category_id);
@@ -343,8 +339,7 @@ class SectionViewController extends Controller
 
     //////////////////////////      IMPORT ABOVE IN PRODUCTS SECTION TABLE     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-    // Add section 
-    public function addSection(Request $request)
+    public function addSection(Request $request) // Add section 
     {
         $validated = $request->validate([
             'section_name' => 'required|string',
@@ -379,8 +374,7 @@ class SectionViewController extends Controller
         ]);
     }
 
-    // Get Sections Datas With filters
-    public function getSections(Request $request)
+    public function getSections(Request $request) // Get Sections Datas With filters
     {
         $limit = (int) $request->input('limit', 15);
         $offset = (int) $request->input('offset', 0);
@@ -422,8 +416,223 @@ class SectionViewController extends Controller
         ]);
     }
 
-    // Delete Section through ID's
-    public function deleteSections($id)
+    // Get Section products
+    // public function getSectionsProducts(Request $request)
+    // {
+    //     $sectionName = $request->input('section_name');
+    //     $status = $request->input('status'); // optional
+    //     $limit = (int) $request->input('limit', 12);
+    //     $offset = (int) $request->input('offset', 0);
+
+    //     if (!$sectionName) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Section name is required.'
+    //         ], 422);
+    //     }
+
+    //     // Step 1: Filter section views
+    //     $sectionQuery = SectionView::where('section_name', $sectionName);
+
+    //     if (!is_null($status)) {
+    //         $sectionQuery->where('status', filter_var($status, FILTER_VALIDATE_BOOLEAN));
+    //     }
+
+    //     $total = $sectionQuery->count();
+
+    //     $sectionViews = $sectionQuery
+    //         ->skip($offset)
+    //         ->take($limit)
+    //         ->get();
+
+    //     $uids = $sectionViews->pluck('uid')->unique();
+
+    //     // Step 2: Fetch variations with products
+    //     $variations = \App\Models\ProductVariations::with([
+    //         'product',
+    //         'product.brand',
+    //         'product.category',
+    //         'product.upload'
+    //     ])->whereIn('uid', $uids)->get();
+
+    //     // Step 3: Map with section data
+    //     $data = $variations->map(function ($var) use ($sectionViews) {
+    //         $product = $var->product;
+
+    //         // Resolve images
+    //         $imageIds = array_filter(explode(',', $var->images_id));
+    //         $uploads = \App\Models\Upload::whereIn('id', $imageIds)->get();
+
+    //         $images = $uploads->map(function ($upload) {
+    //             return [
+    //                 'upload_id' => $upload->id,
+    //                 'upload_url' => $upload->url,
+    //             ];
+    //         });
+
+    //         // Match section info by uid
+    //         $sectionData = $sectionViews->firstWhere('uid', $var->uid);
+
+    //         return [
+    //             'section' => [
+    //                 'id' => $sectionData->id ?? null,
+    //                 'section_name' => $sectionData->section_name ?? null,
+    //                 'uid' => $sectionData->uid ?? null,
+    //                 'status' => $sectionData->status ?? null,
+    //                 'force_status' => $sectionData->force_status ?? null,
+    //                 // 'created_at' => $sectionData->created_at ?? null,
+    //             ],
+    //             'product' => [
+    //                 'id' => $product->id,
+    //                 'aid' => $product->aid,
+    //                 'name' => $product->name,
+    //                 'gender' => $product->gender,
+    //                 'image_url' => $product->image_url,
+    //                 'upload_id' => $product->upload_id,
+    //                 'product_status' => $product->product_status,
+    //                 'brand' => $product->brand ? [
+    //                     'id' => $product->brand->id,
+    //                     'name' => $product->brand->name,
+    //                 ] : null,
+    //                 'category' => $product->category ? [
+    //                     'id' => $product->category->id,
+    //                     'name' => $product->category->name,
+    //                 ] : null,
+    //                 'upload' => $product->upload ? [
+    //                     'id' => $product->upload->id,
+    //                     'url' => $product->upload->url,
+    //                 ] : null,
+    //                 'variation' => [
+    //                     'id' => $var->id,
+    //                     'uid' => $var->uid,
+    //                     'aid' => $var->aid,
+    //                     'color' => $var->color,
+    //                     'size' => $var->size,
+    //                     'regular_price' => $var->regular_price,
+    //                     'sell_price' => $var->sell_price,
+    //                     'images' => $images,
+    //                 ]
+    //             ]
+    //         ];
+    //     });
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => "Products for section '{$sectionName}' fetched successfully.",
+    //         'total' => $total,
+    //         'data' => $data
+    //     ]);
+    // }
+    public function getSectionsProducts(Request $request)
+    {
+        $sectionName = $request->input('section_name');
+        $status = $request->input('status'); // optional
+        $limit = (int) $request->input('limit', 12);
+        $offset = (int) $request->input('offset', 0);
+
+        // Step 1: Get section views
+        $query = SectionView::query();
+
+        if (!empty($sectionName)) {
+            $query->where('section_name', $sectionName);
+        }
+
+        if (!is_null($status)) {
+            $query->where('status', filter_var($status, FILTER_VALIDATE_BOOLEAN));
+        }
+
+        $total = $query->count();
+
+        $sectionViews = $query
+            ->orderBy('section_name', 'asc')
+            ->skip($offset)
+            ->take($limit)
+            ->get();
+
+        $uids = $sectionViews->pluck('uid')->toArray();
+
+        // Step 2: Fetch all variations with product info
+        $variations = \App\Models\ProductVariations::with([
+            'product',
+            'product.brand',
+            'product.category',
+            'product.upload'
+        ])->whereIn('uid', $uids)->get()
+        ->keyBy('uid'); // So we can fetch by UID quickly
+
+        $response = [];
+
+        foreach ($sectionViews as $section) {
+            $variation = $variations->get($section->uid);
+
+            if (!$variation || !$variation->product) continue;
+
+            $product = $variation->product;
+
+            // Resolve image uploads
+            $imageIds = array_filter(explode(',', $variation->images_id));
+            $uploads = \App\Models\Upload::whereIn('id', $imageIds)->get();
+
+            $images = $uploads->map(function ($upload) {
+                return [
+                    'upload_id' => $upload->id,
+                    'upload_url' => $upload->url,
+                ];
+            });
+
+            $response[] = [
+                'section' => [
+                    'id' => $section->id,
+                    'section_name' => $section->section_name,
+                    'uid' => $section->uid,
+                    'status' => $section->status,
+                    'force_status' => $section->force_status
+                ],
+                'product' => [
+                    'id' => $product->id,
+                    'aid' => $product->aid,
+                    'name' => $product->name,
+                    'gender' => $product->gender,
+                    'image_url' => $product->image_url,
+                    'upload_id' => $product->upload_id,
+                    'product_status' => $product->product_status,
+                    'brand' => $product->brand ? [
+                        'id' => $product->brand->id,
+                        'name' => $product->brand->name,
+                    ] : null,
+                    'category' => $product->category ? [
+                        'id' => $product->category->id,
+                        'name' => $product->category->name,
+                    ] : null,
+                    'upload' => $product->upload ? [
+                        'id' => $product->upload->id,
+                        'url' => $product->upload->url,
+                    ] : null,
+                    'variation' => [
+                        'id' => $variation->id,
+                        'uid' => $variation->uid,
+                        'aid' => $variation->aid,
+                        'color' => $variation->color,
+                        'size' => $variation->size,
+                        'regular_price' => $variation->regular_price,
+                        'sell_price' => $variation->sell_price,
+                        'images' => $images,
+                    ]
+                ]
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $sectionName
+                ? "Products for section '{$sectionName}' fetched successfully."
+                : "Products for all sections fetched successfully.",
+            'total' => $total,
+            'data' => $response
+        ]);
+    }
+
+    public function deleteSections($id) // Delete Section through ID's
     {
         $section = SectionView::find($id);
 
@@ -441,11 +650,10 @@ class SectionViewController extends Controller
             'message' => 'Section deleted successfully.'
         ]);
     }
-
-    // Update Sections
-    public function updateSection(Request $request, $id)
+    
+    public function updateSection(Request $request, $id) // Update Sections
     {
-        $section = SectionView::find($id);
+        $section = SectionView::where('id', $id)->first();
 
         if (!$section) {
             return response()->json([
@@ -465,9 +673,10 @@ class SectionViewController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Section updated successfully.',
-            'data'    => $section->makeHidden(['created_at', 'updated_at'])
+            'data'    => $section->makeHidden(['created_at', 'updated_at']),
         ]);
     }
+
     //////////////////////////      IMPORT ABOVE IN PRODUCTS SECTION TABLE     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 }

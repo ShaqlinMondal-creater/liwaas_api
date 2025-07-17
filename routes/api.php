@@ -34,6 +34,7 @@ use App\Http\Controllers\SectionViewController;
     Route::post('/allBrands', [BrandController::class, 'getAllBrands']); //All brand showing
     Route::post('/allCategories', [CategoryController::class, 'getAllCategories']); //All category showing
     Route::post('/extras/getall', [ExtrasController::class, 'getAllExtras']);  //For Get Extras with Filter
+    Route::post('sections/getsections-products', [SectionViewController::class, 'getSectionsProducts']); 
 
 Route::middleware(['auth:sanctum'])->group(function () {
 
