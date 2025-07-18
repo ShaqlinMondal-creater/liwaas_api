@@ -57,7 +57,7 @@ class WishlistController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Product variation added to wishlist.',
-            'data'    => $wishlist,
+            'data'    => $wishlist->makeHidden(['created_at', 'updated_at']),
         ], 201);
     }
 

@@ -486,6 +486,7 @@ class SectionViewController extends Controller
                     'id' => $product->id,
                     'aid' => $product->aid,
                     'name' => $product->name,
+                    'slug' => $product->slug,
                     'gender' => $product->gender,
                     'image_url' => $product->image_url,
                     'upload_id' => $product->upload_id,
