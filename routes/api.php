@@ -16,6 +16,8 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\ExtrasController;
 use App\Http\Controllers\SectionViewController;
+use App\Http\Controllers\HelperController;
+
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -30,7 +32,9 @@ use App\Http\Controllers\SectionViewController;
         Route::post('/allProducts', [ProductController::class, 'getAllProducts']); // All product showing 
 
     });
+    
 
+    Route::get('/filters', [HelperController::class, 'getFilters']); // Get all Filter for products
     Route::post('/allBrands', [BrandController::class, 'getAllBrands']); //All brand showing
     Route::post('/allCategories', [CategoryController::class, 'getAllCategories']); //All category showing
     Route::post('/extras/getall', [ExtrasController::class, 'getAllExtras']);  //For Get Extras with Filter
