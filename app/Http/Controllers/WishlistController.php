@@ -65,7 +65,7 @@ class WishlistController extends Controller
     {
         $userId = auth()->id();
 
-        $wishlists = Wishlist::with(['product:id,aid,name', 'variation'])
+        $wishlists = Wishlist::with(['product:id,aid,name,slug', 'variation'])
                             ->where('user_id', $userId)
                             ->get();
 
@@ -86,8 +86,9 @@ class WishlistController extends Controller
             if ($variation && $variation->images_id) {
                 $imageIds = array_filter(explode(',', $variation->images_id));
                 $uploads = Upload::whereIn('id', $imageIds)->pluck('url')->toArray();
-                $images = array_map(fn($url) => asset('uploads/' . $url), $uploads);
+                $images = $uploads; // Already full URLs
             }
+
 
             return [
                 'id'           => $item->id,
@@ -99,6 +100,7 @@ class WishlistController extends Controller
                     'id'   => $item->product->id ?? null,
                     'aid'  => $item->product->aid ?? null,
                     'name' => $item->product->name ?? null,
+                    'slug' => $item->product->slug ?? null,
                 ],
                 'variation'    => $variation ? [
                     'id'           => $variation->id,

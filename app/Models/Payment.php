@@ -2,38 +2,23 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\User;
-use App\Models\Orders;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Payment extends Model
 {
     use HasFactory;
 
-    // Define table name (optional if name is not plural of model)
-    protected $table = 'payments';
+    protected $table = 't_payments';
 
-    // Fillable columns
     protected $fillable = [
-        'razorpay_payment_id',
-        'razorpay_order_id',
-        'method',
-        'amount',
-        'status',
+        'genarate_order_id',
+        'payment_type',
+        'transaction_payment_id',
+        'payment_amount',
+        'payment_status',
         'order_id',
         'user_id',
+        'response_',
     ];
-
-    // Relationship: Payment belongs to a User
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    // Relationship: Payment belongs to an Order
-    public function order()
-    {
-        return $this->belongsTo(Orders::class);
-    }
 }
