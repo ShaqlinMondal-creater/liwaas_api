@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Orders;
@@ -179,26 +181,6 @@ class OrderController extends Controller
         });
     }
 
-    // protected function generateOrderCode(): string  // helper function
-    // {
-    //     $date = now()->format('Y-m-d');
-    //     $prefix = now()->format('Ymd'); // 20250609
-
-    //     $todayCount = Orders::whereDate('created_at', $date)->count();
-    //     $sequence = str_pad(101 + $todayCount, 4, '0', STR_PAD_LEFT);
-    //     $baseCode = "{$prefix}-{$sequence}";
-
-    //     $finalCode = $baseCode;
-    //     $duplicateSuffix = 1;
-
-    //     while (Orders::where('order_code', $finalCode)->exists()) {
-    //         $finalCode = "{$baseCode}-D" . ($duplicateSuffix > 1 ? $duplicateSuffix : '');
-    //         $duplicateSuffix++;
-    //     }
-
-    //     return $finalCode;
-    // }
-
     public function deleteOrder($id)  // Delete order
     {
         $order = Orders::find($id);
@@ -353,7 +335,194 @@ class OrderController extends Controller
     }
 
     // Get All order
+    public function getAllOrders(Request $request)
+    {
+        $user = Auth::user();
 
+        if (!$user || $user->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access.'
+            ], 403);
+        }
+
+        // Filters
+        $orderCode = $request->input('order_code');
+        $userName = $request->input('user_name');
+        $orderId = $request->input('order_id');
+
+        $limit = (int) $request->input('limit', 15);
+        $offset = (int) $request->input('offset', 0);
+
+        $query = Orders::with(['user', 'items.variation', 'items.product'])
+            ->when($orderCode, fn($q) => $q->where('order_code', 'like', "%$orderCode%"))
+            ->when($orderId, fn($q) => $q->where('id', $orderId))
+            ->when($userName, function ($q) use ($userName) {
+                $q->whereHas('user', fn($q2) => $q2->where('name', 'like', "%$userName%"));
+            });
+
+        $total = $query->count();
+
+        $orders = $query
+            ->orderByDesc('created_at')
+            ->skip($offset)
+            ->take($limit)
+            ->get();
+
+        $data = $orders->map(function ($order) {
+            return [
+                'id' => $order->id,
+                'order_code' => $order->order_code,
+                'invoice_no' => $order->invoice_no,
+                'invoice_link' => $order->invoice_link,
+                'user' => [
+                    'id' => $order->user->id,
+                    'name' => $order->user->name,
+                    'email' => $order->user->email,
+                ],
+                'shipping' => $order->shipping,
+                'payment_type' => $order->payment_type,
+                'payment_status' => $order->payment_status,
+                'delivery_status' => $order->delivery_status,
+                'grand_total' => $order->grand_total,
+                'items' => $order->items->map(function ($item) {
+                    // 🔍 Handle image from variation
+                    $imageId = null;
+                    $imageUrl = null;
+
+                    if ($item->variation && $item->variation->images_id) {
+                        $imageIds = explode(',', $item->variation->images_id);
+                        $firstId = trim($imageIds[0] ?? '');
+                        if ($firstId) {
+                            $upload = Upload::find($firstId);
+                            if ($upload) {
+                                $imageId = $upload->id;
+                                $imageUrl = $upload->url;
+                            }
+                        }
+                    }
+
+                    return [
+                        'id' => $item->id,
+                        'product' => [
+                            'id' => $item->product->id,
+                            'name' => $item->product->name,
+                            'image' => [
+                                'upload_id' => $imageId,
+                                'upload_url' => $imageUrl,
+                            ]
+                        ],
+                        'variation' => $item->variation ? [
+                            'uid' => $item->variation->uid,
+                            'color' => $item->variation->color,
+                            'size' => $item->variation->size,
+                            'sell_price' => $item->variation->sell_price,
+                        ] : null,
+                        'quantity' => $item->quantity,
+                        'total' => $item->total,
+                        'tax' => $item->tax,
+                    ];
+                }),
+                'created_at' => Carbon::parse($order->created_at)
+                    ->timezone('Asia/Kolkata')
+                    ->translatedFormat('jS M Y, h.iA'),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'All orders fetched successfully.',
+            'total' => $total,
+            'data' => $data
+        ]);
+    }
+
+    // Get Customer Order
+    public function getMyOrders(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user || $user->role === 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access.'
+            ], 403);
+        }
+
+        $limit = (int) $request->input('limit', 15);
+        $offset = (int) $request->input('offset', 0);
+
+        $query = Orders::with(['items.variation', 'items.product'])
+            ->where('user_id', $user->id);
+
+        $total = $query->count();
+
+        $orders = $query->orderByDesc('created_at')
+            ->skip($offset)
+            ->take($limit)
+            ->get();
+
+        $data = $orders->map(function ($order) {
+            return [
+                'id' => $order->id,
+                'order_code' => $order->order_code,
+                'invoice_no' => $order->invoice_no,
+                'invoice_link' => $order->invoice_link,
+                'shipping' => $order->shipping,
+                'payment_type' => $order->payment_type,
+                'payment_status' => $order->payment_status,
+                'delivery_status' => $order->delivery_status,
+                'grand_total' => $order->grand_total,
+                'items' => $order->items->map(function ($item) {
+                    $imageId = null;
+                    $imageUrl = null;
+
+                    if ($item->variation && $item->variation->images_id) {
+                        $imageIds = explode(',', $item->variation->images_id);
+                        $firstId = trim($imageIds[0] ?? '');
+                        if ($firstId) {
+                            $upload = Upload::find($firstId);
+                            if ($upload) {
+                                $imageId = $upload->id;
+                                $imageUrl = $upload->url;
+                            }
+                        }
+                    }
+
+                    return [
+                        'id' => $item->id,
+                        'product' => [
+                            'id' => $item->product->id,
+                            'name' => $item->product->name,
+                            'image' => [
+                                'upload_id' => $imageId,
+                                'upload_url' => $imageUrl,
+                            ]
+                        ],
+                        'variation' => $item->variation ? [
+                            'uid' => $item->variation->uid,
+                            'color' => $item->variation->color,
+                            'size' => $item->variation->size,
+                            'sell_price' => $item->variation->sell_price,
+                        ] : null,
+                        'quantity' => $item->quantity,
+                        'total' => $item->total,
+                        'tax' => $item->tax,
+                    ];
+                }),
+                'created_at' => Carbon::parse($order->created_at)
+                    ->timezone('Asia/Kolkata')
+                    ->translatedFormat('jS M Y, h.iA'),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Your orders fetched successfully.',
+            'total' => $total,
+            'data' => $data
+        ]);
+    }
 
 }
 

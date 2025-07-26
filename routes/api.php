@@ -130,6 +130,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::delete('/delete-images', [UploadController::class, 'deleteProductImages']); // Delete Product Images
         });
         
+        // For Orders
+        Route::prefix('order')->group(function () {
+            Route::post('/get-order', [OrderController::class, 'getAllOrders']); //get all order
+            Route::put('/update-status/{id}', [OrderController::class, 'updateOrderStatus']); // update order status
+            Route::delete('/delete/{id}', [OrderController::class, 'deleteOrder']); // delete order by order id
+        }); 
 
     });
 
@@ -139,7 +145,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::prefix('address')->group(function () {
             Route::post('/create-address', [AddressController::class, 'createAddress']); // create address
-            Route::post('/getAddressById', [AddressController::class, 'getAddressById']); // get all address by user id
+            Route::post('/getAddressBy-user', [AddressController::class, 'getAddressByUser']); // get all address by user id
             Route::post('/update-address', [AddressController::class, 'updateAddress']); // update address by address id
             Route::delete('/delete-address/{address_id}', [AddressController::class, 'deleteAddress']); // delete address by address id
         });
@@ -166,8 +172,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::prefix('order')->group(function () {
             Route::post('/create', [OrderController::class, 'createOrder']); //create order
-            Route::delete('/delete/{id}', [OrderController::class, 'deleteOrder']); // delete order by order id
-            Route::put('/update-status/{id}', [OrderController::class, 'updateOrderStatus']); // update order status
+            Route::post('/get-order', [OrderController::class, 'getMyOrders']); //get all order
+            
         });
         
         Route::post('/payments/verify', [PaymentController::class, 'verify']);

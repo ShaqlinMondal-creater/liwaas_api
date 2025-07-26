@@ -125,16 +125,23 @@ class AddressController extends Controller
     }
 
     // Get Address by User id as (registered user)
-    public function getAddressById(Request $request)
+    public function getAddressByUser(Request $request)
     {
         try {
-            $userId = $request->user()->id; // Get authenticated user's ID
+            $user = $request->user();
 
-            // Fetch addresses only for the authenticated user
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                ], 401);
+            }
+
+            $userId = $user->id;
+
             $addresses = AddressModel::where('registered_user', $userId)->get();
 
-            // Remove created_at and updated_at if needed
-            $cleanedAddresses = $addresses->map(function ($address) {
+            $cleaned = $addresses->map(function ($address) {
                 $data = $address->toArray();
                 unset($data['created_at'], $data['updated_at']);
                 return $data;
@@ -143,7 +150,7 @@ class AddressController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Addresses fetched successfully.',
-                'data' => $cleanedAddresses
+                'data' => $cleaned
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -153,6 +160,8 @@ class AddressController extends Controller
             ], 500);
         }
     }
+
+
 
     // update address by address id with validet user
     public function updateAddress(Request $request)
