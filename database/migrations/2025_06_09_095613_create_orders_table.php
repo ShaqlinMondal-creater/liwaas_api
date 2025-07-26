@@ -16,28 +16,20 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
 
             $table->string('order_code', 9)->unique(); // Format: XXXX-YYYY
-            $table->string('invoice_no')->nullable();
-            $table->string('invoice_link')->nullable();
-            $table->string('ship_delivery_id')->nullable();
-            $table->enum('shipping', ['Pending', 'Approved', 'Completed'])->default('Pending');
-            $table->string('shipping_type')->nullable();
-            $table->string('shipping_by')->nullable();
-            $table->text('shipping_address');
-            $table->decimal('shipping_charge', 10, 2)->default(0);
+            $table->unsignedBigInteger('invoice_id')->nullable();
+            $table->unsignedBigInteger('shipping_id')->nullable();
 
             // New fields added
             $table->decimal('tax_price', 10, 2)->default(0);
             $table->decimal('grand_total', 10, 2); // after tax + shipping (+/- coupon)
 
-            $table->enum('payment_status', ['pending', 'completed', 'cancelled', 'In Queue'])->default('pending');
-            $table->string('razorpay_order_id')->nullable(); // updated from payment_details 
             $table->enum('payment_type', ['COD', 'Preppaid', 'Postpaid'])->default('COD');
+            $table->unsignedBigInteger('payment_id')->nullable(); // updated from payment_details 
 
             $table->enum('delivery_status', ['pending', 'completed', 'shipped', 'Near You'])->default('pending');
 
             $table->unsignedBigInteger('coupon_id')->nullable();
-            $table->string('track_code')->nullable();
-
+            $table->text('other_text')->nullable(); 
             $table->timestamps(); // created_at and updated_at
 
             // Foreign key constraint

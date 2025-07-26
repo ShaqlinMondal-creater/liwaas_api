@@ -13,6 +13,7 @@ class Shipping extends Model
 
     protected $fillable = [
         'shipping_status',
+        'shipping_type',
         'shipping_by',
         'address_id',
         'shipping_charge',

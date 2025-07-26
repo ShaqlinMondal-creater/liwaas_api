@@ -11,24 +11,17 @@ class Orders extends Model
     protected $table = 'orders'; // ✅ Correct table name
 
     protected $fillable = [
-        'order_code',
-        'invoice_no',
-        'invoice_link',
-        'shipping',
-        'ship_delivery_id',
-        'shipping_type',
-        'shipping_by',
-        'shipping_id',
         'user_id',
+        'order_code',
+        'invoice_id',
+        'shipping_id',
+        'tax_price',
+        'grand_total',
         'payment_type',
-        'payment_status',
-        'razorpay_order_id',
+        'payment_id',
         'delivery_status',
         'coupon_id',
-        'track_code',
-        'tax_price',
-        'shipping_charge',
-        'grand_total',
+        'other_text',
     ];
 
 

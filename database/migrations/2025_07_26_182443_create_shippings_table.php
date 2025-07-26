@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('t_shipping', function (Blueprint $table) {
             $table->id();
             $table->enum('shipping_status', ['Pending', 'Approved', 'Completed'])->default('Pending');
+            $table->enum('shipping_type', ['Home', 'Work', 'Other'])->default('Home');
             $table->string('shipping_by')->nullable(); // e.g., Shiprocket, Delhivery
             $table->unsignedBigInteger('address_id')->nullable();
             $table->decimal('shipping_charge', 10, 2)->default(0);
