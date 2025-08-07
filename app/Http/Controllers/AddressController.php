@@ -15,7 +15,7 @@ class AddressController extends Controller
         try {
             $authUser = $request->user(); // Get the logged-in user
 
-            // Validation rules (remove 'user_id' from user input)
+            // Validation rules
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'email' => 'required|email',
@@ -40,12 +40,15 @@ class AddressController extends Controller
             // Default country if not set
             $country = $request->country ?? 'INDIA';
 
-            // Create the address using the authenticated user ID
+            // Mark all previous addresses as "secondary"
+            AddressModel::where('user_id', $authUser->id)->update(['address_type' => 'secondary']);
+
+            // Create the new address (default "primary" if not passed)
             $address = AddressModel::create([
                 'user_id' => $authUser->id,
                 'name' => $request->name,
                 'email' => $request->email,
-                'address_type' => $request->address_type ?? 'secondary',
+                'address_type' => $request->address_type ?? 'primary', // new one is primary by default
                 'mobile' => $request->mobile,
                 'state' => $request->state,
                 'city' => $request->city,
@@ -161,8 +164,6 @@ class AddressController extends Controller
         }
     }
 
-
-
     // update address by address id with validet user
     public function updateAddress(Request $request)
     {
@@ -181,11 +182,11 @@ class AddressController extends Controller
                 'address_line_2' => 'nullable|string|max:255',
             ]);
 
-            $userId = $request->user()->id;
+            $user = $request->user();
 
             // Find address belonging to the current user
             $address = AddressModel::where('id', $request->address_id)
-                ->where('user_id', $userId)
+                ->where('user_id', $user->id)
                 ->first();
 
             if (! $address) {
@@ -195,11 +196,20 @@ class AddressController extends Controller
                 ], 404);
             }
 
+            // If the address type is 'primary', update all others to 'secondary'
+            $newType = $request->address_type ?? 'primary';
+
+            if ($newType === 'primary') {
+                AddressModel::where('user_id', $user->id)
+                    ->where('id', '!=', $address->id)
+                    ->update(['address_type' => 'secondary']);
+            }
+
             // Update the address
             $address->update([
                 'name' => $request->name,
                 'email' => $request->email,
-                'address_type' => $request->address_type ?? 'primary',
+                'address_type' => $newType,
                 'mobile' => $request->mobile,
                 'state' => $request->state,
                 'city' => $request->city,
