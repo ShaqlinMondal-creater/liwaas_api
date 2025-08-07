@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->enum('role', ['customer', 'admin'])->default('customer');
             $table->string('mobile')->unique();
-            $table->string('address_line_1')->nullable();
             $table->enum('is_active', ['true', 'false'])->default('false');
             $table->enum('is_logged_in', ['true', 'false'])->default('false');
             $table->timestamp('is_deleted')->nullable();
