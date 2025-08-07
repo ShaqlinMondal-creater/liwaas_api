@@ -8,100 +8,40 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Product;
 use App\Models\ProductVariations;
 use App\Models\Upload;
+use Illuminate\Support\Str;
 
 class CartController extends Controller
 {
-    // ✅ Add product to cart
-    // public function createCart(Request $request)
-    // {
-    //     // ✅ Step 1: Validate request
-    //     $validated = $request->validate([
-    //         'products_id'   => 'required|exists:products,id',
-    //         'aid'           => 'required|string',
-    //         'uid'           => 'required|integer',
-    //         'regular_price' => 'required|numeric',
-    //         'sell_price'    => 'required|numeric',
-    //         'quantity'      => 'required|integer|min:1',
-    //     ]);
-
-    //     // ✅ Step 2: Get authenticated user ID
-    //     $userId = auth()->id();
-
-    //     // ✅ Step 3: Check product existence
-    //     $product = Product::find($validated['products_id']);
-    //     if (!$product) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Product not found.',
-    //         ], 404);
-    //     }
-
-    //     // ✅ Step 4: Check variation existence with UID and AID
-    //     $variation = ProductVariations::where('uid', $validated['uid'])
-    //                                 ->where('aid', $validated['aid'])
-    //                                 ->first();
-
-    //     if (!$variation) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Variation not found for the given UID and AID.',
-    //         ], 404);
-    //     }
-
-    //     // ✅ Step 5: Check if product + variation already exists in user's cart
-    //     $existingCart = Cart::where('user_id', $userId)
-    //                         ->where('products_id', $validated['products_id'])
-    //                         ->where('uid', $validated['uid'])
-    //                         ->first();
-
-    //     if ($existingCart) {
-    //         // ✅ Update quantity and total_price
-    //         $existingCart->quantity += $validated['quantity'];
-    //         $existingCart->total_price = $existingCart->sell_price * $existingCart->quantity;
-    //         $existingCart->save();
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Cart updated successfully.',
-    //             'data'    => $existingCart
-    //         ], 200);
-    //     }
-
-    //     // ✅ Step 6: Create new cart
-    //     $totalPrice = $validated['sell_price'] * $validated['quantity'];
-
-    //     $cart = Cart::create([
-    //         'user_id'       => $userId,
-    //         'products_id'   => $validated['products_id'],
-    //         'aid'           => $validated['aid'],
-    //         'uid'           => $validated['uid'],
-    //         'regular_price' => $validated['regular_price'],
-    //         'sell_price'    => $validated['sell_price'],
-    //         'quantity'      => $validated['quantity'],
-    //         'total_price'   => $totalPrice,
-    //     ]);
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Cart created successfully.',
-    //         'data'    => $cart
-    //     ], 201);
-    // }
-
+    //✅ Add product to cart
     public function createCart(Request $request)
     {
-        // ✅ Step 1: Validate request
+        // ✅ Step 1: Validate input
         $validated = $request->validate([
             'products_id' => 'required|exists:products,id',
             'aid'         => 'required|string',
             'uid'         => 'required|integer',
             'quantity'    => 'required|integer|min:1',
+            'temp_id'     => 'nullable|string',
         ]);
 
-        // ✅ Step 2: Get authenticated user ID
-        $userId = auth()->id();
+        // ✅ Step 2: Try to extract auth user from token manually (if exists)
+        $user = null;
+        if ($request->bearerToken()) {
+            $user = auth('sanctum')->user(); // Only resolves if token valid
+        }
 
-        // ✅ Step 3: Verify product existence
+        if ($user) {
+            $userId = $user->id;
+            $isGuest = false;
+        } elseif (!empty($validated['temp_id'])) {
+            $userId = $validated['temp_id']; // Existing guest
+            $isGuest = true;
+        } else {
+            $userId = 'temp_' . Str::random(12); // New guest
+            $isGuest = true;
+        }
+
+        // ✅ Step 3: Get product
         $product = Product::find($validated['products_id']);
         if (!$product) {
             return response()->json([
@@ -110,7 +50,7 @@ class CartController extends Controller
             ], 404);
         }
 
-        // ✅ Step 4: Fetch product variation using UID and AID
+        // ✅ Step 4: Get variation
         $variation = ProductVariations::where('uid', $validated['uid'])
                                     ->where('aid', $validated['aid'])
                                     ->first();
@@ -118,18 +58,17 @@ class CartController extends Controller
         if (!$variation) {
             return response()->json([
                 'success' => false,
-                'message' => 'Variation not found for the given UID and AID.',
+                'message' => 'Variation not found.',
             ], 404);
         }
 
-        // ✅ Step 5: Check if the cart entry already exists
+        // ✅ Step 5: Check for existing cart item
         $existingCart = Cart::where('user_id', $userId)
                             ->where('products_id', $validated['products_id'])
                             ->where('uid', $validated['uid'])
                             ->first();
 
         if ($existingCart) {
-            // ✅ Update quantity and total price
             $existingCart->quantity += $validated['quantity'];
             $existingCart->total_price = $variation->sell_price * $existingCart->quantity;
             $existingCart->save();
@@ -137,13 +76,12 @@ class CartController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Cart updated successfully.',
-                'data'    => $existingCart
+                'data'    => $existingCart,
+                'temp_id' => $isGuest ? $userId : null,
             ], 200);
         }
 
-        // ✅ Step 6: Create a new cart item
-        $totalPrice = $variation->sell_price * $validated['quantity'];
-
+        // ✅ Step 6: Create cart item
         $cart = Cart::create([
             'user_id'       => $userId,
             'products_id'   => $validated['products_id'],
@@ -152,38 +90,36 @@ class CartController extends Controller
             'regular_price' => $variation->regular_price,
             'sell_price'    => $variation->sell_price,
             'quantity'      => $validated['quantity'],
-            'total_price'   => $totalPrice,
+            'total_price'   => $variation->sell_price * $validated['quantity'],
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Cart created successfully.',
-            'data'    => $cart
+            'data'    => $cart,
+            'temp_id' => $isGuest ? $userId : null,
         ], 201);
     }
 
-    public function updateCart(Request $request)
+    // Update cart according to the cart id
+    public function updateCart(Request $request, $id)
     {
+        // Validate only quantity
         $validated = $request->validate([
-            'products_id' => 'required|exists:products,id',
-            'uid'         => 'required|integer',
-            'quantity'    => 'required|integer|min:1',
+            'quantity' => 'required|integer|min:1',
         ]);
 
-        $userId = auth()->id();
-
-        $cart = Cart::where('user_id', $userId)
-            ->where('products_id', $validated['products_id'])
-            ->where('uid', $validated['uid'])
-            ->first();
+        // Find cart by ID
+        $cart = Cart::find($id);
 
         if (!$cart) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cart item not found. Create it first.',
+                'message' => 'Cart item not found.',
             ], 404);
         }
 
+        // Update quantity and total price
         $cart->quantity = $validated['quantity'];
         $cart->total_price = $cart->sell_price * $validated['quantity'];
         $cart->save();
@@ -195,11 +131,25 @@ class CartController extends Controller
         ], 200);
     }
 
-    public function getUserCart()
+    // Get Users Cart Data
+    public function getUserCart(Request $request)
     {
-        $userId = auth()->id();
+        // ✅ Try to get authenticated user
+        $user = null;
+        if ($request->bearerToken()) {
+            $user = auth('sanctum')->user(); // Only resolves if token is valid
+        }
 
-        // Fetch cart with necessary relationships
+        if ($user) {
+            $userId = $user->id;
+        } else {
+            $request->validate([
+                'temp_id' => 'required|string',
+            ]);
+            $userId = $request->input('temp_id');
+        }
+
+        // ✅ Fetch cart with product & variation
         $carts = Cart::with(['product:id,name', 'variation:id,uid,aid,color,size,images_id'])
                     ->where('user_id', $userId)
                     ->get();
@@ -212,20 +162,16 @@ class CartController extends Controller
             ], 200);
         }
 
-        // Format response
+        // ✅ Format response
         $formatted = $carts->map(function ($cart) {
             $imageUrls = [];
 
-            // Parse and resolve image URLs from variation's images_id
+            // Resolve images
             $imagesId = optional($cart->variation)->images_id;
             if ($imagesId) {
                 $imageIdsArray = array_filter(explode(',', $imagesId));
-
-                // Fetch uploads with matching IDs
                 $uploads = Upload::whereIn('id', $imageIdsArray)->get(['id', 'url']);
-
-                // Extract URLs
-                $imageUrls = $uploads->pluck('url')->toArray();
+                $imageUrls = $uploads->pluck('url')->map(fn($url) => asset('uploads/' . $url))->toArray();
             }
 
             return [
@@ -252,22 +198,20 @@ class CartController extends Controller
         ], 200);
     }
 
+    // Delete Cart according to cart id
     public function deleteCart($cartId)
     {
-        $userId = auth()->id(); // Get the authenticated user ID
-
-        // Find the cart item that belongs to the current user
-        $cart = Cart::where('id', $cartId)
-                    ->where('user_id', $userId)
-                    ->first();
+        // Find the cart item by ID
+        $cart = Cart::find($cartId);
 
         if (!$cart) {
             return response()->json([
                 'success' => false,
-                'message' => 'Cart item not found or does not belong to the user.',
+                'message' => 'Cart item not found.',
             ], 404);
         }
 
+        // Delete the cart item
         $cart->delete();
 
         return response()->json([
@@ -275,6 +219,7 @@ class CartController extends Controller
             'message' => 'Cart item deleted successfully.',
         ], 200);
     }
+
 
     // public function getAllCartsForAdmin()
     // {

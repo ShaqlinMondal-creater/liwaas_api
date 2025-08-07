@@ -19,10 +19,6 @@ use App\Http\Controllers\SectionViewController;
 use App\Http\Controllers\HelperController;
 
 
-// Route::get('/user', function (Request $request) {
-//     return $request->user();
-// })->middleware('auth:sanctum');
-
     // Public routes
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
@@ -39,6 +35,13 @@ use App\Http\Controllers\HelperController;
     Route::post('/allCategories', [CategoryController::class, 'getAllCategories']); //All category showing
     Route::post('/extras/getall', [ExtrasController::class, 'getAllExtras']);  //For Get Extras with Filter
     Route::post('sections/getsections-products', [SectionViewController::class, 'getSectionsProducts']); 
+
+    Route::prefix('cart')->group(function () {
+        Route::post('/create-cart', [CartController::class, 'createCart']);
+        Route::post('/update-cart/{id}', [CartController::class, 'updateCart']);
+        Route::get('/get-cart', [CartController::class, 'getUserCart']);
+        Route::delete('delete-cart/{id}', [CartController::class, 'deleteCart']);
+    });
 
 Route::middleware(['auth:sanctum'])->group(function () {
 
@@ -92,9 +95,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/shiprocket-orders', [ShippingController::class, 'getShiprocketOrders']); //For get all shipping order
         
 
-        // Route::get('/users', [AdminController::class, 'getAllUsers']); // Get all User
         Route::post('/users', [AdminController::class, 'getAllUsers']); // now accepts body
-
         Route::post('/getAllAddress', [AddressController::class, 'getAllAddress']); // get all address
         Route::delete('/delete-address/{address_id}', [AddressController::class, 'adminDeleteAddress']); // delete address by admin
         
@@ -139,6 +140,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     });
 
+    
+
     // Customer Routes
     Route::middleware(['customerOnly'])->prefix('customer')->group(function () {
         Route::get('/profile', [UserController::class, 'customerProfile']);
@@ -150,12 +153,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::delete('/delete-address/{address_id}', [AddressController::class, 'deleteAddress']); // delete address by address id
         });
 
-        Route::prefix('cart')->group(function () {
-            Route::post('/create-cart', [CartController::class, 'createCart']);
-            Route::post('/update-cart', [CartController::class, 'updateCart']);
-            Route::get('/get-cart', [CartController::class, 'getUserCart']);
-            Route::delete('/{id}', [CartController::class, 'deleteCart']);
-        });
+        // Route::prefix('cart')->group(function () {
+        //     Route::post('/create-cart', [CartController::class, 'createCart']);
+        //     Route::post('/update-cart', [CartController::class, 'updateCart']);
+        //     Route::get('/get-cart', [CartController::class, 'getUserCart']);
+        //     Route::delete('/{id}', [CartController::class, 'deleteCart']);
+        // });
 
         Route::prefix('wishlist')->group(function () {
             Route::post('/create', [WishlistController::class, 'addWishlist']);
