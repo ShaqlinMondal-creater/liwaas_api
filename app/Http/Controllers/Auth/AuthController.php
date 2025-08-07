@@ -11,75 +11,45 @@ use Illuminate\Support\Facades\Validator;
 class AuthController extends Controller
 {
     // Register method
-    // public function register(Request $request)
-    // {
-    //     $validatedData = $request->validate([
-    //         'name' => 'required|string',
-    //         'email' => 'required|email|unique:users,email',
-    //         'mobile' => 'required|string|unique:users,mobile',
-    //         'password' => 'required|string|min:6',
-    //     ]);
-
-    //     $user = new User();
-    //     $user->name = $validatedData['name'];
-    //     $user->email = $validatedData['email'];
-    //     $user->password = Hash::make($validatedData['password']);
-    //     $user->mobile = $validatedData['mobile'];
-    //     $user->role = 'customer';
-    //     $user->is_active = 'true';
-    //     $user->is_logged_in = 'false';
-    //     $user->save();
-
-    //     // Clean up output using unset
-    //     $userData = $user->toArray();
-    //     unset($userData['created_at'], $userData['updated_at'], $userData['email_verified_at'], $userData['deleted_at']);
-
-    //     return response()->json([
-    //         'message' => 'User registered successfully',
-    //         'user' => $userData,
-    //     ], 201);
-    // }
-
     public function register(Request $request)
-{
-    $validatedData = $request->validate([
-        'name' => 'required|string',
-        'email' => 'required|email|unique:users,email',
-        'mobile' => 'required|string|unique:users,mobile',
-        'password' => 'required|string|min:6',
-    ]);
+    {
+        $validatedData = $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users,email',
+            'mobile' => 'required|string|unique:users,mobile',
+            'password' => 'required|string|min:6',
+        ]);
 
-    $user = new User();
-    $user->name = $validatedData['name'];
-    $user->email = $validatedData['email'];
-    $user->password = Hash::make($validatedData['password']);
-    $user->mobile = $validatedData['mobile'];
-    $user->role = 'customer';
-    $user->is_active = 'true';
-    $user->is_logged_in = 'true'; // Automatically log in after registration
-    $user->save();
+        $user = new User();
+        $user->name = $validatedData['name'];
+        $user->email = $validatedData['email'];
+        $user->password = Hash::make($validatedData['password']);
+        $user->mobile = $validatedData['mobile'];
+        $user->role = 'customer';
+        $user->is_active = 'true';
+        $user->is_logged_in = 'true'; // Automatically log in after registration
+        $user->save();
 
-    // Create token
-    $token = $user->createToken('api-token')->plainTextToken;
+        // Create token
+        $token = $user->createToken('api-token')->plainTextToken;
 
-    // Convert to array and remove unwanted fields
-    $userData = $user->toArray();
-    unset(
-        $userData['created_at'],
-        $userData['updated_at'],
-        $userData['email_verified_at'],
-        $userData['is_deleted'],
-        $userData['is_logged_in']
-    );
+        // Convert to array and remove unwanted fields
+        $userData = $user->toArray();
+        unset(
+            $userData['created_at'],
+            $userData['updated_at'],
+            $userData['email_verified_at'],
+            $userData['is_deleted'],
+            $userData['is_logged_in']
+        );
 
-    return response()->json([
-        'success' => true,
-        'message' => 'User registered and logged in successfully.',
-        'token' => $token,
-        'user' => $userData,
-    ], 201);
-}
-
+        return response()->json([
+            'success' => true,
+            'message' => 'User registered and logged in successfully.',
+            'token' => $token,
+            'user' => $userData,
+        ], 201);
+    }
 
     // Login method
     public function login(Request $request)
