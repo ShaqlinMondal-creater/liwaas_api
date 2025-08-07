@@ -15,14 +15,9 @@ return new class extends Migration
             $table->enum('role', ['customer', 'admin'])->default('customer');
             $table->string('mobile')->unique();
             $table->string('address_line_1')->nullable();
-            $table->string('address_line_2')->nullable();
-            $table->string('state')->nullable();
-            $table->string('city')->nullable();
-            $table->string('pincode')->nullable();
             $table->enum('is_active', ['true', 'false'])->default('false');
             $table->enum('is_logged_in', ['true', 'false'])->default('false');
             $table->timestamp('is_deleted')->nullable();
-            $table->string('country')->default('INDIA'); // ✅ new country column
         });
     }
 

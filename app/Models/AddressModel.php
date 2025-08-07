@@ -14,7 +14,7 @@ class AddressModel extends Model
 
     // Define the fillable attributes to allow mass assignment
     protected $fillable = [
-        'registered_user', // Add the registered_user field here
+        'user_id', // Add the user_id field here
         'name',
         'email',
         'address_type',
@@ -33,6 +33,6 @@ class AddressModel extends Model
     // Each address belongs to one user
     public function user()
     {
-        return $this->belongsTo(User::class, 'registered_user');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

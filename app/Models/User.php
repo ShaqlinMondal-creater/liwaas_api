@@ -25,11 +25,6 @@ class User extends Authenticatable
         'role',
         'mobile',
         'address_line_1',
-        'address_line_2',
-        'state',
-        'city',
-        'country',
-        'pincode',
         'is_active',
         'is_logged_in',
         'is_deleted',
@@ -61,7 +56,7 @@ class User extends Authenticatable
      // One user has many addresses
     public function addresses()
     {
-        return $this->hasMany(Address::class, 'registered_user');
+        return $this->hasMany(Address::class, 'user_id');
     }
 
     public function carts()

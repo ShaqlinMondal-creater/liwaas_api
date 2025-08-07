@@ -15,7 +15,7 @@ class AddressController extends Controller
         try {
             $authUser = $request->user(); // Get the logged-in user
 
-            // Validation rules (remove 'registered_user' from user input)
+            // Validation rules (remove 'user_id' from user input)
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'email' => 'required|email',
@@ -42,7 +42,7 @@ class AddressController extends Controller
 
             // Create the address using the authenticated user ID
             $address = AddressModel::create([
-                'registered_user' => $authUser->id,
+                'user_id' => $authUser->id,
                 'name' => $request->name,
                 'email' => $request->email,
                 'address_type' => $request->address_type ?? 'secondary',
@@ -84,8 +84,8 @@ class AddressController extends Controller
                 $query->where('name', 'like', '%' . $request->name . '%');
             }
 
-            if ($request->filled('registered_user')) {
-                $query->where('registered_user', $request->registered_user);
+            if ($request->filled('user_id')) {
+                $query->where('user_id', $request->registered_user);
             }
 
             if ($request->filled('state')) {
@@ -139,7 +139,7 @@ class AddressController extends Controller
 
             $userId = $user->id;
 
-            $addresses = AddressModel::where('registered_user', $userId)->get();
+            $addresses = AddressModel::where('user_id', $userId)->get();
 
             $cleaned = $addresses->map(function ($address) {
                 $data = $address->toArray();
@@ -185,7 +185,7 @@ class AddressController extends Controller
 
             // Find address belonging to the current user
             $address = AddressModel::where('id', $request->address_id)
-                ->where('registered_user', $userId)
+                ->where('user_id', $userId)
                 ->first();
 
             if (! $address) {
@@ -234,7 +234,7 @@ class AddressController extends Controller
             $userId = $request->user()->id;
 
             $address = AddressModel::where('id', $address_id)
-                ->where('registered_user', $userId)
+                ->where('user_id', $userId)
                 ->first();
 
             if (! $address) {

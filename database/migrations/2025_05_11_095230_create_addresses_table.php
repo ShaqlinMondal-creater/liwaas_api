@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('addresses', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('registered_user'); // user ID without foreign key
+            $table->unsignedBigInteger('user_id'); // user ID without foreign key
             $table->string('name');
             $table->string('email');
             $table->enum('address_type', ['primary', 'secondary'])->default('secondary');
