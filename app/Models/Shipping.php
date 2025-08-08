@@ -20,4 +20,10 @@ class Shipping extends Model
         'shipping_delivery_id',
         'response_',
     ];
+
+    public function address()
+    {
+        return $this->belongsTo(\App\Models\AddressModel::class, 'address_id');
+    }
+
 }

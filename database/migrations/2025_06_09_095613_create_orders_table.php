@@ -29,6 +29,7 @@ return new class extends Migration
             $table->enum('delivery_status', ['pending', 'completed', 'shipped', 'Near You'])->default('pending');
 
             $table->unsignedBigInteger('coupon_id')->nullable();
+            $table->decimal('coupon_discount', 10, 2)->nullable();
             $table->text('other_text')->nullable(); 
             $table->timestamps(); // created_at and updated_at
 

@@ -53,43 +53,47 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Admin Routes
     Route::middleware(['adminOnly'])->prefix('admin')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'adminDashboard']);
+        Route::post('/truncate-table', [AdminController::class, 'truncateTable']); // Truncate Table
         Route::delete('delete/{id}', [ProductReviewController::class, 'deleteReview']); // Delete review by id
         
+
         Route::get('/reviews', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
         Route::post('/carts', [CartController::class, 'getAllCartsForAdmin']); // For Carts
         Route::get('/wishlists', [WishlistController::class, 'getAllWishlists']); // For Wishlist
 
-        // Sections Get API DATA no Table
-        Route::prefix('fetch')->group(function () { 
-            Route::get('/newarrivals', [SectionViewController::class, 'getNewArriaval']); // get New arrival
-            Route::get('/trendings', [SectionViewController::class, 'getTrendings']); // get trending 
-            Route::get('/gallery', [SectionViewController::class, 'getGallery']); //get gallary
-            Route::post('/cat-products/{category_id}', [SectionViewController::class, 'getCategoryProducts']); //get category wise products
-        });
+        // Settings Data
+            // Sections Get API DATA no Table
+            Route::prefix('fetch')->group(function () { 
+                Route::get('/newarrivals', [SectionViewController::class, 'getNewArriaval']); // get New arrival
+                Route::get('/trendings', [SectionViewController::class, 'getTrendings']); // get trending 
+                Route::get('/gallery', [SectionViewController::class, 'getGallery']); //get gallary
+                Route::post('/cat-products/{category_id}', [SectionViewController::class, 'getCategoryProducts']); //get category wise products
+            });
 
-        // Operations with Sections Table
-        Route::prefix('sections')->group(function () { 
-            Route::post('/add', [SectionViewController::class, 'addSection']); 
-            Route::post('/getsections', [SectionViewController::class, 'getSections']); 
-            Route::delete('/delete/{id}', [SectionViewController::class, 'deleteSections']);
-            Route::put('/update/{id}', [SectionViewController::class, 'updateSection']);
+            // Operations with Sections Table
+            Route::prefix('sections')->group(function () { 
+                Route::post('/add', [SectionViewController::class, 'addSection']); 
+                Route::post('/getsections', [SectionViewController::class, 'getSections']); 
+                Route::delete('/delete/{id}', [SectionViewController::class, 'deleteSections']);
+                Route::put('/update/{id}', [SectionViewController::class, 'updateSection']);
 
-        });
+            });
 
-        // Extras File
-        Route::prefix('extras')->group(function () { 
-            Route::post('/add', [ExtrasController::class, 'addExtras']); //For Add Extras
-            Route::delete('/delete/{id}', [ExtrasController::class, 'deleteExtras']); //For Delete Extras
-            Route::put('/update-status/{id}', [ExtrasController::class, 'updateStatus']); //For update Status
-        });
+            // Extras File
+            Route::prefix('extras')->group(function () { 
+                Route::post('/add', [ExtrasController::class, 'addExtras']); //For Add Extras
+                Route::delete('/delete/{id}', [ExtrasController::class, 'deleteExtras']); //For Delete Extras
+                Route::put('/update-status/{id}', [ExtrasController::class, 'updateStatus']); //For update Status
+            });
 
-        // For Products
-        Route::prefix('shiprocket')->group(function () {
-            Route::get('/orders', [ShippingController::class, 'fetchAllShiprocketOrders']);
-            Route::post('/order-cancel', [ShippingController::class, 'cancelShiprocketOrder']);
-            Route::get('/track', [ShippingController::class, 'trackShipment']);
-            Route::get('/stats', [ShippingController::class, 'getMonthlyShippingStats']);
-        });
+            // For Products
+            Route::prefix('shiprocket')->group(function () {
+                Route::get('/orders', [ShippingController::class, 'fetchAllShiprocketOrders']);
+                Route::post('/order-cancel', [ShippingController::class, 'cancelShiprocketOrder']);
+                Route::get('/track', [ShippingController::class, 'trackShipment']);
+                Route::get('/stats', [ShippingController::class, 'getMonthlyShippingStats']);
+            });
+        // End Settings Data
 
         Route::post('/shipping-by', [ShippingController::class, 'shipBy']); // For Select Shipping
         Route::get('/shiprocket-orders', [ShippingController::class, 'getShiprocketOrders']); //For get all shipping order
@@ -176,6 +180,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::prefix('order')->group(function () {
             Route::post('/create', [OrderController::class, 'createOrder']); //create order
             Route::post('/get-order', [OrderController::class, 'getMyOrders']); //get all order
+            Route::post('/upd-payment', [OrderController::class, 'handlePaymentCallback']); //get all order
+            
             
         });
         

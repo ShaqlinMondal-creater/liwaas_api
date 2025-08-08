@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Invoice {{ $order->invoice_no }}</title>
+    <title>Invoice {{ $order->invoice->invoice_no }}</title>
     <style>
         @page {
             margin: 0;
@@ -204,7 +204,7 @@
                     <img src="{{ $logoBase64 }}" alt="Logo" class="logo">
                 </td>
                 <td class="w-50 text-right">
-                    <strong>INVOICE NUMBER:</strong> #{{ $order->invoice_no }}<br>
+                    <strong>INVOICE NUMBER:</strong> #{{ $order->invoice->invoice_no }}<br>
                     <strong>INVOICE DATE:</strong> {{ now()->format('M d, Y, h:i A') }}
                 </td>
             </tr>
@@ -232,12 +232,14 @@
                 <td style="width: 50%; vertical-align: top; padding-right: 10px;">
                     <div style="border: 0px solid #ccc; padding: 10px; line-height: 1.4;">
                         <strong>Billed To:</strong><br>
-                        <strong>{{ $order->user->name ?? 'Customer' }}</strong><br>
-                        {{ $order->user->email }}<br>
-                        Tel: {{ $order->user->mobile ?? '+91 xxxxx-xxxxx' }}<br>
+                        <strong>{{ $order->shipping->address->name ?? 'Customer' }}</strong><br>
+                        <strong>Tel: {{ $order->shipping->address->mobile ?? '+91 xxxxx-xxxxx' }}</strong>,
+                        {{ $order->shipping->address->email ?? 'example@gmail.com' }} <br>
 
                         <strong>Ship To:</strong><br>
-                        {{ $order->shipping_address }} , {{ $order->user->country }}<br>
+                        {{ $order->shipping->address->address_line_1 }} , {{ $order->shipping->address->address_line_2 ?? '' }}<br>
+                        {{ $order->shipping->address->city }}, {{ $order->shipping->address->state }}, {{ $order->shipping->address->country }}, {{ $order->shipping->address->pincode }}
+                        
                     </div>
                 </td>
 
@@ -246,7 +248,7 @@
                     <div style="border: 0px solid #ccc; padding: 10px; line-height: 1.4; float: right; min-width: 220px;">
                         <strong>ORDER:</strong> #{{ $order->order_code }}<br>
                         <strong>ORDER DATE:</strong> {{ $order->created_at->format('M d, Y, h:i A') }}<br>
-                        <strong>Shipping:</strong> {{ $order->shipping_type ?? 'Home' }}<br>
+                        <strong>Shipping:</strong> {{ $order->shipping->shipping_type ?? 'Home' }}<br>
                         <strong>Payment:</strong> {{ $order->payment_status ?? 'N/A' }}
                     </div>
                 </td>
@@ -269,13 +271,15 @@
                 @foreach($order->items as $item)
                 @php
                     $base64Image = null;
-                    if (!empty($item->image_link)) {
-                        $imagePath = public_path(str_replace(url('/'), '', $item->image_link));
-                        if (file_exists($imagePath)) {
-                            $type = pathinfo($imagePath, PATHINFO_EXTENSION);
-                            $data = file_get_contents($imagePath);
-                            $base64Image = 'data:image/' . $type . ';base64,' . base64_encode($data);
-                        }
+                    
+                    $imagePath = public_path('logos/default_liwass.png');
+
+                    if (file_exists($imagePath)) {
+                        $type = pathinfo($imagePath, PATHINFO_EXTENSION);
+                        $data = file_get_contents($imagePath);
+                        $base64Image = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                    } else {
+                        dd('File not found:', $imagePath);
                     }
                 @endphp
                 <tr>
@@ -298,9 +302,10 @@
                             </tr>
                         </table>
                     </td>
-                    <td>
-                        Color: {{ $item->color ?? 'N/A' }}<br>
-                        Size: {{ $item->size ?? 'N/A' }}
+                    <td style="text-align:center;">
+                        Color: <span style="display:inline-block;border-radius:50%;width:15px;height:15px;background-color:{{ $item->variation->color ?? '#ffffff' }};"></span>
+                        <br>
+                        Size: {{ $item->variation->size ?? 'N/A' }}
                     </td>
                     <td>{{ $item->quantity }}</td>
                     <td>₹ 0.00</td>
@@ -318,7 +323,7 @@
             <h4>SUBTOTAL: ₹{{ number_format($subtotal, 2) }}</h4>
             <h4>TAX: ₹{{ number_format($order->tax_price, 2) }}</h4>
             <h4>SHIPPING & HANDLING: ₹{{ number_format($order->shipping_charge, 2) }}</h4>
-            <h4>DISCOUNT: ₹ 0.00</h4>
+            <h4>DISCOUNT: ₹ {{$order->coupon_discount}}</h4>
             <h4 class="grand-total">GRAND TOTAL: ₹{{ number_format($order->grand_total, 2) }}</h4>
         </div>
     </div>
@@ -338,8 +343,8 @@
             <!-- Display the QR Code in the invoice -->
             @php
                 $qrBase64 = null;
-                if (!empty($order->track_code)) {
-                    $qrPath = public_path('qr/' . $order->track_code);
+                if (!empty($order->invoice->invoice_qr)) {
+                    $qrPath = public_path('qr/' . $order->invoice->invoice_qr);
                     if (file_exists($qrPath)) {
                         $qrBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($qrPath));
                     }

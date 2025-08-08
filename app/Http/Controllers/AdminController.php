@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Models\User;
 
@@ -66,5 +67,67 @@ class AdminController extends Controller
         }
     }
 
+    public function truncateTable(Request $request)
+    {
+        $validated = $request->validate([
+            'table_name' => 'required|string'
+        ]);
+
+        $input = $validated['table_name'];
+
+        $allowedTables = [
+            'addresses',
+            'brands',
+            'carts',
+            'categories',
+            'counters',
+            'extras',
+            'g_sheets',
+            'orders',
+            'order_details',
+            'products',
+            'product_reviews',
+            'product_variations',
+            'section_views',
+            't_coupon',
+            't_invoice',
+            't_payments',
+            't_shipping',
+            'uploads',
+            'users',
+            'wishlists'
+        ];
+
+        try {
+            if ($input === 'all') {
+                foreach ($allowedTables as $table) {
+                    DB::table($table)->truncate();
+                }
+            } else {
+                $tables = array_map('trim', explode(',', $input));
+
+                foreach ($tables as $table) {
+                    if (!in_array($table, $allowedTables)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Table '{$table}' is not allowed to truncate."
+                        ], 400);
+                    }
+
+                    DB::table($table)->truncate();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tables truncated successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error truncating tables: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
 }

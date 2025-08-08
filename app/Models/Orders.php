@@ -21,6 +21,7 @@ class Orders extends Model
         'payment_id',
         'delivery_status',
         'coupon_id',
+        'coupon_discount',
         'other_text',
     ];
 
@@ -45,4 +46,15 @@ class Orders extends Model
     {
         return $this->belongsTo(Coupon::class); // Only if you have a Coupon model
     }
+
+    public function invoice()
+    {
+        return $this->belongsTo(\App\Models\Invoices::class, 'invoice_id');
+    }
+
+    public function shipping()
+    {
+        return $this->belongsTo(\App\Models\Shipping::class, 'shipping_id');
+    }
+
 }
