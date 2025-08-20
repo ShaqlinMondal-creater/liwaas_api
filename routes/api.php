@@ -145,7 +145,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     
-
     // Customer Routes
     Route::middleware(['customerOnly'])->prefix('customer')->group(function () {
         Route::get('/profile', [UserController::class, 'customerProfile']);
@@ -189,6 +188,4 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
     });
-    
-
 });

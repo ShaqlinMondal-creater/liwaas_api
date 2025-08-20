@@ -171,7 +171,16 @@ class CartController extends Controller
             if ($imagesId) {
                 $imageIdsArray = array_filter(explode(',', $imagesId));
                 $uploads = Upload::whereIn('id', $imageIdsArray)->get(['id', 'url']);
-                $imageUrls = $uploads->pluck('url')->map(fn($url) => asset('uploads/' . $url))->toArray();
+                // $imageUrls = $uploads->pluck('url')->map(fn($url) => asset('uploads/' . $url))->toArray();
+                $imageUrls = $uploads->pluck('url')->map(function ($url) {
+                    // If already a full URL, return as is
+                    if (preg_match('/^http(s)?:\/\//', $url)) {
+                        return $url;
+                    }
+                    // Otherwise prepend your uploads path
+                    return asset('uploads/' . ltrim($url, '/'));
+                })->toArray();
+
             }
 
             return [
