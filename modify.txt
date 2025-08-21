@@ -1,3 +1,3 @@
 api update :
 -> /products/allProducts   -> add 'sort' where pass asc and desc base of the price
-
+-> /products/allProducts   -> add 'max-min price' filter
