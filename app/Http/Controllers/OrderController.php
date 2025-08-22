@@ -704,7 +704,7 @@ class OrderController extends Controller
         $limit = (int) $request->input('limit', 15);
         $offset = (int) $request->input('offset', 0);
 
-        $query = Orders::with(['items.variation', 'items.product'])
+        $query = Orders::with(['items.variation', 'items.product', 'invoice'])
             ->where('user_id', $user->id);
 
         $total = $query->count();
@@ -718,8 +718,8 @@ class OrderController extends Controller
             return [
                 'id' => $order->id,
                 'order_code' => $order->order_code,
-                'invoice_no' => $order->invoice_no,
-                'invoice_link' => $order->invoice_link,
+                'invoice_no' => $order->invoice ? $order->invoice->invoice_no : null,
+                'invoice_link' => $order->invoice ? $order->invoice->invoice_link : null,
                 'shipping' => $order->shipping,
                 'payment_type' => $order->payment_type,
                 'payment_status' => $order->payment_status,
