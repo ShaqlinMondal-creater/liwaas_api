@@ -341,7 +341,7 @@ class OrderController extends Controller
     {
         $request->validate([
             'shipping' => 'nullable|string|in:Pending,Approved,Completed',
-            'delivery_status' => 'nullable|string|in:pending,completed,shipped,Near You',
+            'delivery_status' => 'nullable|string|in:pending,delivered,arrived,shipped,Near You,cancel',
         ]);
 
         // Get the order

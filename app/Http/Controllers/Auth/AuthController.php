@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 
@@ -128,5 +129,87 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    // Fetch Profile
+    public function getProfile(Request $request)
+    {
+        $user = Auth::user(); // Sanctum automatically resolves user from Bearer token
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Invalid or missing token.',
+            ], 401);
+        }
+
+        // Convert to array and remove unwanted fields
+        $userData = $user->toArray();
+        unset(
+            $userData['created_at'],
+            $userData['updated_at'],
+            $userData['email_verified_at'],
+            $userData['is_deleted'],
+            $userData['is_logged_in']
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User profile fetched successfully.',
+            'user' => $userData,
+        ], 200);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        // ✅ Validate input
+        $request->validate([
+            'name'         => 'nullable|string|max:255',
+            'email'        => 'nullable|email|unique:users,email,' . $user->id,
+            'mobile'       => 'nullable|string|max:15',
+            'old_password' => 'nullable|string',
+            'new_password' => 'nullable|string|min:6',
+        ]);
+
+        // ✅ Update profile details
+        if ($request->filled('name')) {
+            $user->name = $request->name;
+        }
+        if ($request->filled('email')) {
+            $user->email = $request->email;
+        }
+        if ($request->filled('mobile')) {
+            $user->mobile = $request->mobile;
+        }
+
+        // ✅ Handle password update (only if both old and new are provided)
+        if ($request->filled('old_password') && $request->filled('new_password')) {
+            if (!\Hash::check($request->old_password, $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Old password is incorrect'
+                ], 400);
+            }
+
+            $user->password = bcrypt($request->new_password);
+        }
+
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile updated successfully',
+            'data'    => $user
+        ], 200);
+    }
+
 
 }

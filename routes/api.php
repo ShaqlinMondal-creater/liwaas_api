@@ -149,6 +149,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::middleware(['customerOnly'])->prefix('customer')->group(function () {
         Route::get('/profile', [UserController::class, 'customerProfile']);
 
+        Route::prefix('profile')->group(function () {
+            Route::post('/update', [AuthController::class, 'updateProfile']); // Update my Profile
+            // Route::post('/deactive', [AuthController::class, 'getAddressByUser']); // Deactive my Profile
+            Route::post('/fetch', [AuthController::class, 'getProfile']); // Fetch my Profile
+            // Route::delete('/forget-password', [AuthController::class, 'deleteAddress']); // Update my password
+        });
+
         Route::prefix('address')->group(function () {
             Route::post('/create-address', [AddressController::class, 'createAddress']); // create address
             Route::post('/getAddressBy-user', [AddressController::class, 'getAddressByUser']); // get all address by user id

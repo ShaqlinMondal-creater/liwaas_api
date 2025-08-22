@@ -26,7 +26,7 @@ return new class extends Migration
             $table->enum('payment_type', ['COD', 'Preppaid', 'Postpaid'])->default('COD');
             $table->unsignedBigInteger('payment_id')->nullable(); // updated from payment_details 
 
-            $table->enum('delivery_status', ['pending', 'completed', 'shipped', 'Near You'])->default('pending');
+            $table->enum('delivery_status', ['pending', 'arrived','delivered','cancel', 'shipped', 'Near You'])->default('pending');
 
             $table->unsignedBigInteger('coupon_id')->nullable();
             $table->decimal('coupon_discount', 10, 2)->nullable();
