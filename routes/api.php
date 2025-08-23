@@ -43,6 +43,8 @@ use App\Http\Controllers\HelperController;
         Route::delete('delete-cart/{id}', [CartController::class, 'deleteCart']);
     });
 
+    Route::post('/make_user', [AuthController::class, 'makeUser']);
+
 Route::middleware(['auth:sanctum'])->group(function () {
 
     // Common Routes (Admin + Customer)

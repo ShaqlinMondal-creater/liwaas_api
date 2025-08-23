@@ -7,7 +7,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\Cart;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use App\Mail\CreateUserMail;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -209,6 +213,59 @@ class AuthController extends Controller
             'message' => 'Profile updated successfully',
             'data'    => $user
         ], 200);
+    }
+
+    // Guest to AUth User Make
+    public function makeUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users,email',
+            'mobile' => 'required|string|unique:users,mobile',
+            'guest_id' => 'required|string'
+        ]);
+
+        // ✅ Check if guest_id exists in carts table
+        $guestCartExists = Cart::where('user_id', $request->guest_id)->exists();
+        if (!$guestCartExists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No cart found for the provided guest_id',
+            ], 404);
+        }
+
+        // ✅ Generate random password
+        $password = Str::random(8);
+
+        // ✅ Create user
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'mobile' => $request->mobile,
+            'password' => Hash::make($password),
+            'role' => 'customer',
+            'is_active' => 'true',
+            'is_logged_in' => 'true',
+        ]);
+
+        // ✅ Send mail with name, email, mobile, password
+        Mail::to($user->email)->send(new CreateUserMail($user, $password));
+
+
+        // ✅ Replace guest_id with new user_id in carts table
+        Cart::where('user_id', $request->guest_id)
+            ->update(['user_id' => $user->id]);
+
+        $user->makeHidden(['created_at', 'updated_at']);
+        // ✅ Generate token
+        $token = $user->createToken('authToken')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User created successfully and cart updated',
+            'token' => $token,
+            'user' => $user,
+        ], 201);
     }
 
 
