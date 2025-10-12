@@ -20,7 +20,7 @@ class AdminController extends Controller
             $search = $request->input('search');
 
             // Start query
-            $query = User::select('id', 'name', 'email', 'mobile', 'role', 'address_line_1', 'is_active', 'is_logged_in');
+            $query = User::select('id', 'name', 'email', 'mobile', 'role', 'is_active', 'is_logged_in');
 
             // Apply filters if present (enum string: 'true' or 'false')
             if (!is_null($isLoggedIn)) {
