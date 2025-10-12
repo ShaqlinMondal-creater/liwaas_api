@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('purpose_name');              // e.g. banner, offer, etc.
             $table->string('comments');  
-            $table->string('highlighs');  
+            $table->string('highlights');  
             $table->string('file_name');                 // original file name or custom name
             $table->string('file_path');                 // relative or full file path
             $table->boolean('show_status')->default(1); // 1 = show, 0 = hidden
