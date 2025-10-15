@@ -26,6 +26,9 @@ use App\Http\Controllers\HelperController;
     Route::prefix('products')->group(function () {
         Route::post('get-product-byslug/{slug}', [ProductController::class, 'getProductsBySlug']); // through slug product filter 
         Route::post('/allProducts', [ProductController::class, 'getAllProducts']); // All product showing 
+        Route::post('get-product-byAid/{aid}', [ProductController::class, 'getProductsByAid']); // through AID product filter 
+        Route::post('get-product-byAid/{aid}', [ProductController::class, 'getProductsByAid']); // through AID
+        Route::post('get-product-byUid/{uid}', [ProductController::class, 'getProductsByUid']); // through UID
 
     });
     

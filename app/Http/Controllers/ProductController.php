@@ -268,44 +268,6 @@ class ProductController extends Controller
     }
 
     // Get Product by slug
-    // public function getProductsBySlug($slug)
-    // {
-    //     try {
-    //         // Fetch product by slug with relationships
-    //         $product = Product::with([
-    //             'brand:id,name,logo',
-    //             'category:id,name,logo',
-    //             'variations:aid,uid,color,size,regular_price,sell_price,currency,gst,stock',
-    //             'upload:id,url,file_name'
-    //         ])->where('slug', trim($slug))->first();
-
-    //         if (!$product) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Product not found with the given slug.',
-    //                 'slug_received' => $slug,
-    //             ], 404);
-    //         }
-
-    //         // Remove timestamps and unnecessary IDs
-    //         $data = $product->toArray();
-    //         unset($data['created_at'], $data['updated_at'], $data['brand_id'], $data['category_id']);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Product fetched successfully.',
-    //             'data' => $data
-    //         ], 200);
-
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Error fetching product.',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
-
     public function getProductsBySlug($slug)
     {
         try {
@@ -349,6 +311,124 @@ class ProductController extends Controller
                 'success' => false,
                 'message' => 'Error fetching product.',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Get Product by AID
+    public function getProductsByAid($aid)
+    {
+        try {
+            $product = Product::with([
+                'brand:id,name,logo',
+                'category:id,name,logo',
+                'variations' => function ($q) {
+                    $q->select('aid', 'uid', 'color', 'size', 'regular_price', 'sell_price', 'currency', 'gst', 'stock', 'images_id');
+                }
+            ])->where('aid', trim($aid))->first();
+
+            if (!$product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product not found with the given AID.',
+                    'aid_received' => $aid,
+                ], 404);
+            }
+
+            $data = $product->toArray();
+            unset($data['created_at'], $data['updated_at'], $data['brand_id'], $data['category_id']);
+
+            // Attach variation images
+            foreach ($data['variations'] as &$variation) {
+                $imageIds = array_filter(explode(',', $variation['images_id']));
+                $variation['images'] = Upload::whereIn('id', $imageIds)->get(['id', 'url', 'file_name']);
+            }
+
+            // Attach main uploads
+            $uploadIds = array_filter(explode(',', $product->upload_id));
+            $data['upload'] = Upload::whereIn('id', $uploadIds)->get(['id', 'url', 'file_name']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product fetched successfully by AID.',
+                'data' => $data
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching product by AID.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Get Product by UID
+    public function getProductsByUid($uid)
+    {
+        try {
+            // 1️⃣ Find variation by UID
+            $variation = ProductVariations::where('uid', trim($uid))->first();
+
+            if (!$variation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No variation found with the given UID.',
+                    'uid_received' => $uid,
+                ], 404);
+            }
+
+            // 2️⃣ Fetch related product via AID
+            $product = Product::with([
+                'brand:id,name,logo',
+                'category:id,name,logo'
+            ])->where('aid', $variation->aid)->first();
+
+            if (!$product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product not found for this variation UID.',
+                ], 404);
+            }
+
+            // 3️⃣ Convert product to array and clean up fields
+            $data = $product->toArray();
+            unset($data['created_at'], $data['updated_at'], $data['brand_id'], $data['category_id']);
+
+            // 4️⃣ Get all variations under same AID
+            $variations = ProductVariations::where('aid', $variation->aid)
+                ->get(['aid', 'uid', 'color', 'size', 'regular_price', 'sell_price', 'currency', 'gst', 'stock', 'images_id'])
+                ->map(function ($v) {
+                    $imageIds = array_filter(explode(',', $v->images_id));
+                    $v->images = Upload::whereIn('id', $imageIds)->get(['id', 'url', 'file_name']);
+                    return $v;
+                });
+
+            // 5️⃣ Sort variations so selected UID is first
+            $variations = $variations->sortByDesc(function ($v) use ($uid) {
+                return $v->uid === $uid;
+            })->values();
+
+            // 6️⃣ Attach uploads for product itself
+            $uploadIds = array_filter(explode(',', $product->upload_id));
+            $data['upload'] = Upload::whereIn('id', $uploadIds)->get(['id', 'url', 'file_name']);
+
+            // 7️⃣ Final structured response
+            $data['selected_variation'] = $variations->firstWhere('uid', $uid);
+            $data['variations'] = $variations;
+            
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product fetched successfully by UID.',
+                'data' => $data,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching product by UID.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
