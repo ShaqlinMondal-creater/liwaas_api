@@ -70,6 +70,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 Route::get('/trendings', [SectionViewController::class, 'getTrendings']); // get trending 
                 Route::get('/gallery', [SectionViewController::class, 'getGallery']); //get gallary
                 Route::post('/cat-products/{category_id}', [SectionViewController::class, 'getCategoryProducts']); //get category wise products
+                Route::post('/marked-section-products', [SectionViewController::class, 'markedSectionProducts']); //Marked Products
             });
 
             // Operations with Sections Table
