@@ -17,6 +17,7 @@ use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\ExtrasController;
 use App\Http\Controllers\SectionViewController;
 use App\Http\Controllers\HelperController;
+use App\Http\Controllers\PaymentController;
 
 
     // Public routes
@@ -26,8 +27,7 @@ use App\Http\Controllers\HelperController;
     Route::prefix('products')->group(function () {
         Route::post('get-product-byslug/{slug}', [ProductController::class, 'getProductsBySlug']); // through slug product filter 
         Route::post('/allProducts', [ProductController::class, 'getAllProducts']); // All product showing 
-        Route::post('get-product-byAid/{aid}', [ProductController::class, 'getProductsByAid']); // through AID product filter 
-        Route::post('get-product-byAid/{aid}', [ProductController::class, 'getProductsByAid']); // through AID
+        Route::post('get-product-byAid/{aid}', [ProductController::class, 'getProductsByAid']); // through AID product filter
         Route::post('get-product-byUid/{uid}', [ProductController::class, 'getProductsByUid']); // through UID
 
     });
@@ -49,9 +49,6 @@ use App\Http\Controllers\HelperController;
     Route::post('/make_user', [AuthController::class, 'makeUser']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
-
-    // Common Routes (Admin + Customer)
-    Route::get('/common', [RoleBasedController::class, 'commonPage']);
 
     Route::post('/logout', [AuthController::class, 'logout']); // Logout Route (Both Admin + Customer)
 
@@ -115,6 +112,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::delete('/variation-delete/{uid}', [ProductController::class, 'deleteVariation']); // delete variation only
             Route::delete('/product-delete/{aid}', [ProductController::class, 'deleteProduct']); // delete product with there variations
             Route::post('/product-update', [ProductController::class, 'updateProduct']);
+            Route::post('/add-features', [ProductController::class, 'addProductFeatures']);
         });
         
         // For Brand
@@ -153,7 +151,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     // Customer Routes
     Route::middleware(['customerOnly'])->prefix('customer')->group(function () {
-        Route::get('/profile', [UserController::class, 'customerProfile']);
 
         Route::prefix('profile')->group(function () {
             Route::post('/update', [AuthController::class, 'updateProfile']); // Update my Profile
@@ -198,7 +195,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
         
         Route::post('/payments/verify', [PaymentController::class, 'verify']);
-
 
     });
 });

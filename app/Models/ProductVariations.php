@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Model; 
 
 class ProductVariations extends Model
 {
@@ -21,5 +21,11 @@ class ProductVariations extends Model
     public function carts()
     {
         return $this->hasMany(Cart::class, 'uid', 'uid');
+    }
+
+    // ✅ NEW
+    public function specs()
+    {
+        return $this->hasMany(ProductSpecModel::class, 'uid', 'uid');
     }
 }

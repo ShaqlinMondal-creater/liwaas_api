@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\ProductSpecModel;
 use App\Models\ProductVariations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -693,5 +694,55 @@ class ProductController extends Controller
             ], 500);
         }
     }
+
+    // Add Product Feature
+    public function addProductFeatures(Request $request)
+    {
+        $validated = $request->validate([
+            'uid' => 'required|numeric',
+            'features' => 'required|array|min:1',
+            'features.*.spec_name' => 'required|string',
+            'features.*.spec_value' => 'nullable|string',
+        ]);
+
+        $variation = ProductVariations::where('uid', $validated['uid'])->first();
+
+        if (!$variation) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid UID'
+            ], 404);
+        }
+
+        ProductSpecModel::where('uid', $validated['uid'])->delete();
+
+        foreach ($validated['features'] as $feature) {
+            ProductSpecModel::create([
+                'uid' => $validated['uid'],
+                'spec_name' => $feature['spec_name'],
+                'spec_value' => $feature['spec_value'] ?? null,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Features saved successfully'
+        ]);
+    }
+
+    public function getProductFeatures($uid)
+    {
+        $features = ProductSpecModel::where('uid', $uid)->get([
+            'spec_name',
+            'spec_value'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'uid' => $uid,
+            'features' => $features
+        ]);
+    }
+
 
 }
