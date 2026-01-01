@@ -402,6 +402,11 @@ class ProductController extends Controller
                 ->map(function ($v) {
                     $imageIds = array_filter(explode(',', $v->images_id));
                     $v->images = Upload::whereIn('id', $imageIds)->get(['id', 'url', 'file_name']);
+
+                    // ✅ Product Specs (NEW)
+                    $v->specs = ProductSpecModel::where('uid', $v->uid)
+                        ->get(['id', 'spec_name', 'spec_value']);
+
                     return $v;
                 });
 
@@ -695,16 +700,17 @@ class ProductController extends Controller
         }
     }
 
-    // Add Product Feature
-    public function addProductFeatures(Request $request)
+    // Add Product Specs
+    public function addProductSpecs(Request $request)
     {
         $validated = $request->validate([
             'uid' => 'required|numeric',
             'features' => 'required|array|min:1',
-            'features.*.spec_name' => 'required|string',
+            'features.*.spec_name' => 'required|string|max:255',
             'features.*.spec_value' => 'nullable|string',
         ]);
 
+        // ✅ Check variation exists
         $variation = ProductVariations::where('uid', $validated['uid'])->first();
 
         if (!$variation) {
@@ -714,35 +720,125 @@ class ProductController extends Controller
             ], 404);
         }
 
-        ProductSpecModel::where('uid', $validated['uid'])->delete();
-
         foreach ($validated['features'] as $feature) {
-            ProductSpecModel::create([
-                'uid' => $validated['uid'],
-                'spec_name' => $feature['spec_name'],
-                'spec_value' => $feature['spec_value'] ?? null,
-            ]);
+
+            // 🔁 Check if same uid + spec_name exists
+            $existingSpec = ProductSpecModel::where('uid', $validated['uid'])
+                ->where('spec_name', $feature['spec_name'])
+                ->first();
+
+            if ($existingSpec) {
+                // ✅ UPDATE only value
+                $existingSpec->update([
+                    'spec_value' => $feature['spec_value']
+                ]);
+            } else {
+                // ✅ INSERT new spec
+                ProductSpecModel::create([
+                    'uid' => $validated['uid'],
+                    'spec_name' => $feature['spec_name'],
+                    'spec_value' => $feature['spec_value'] ?? null,
+                ]);
+            }
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Features saved successfully'
+            'message' => 'Product features saved successfully',
+            'uid' => $validated['uid']
         ]);
     }
 
-    public function getProductFeatures($uid)
+    // Get Product Specs
+    public function getProductSpecs(Request $request)
     {
-        $features = ProductSpecModel::where('uid', $uid)->get([
+        $validated = $request->validate([
+            'uid' => 'nullable|numeric',
+            'spec_name' => 'nullable|string|max:255',
+        ]);
+
+        $query = ProductSpecModel::query();
+
+        // ✅ Filter by UID (optional)
+        if (!empty($validated['uid'])) {
+            $query->where('uid', $validated['uid']);
+        }
+
+        // ✅ Filter by Spec Name (optional)
+        if (!empty($validated['spec_name'])) {
+            $query->where('spec_name', $validated['spec_name']);
+        }
+
+        $specs = $query->orderBy('spec_name')->get([
+            'id',
+            'uid',
             'spec_name',
             'spec_value'
         ]);
 
         return response()->json([
             'success' => true,
-            'uid' => $uid,
-            'features' => $features
+            'filters' => [
+                'uid' => $validated['uid'] ?? null,
+                'spec_name' => $validated['spec_name'] ?? null,
+            ],
+            'count' => $specs->count(),
+            'data' => $specs
         ]);
     }
 
+    // Delete Product Specs
+    public function deleteProductSpecs(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'nullable|numeric',
+            'uid' => 'nullable|numeric',
+        ]);
+
+        // ❌ If neither id nor uid provided
+        if (empty($validated['id']) && empty($validated['uid'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please provide id or uid to delete specs.'
+            ], 422);
+        }
+
+        // ✅ Priority: delete by ID (single spec)
+        if (!empty($validated['id'])) {
+            $deleted = ProductSpecModel::where('id', $validated['id'])->delete();
+
+            if ($deleted === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Spec not found.'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product spec deleted successfully.',
+                'deleted_by' => 'id',
+                'id' => $validated['id']
+            ]);
+        }
+
+        // ✅ Delete by UID (bulk specs)
+        $deletedCount = ProductSpecModel::where('uid', $validated['uid'])->delete();
+
+        if ($deletedCount === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No specs found for this UID.'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Product specs deleted successfully.',
+            'deleted_by' => 'uid',
+            'uid' => $validated['uid'],
+            'deleted_count' => $deletedCount
+        ]);
+    }
 
 }
