@@ -295,6 +295,10 @@ class ProductController extends Controller
             foreach ($data['variations'] as &$variation) {
                 $imageIds = array_filter(explode(',', $variation['images_id']));
                 $variation['images'] = Upload::whereIn('id', $imageIds)->get(['id', 'url', 'file_name']);
+
+                // ✅ Product Specs (NEW)
+                $variation['specs'] = ProductSpecModel::where('uid', $variation['uid'])
+                    ->get(['id', 'spec_name', 'spec_value']);
             }
 
             // Attach product uploads manually using upload_id
@@ -343,6 +347,10 @@ class ProductController extends Controller
             foreach ($data['variations'] as &$variation) {
                 $imageIds = array_filter(explode(',', $variation['images_id']));
                 $variation['images'] = Upload::whereIn('id', $imageIds)->get(['id', 'url', 'file_name']);
+
+                // ✅ Product Specs (NEW)
+                $variation['specs'] = ProductSpecModel::where('uid', $variation['uid'])
+                    ->get(['id', 'spec_name', 'spec_value']);
             }
 
             // Attach main uploads
