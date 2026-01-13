@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\ProductSpecModel;
 use App\Models\ProductVariations;
+use App\Models\Counter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\Upload;
