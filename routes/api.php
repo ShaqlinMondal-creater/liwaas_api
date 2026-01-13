@@ -109,7 +109,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // For Products
         Route::prefix('products')->group(function () {
             Route::post('/add_product', [ProductController::class, 'addProduct']); //Add product
-            Route::get('/get-next-count', [ProductController::class, 'getNextProductAndVariationCodes']); //Add product
+            Route::get('/get-next-count', [ProductController::class, 'getNextProductAndVariationCodes']); //Get Latest Count
             Route::delete('/variation-delete/{uid}', [ProductController::class, 'deleteVariation']); // delete variation only
             Route::delete('/product-delete/{aid}', [ProductController::class, 'deleteProduct']); // delete product with there variations
             Route::post('/product-update', [ProductController::class, 'updateProduct']);
