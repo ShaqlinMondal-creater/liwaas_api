@@ -174,6 +174,43 @@ class ProductController extends Controller
         }
     }
 
+    public function getNextProductAndVariationCodes()
+    {
+        try {
+            // Product counter
+            $productCounter = Counter::where('name', 'product')->first();
+
+            // Variation counter
+            $variationCounter = Counter::where('name', 'p_variation')->first();
+
+            if (!$productCounter || !$variationCounter) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Counter configuration missing'
+                ], 500);
+            }
+
+            // Calculate NEXT values (no update)
+            $nextAid = $productCounter->prefix . ($productCounter->postfix + 1);
+            $nextUid = $variationCounter->prefix . ($variationCounter->postfix + 1);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'aid' => $nextAid,
+                    'uid' => $nextUid
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch counters',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     // Get all product with Filters
     public function getAllProducts(Request $request)
     {
