@@ -103,7 +103,7 @@ class ProductController extends Controller
                         'gst' => 18,
                         'stock' => $validated['stock'],
                         'color' => $validated['color'],
-                        'size' => $validated['size'],
+                        'size' => $this->normalizeCommaSeparated($validated['size']),
                     ]);
                     $variationCount = 1;
                 }
@@ -180,7 +180,7 @@ class ProductController extends Controller
                     'gst' => 18,
                     'stock' => $validated['stock'],
                     'color' => $validated['color'],
-                    'size' => $validated['size'],
+                    'size' => $this->normalizeCommaSeparated($validated['size']),
                 ]);
                 $variationCount = 1;
             }
@@ -207,165 +207,21 @@ class ProductController extends Controller
             ], 500);
         }
     }  
-     
-    // public function addProduct(Request $request)
-    // {
-    //     try {
-    //         $validated = $request->validate([
-    //             'aid' => 'required|string',
-    //             'name' => 'required|string',
-    //             'brand' => 'required|integer',
-    //             'category' => 'required|integer',
-    //             'slug' => 'nullable|string',
-    //             'description' => 'nullable|string',
-    //             'specification' => 'nullable|string',
-    //             'gender' => 'required|in:male,female,unisex',
-    //             'cod' => 'nullable|in:available,not available',
-    //             'shipping' => 'nullable|in:available,not available',
-    //             'ratings' => 'nullable|numeric',
-    //             'keyword' => 'nullable|string',
-    //             'image_url' => 'nullable|string',
-    //             'upload_id' => 'nullable|string',
-    //             'product_status' => 'nullable|in:active,inactive',
-    //             'added_by' => 'nullable|string',
-    //             'custom_design' => 'nullable|in:available,not available',
-    //             'variations' => 'nullable|array',
-    //             'variations.*.uid' => 'required_with:variations|numeric|distinct|unique:product_variations,uid',
-    //             'variations.*.regular_price' => 'required_with:variations|numeric',
-    //             'variations.*.sale_price' => 'required_with:variations|numeric',
-    //             'variations.*.size' => 'required_with:variations|string',
-    //             'variations.*.color' => 'required_with:variations|string',
-    //             'variations.*.stock' => 'required_with:variations|integer',
-    //             'uid' => 'required_without:variations|numeric|unique:product_variations,uid',
-    //             'regular_price' => 'required_without:variations|numeric',
-    //             'sale_price' => 'required_without:variations|numeric',
-    //             'size' => 'required_without:variations|string',
-    //             'color' => 'required_without:variations|string',
-    //             'stock' => 'required_without:variations|integer',
-    //         ]);
+    private function normalizeCommaSeparated($value)
+    {
+        if (!$value) return null;
 
-    //         // ✅ Validate brand & category
-    //         if (!Brand::find($validated['brand'])) {
-    //             return response()->json(['success' => false, 'message' => 'Invalid brand ID.'], 400);
-    //         }
+        $parts = explode(',', $value);
 
-    //         if (!Category::find($validated['category'])) {
-    //             return response()->json(['success' => false, 'message' => 'Invalid category ID.'], 400);
-    //         }
+        $parts = array_map(function ($item) {
+            return strtoupper(trim($item));
+        }, $parts);
 
-    //         // ✅ Check if AID already exists
-    //         $existingProduct = Product::where('aid', $validated['aid'])->first();
+        // remove empty values just in case
+        $parts = array_filter($parts);
 
-    //         if ($existingProduct) {
-    //             // ✅ It's a variant for existing product (do not update product or slug)
-    //             if (!empty($validated['variations'])) {
-    //                 foreach ($validated['variations'] as $variation) {
-    //                     ProductVariations::create([
-    //                         'aid' => $validated['aid'],
-    //                         'uid' => $variation['uid'],
-    //                         'regular_price' => $variation['regular_price'],
-    //                         'sell_price' => $variation['sale_price'],
-    //                         'currency' => 'INR',
-    //                         'gst' => 18,
-    //                         'stock' => $variation['stock'],
-    //                         'color' => $variation['color'],
-    //                         'size' => $variation['size'],
-    //                     ]);
-    //                 }
-    //             } else {
-    //                 ProductVariations::create([
-    //                     'aid' => $validated['aid'],
-    //                     'uid' => $validated['uid'],
-    //                     'regular_price' => $validated['regular_price'],
-    //                     'sell_price' => $validated['sale_price'],
-    //                     'currency' => 'INR',
-    //                     'gst' => 18,
-    //                     'stock' => $validated['stock'],
-    //                     'color' => $validated['color'],
-    //                     'size' => $validated['size'],
-    //                 ]);
-    //             }
-
-    //             return response()->json([
-    //                 'success' => true,
-    //                 'message' => 'Variation added to existing product.',
-    //                 'product_id' => $existingProduct->id
-    //             ], 200);
-    //         }
-
-    //         // ✅ Slug creation
-    //         $baseSlug = $validated['slug'] ?? \Str::slug($validated['name']);
-    //         $slug = $baseSlug;
-
-    //         while (Product::where('slug', $slug)->exists()) {
-    //             $slug = $baseSlug . '-' . strtolower(\Str::random(6));
-    //         }
-
-    //         // ✅ Create new product
-    //         $product = Product::create([
-    //             'aid' => $validated['aid'],
-    //             'name' => $validated['name'],
-    //             'brand_id' => $validated['brand'],
-    //             'category_id' => $validated['category'],
-    //             'slug' => $slug,
-    //             'description' => $validated['description'] ?? null,
-    //             'specification' => $validated['specification'] ?? null,
-    //             'gender' => $validated['gender'],
-    //             'cod' => $validated['cod'] ?? 'available',
-    //             'shipping' => $validated['shipping'] ?? 'available',
-    //             'ratings' => $validated['ratings'] ?? 0,
-    //             'keyword' => $validated['keyword'] ?? null,
-    //             'image_url' => $validated['image_url'] ?? null,
-    //             'upload_id' => $validated['upload_id'] ?? null,
-    //             'product_status' => $validated['product_status'] ?? 'active',
-    //             'added_by' => $validated['added_by'] ?? 'admin',
-    //             'custom_design' => $validated['custom_design'] ?? 'not available'
-    //         ]);
-
-    //         // ✅ Add its first variation(s)
-    //         if (!empty($validated['variations'])) {
-    //             foreach ($validated['variations'] as $variation) {
-    //                 ProductVariations::create([
-    //                     'aid' => $validated['aid'],
-    //                     'uid' => $variation['uid'],
-    //                     'regular_price' => $variation['regular_price'],
-    //                     'sell_price' => $variation['sale_price'],
-    //                     'currency' => 'INR',
-    //                     'gst' => 18,
-    //                     'stock' => $variation['stock'],
-    //                     'color' => $variation['color'],
-    //                     'size' => $variation['size'],
-    //                 ]);
-    //             }
-    //         } else {
-    //             ProductVariations::create([
-    //                 'aid' => $validated['aid'],
-    //                 'uid' => $validated['uid'],
-    //                 'regular_price' => $validated['regular_price'],
-    //                 'sell_price' => $validated['sale_price'],
-    //                 'currency' => 'INR',
-    //                 'gst' => 18,
-    //                 'stock' => $validated['stock'],
-    //                 'color' => $validated['color'],
-    //                 'size' => $validated['size'],
-    //             ]);
-    //         }
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'New product created successfully.',
-    //             'product_id' => $product->id
-    //         ], 201);
-
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Something went wrong.',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
-
+        return implode(', ', $parts);
+    }
     public function getNextProductAndVariationCodes()
     {
         try {
