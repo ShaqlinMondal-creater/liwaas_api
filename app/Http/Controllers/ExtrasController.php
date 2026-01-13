@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Extra;
-use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ExtrasController extends Controller
@@ -22,21 +22,13 @@ class ExtrasController extends Controller
 
         $file = $request->file('file');
         $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-        $destinationPath = public_path('extras');
-
-        if (!File::exists($destinationPath)) {
-            File::makeDirectory($destinationPath, 0755, true);
-        }
-
-        $file->move($destinationPath, $fileName);
-
-        // ✅ Build full URL like http://192.168.1.100:8000/extras/filename.jpg
-        $fileUrl = url('extras/' . $fileName);
+        $path = $file->storeAs('extras', $fileName, 'public');
+        $url  = Storage::url($path);
 
         $extra = Extra::create([
             'purpose_name' => $validated['purpose_name'],
             'file_name' => $fileName,
-            'file_path' => $fileUrl, // ✅ store full URL
+            'file_path' => $path, // ✅ store full URL
             'show_status' => $request->input('show_status', 0), // ✅ default to 0
             'comments' => $request->input('comments'),
             'highlights' => $request->input('highlights'),
@@ -93,10 +85,7 @@ class ExtrasController extends Controller
             ], 404);
         }
 
-        $filePath = public_path($extra->file_path);
-        if (File::exists($filePath)) {
-            File::delete($filePath);
-        }
+        Storage::disk('public')->delete($extra->file_path);
 
         $extra->delete();
 

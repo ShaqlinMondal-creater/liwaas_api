@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderPlacedMail;
 use App\Mail\OrderStatusUpdated;
 // use App\Services\ShiprocketService;
+use Illuminate\Support\Facades\Storage;
 
 class OrderController extends Controller
 {
@@ -371,7 +372,7 @@ class OrderController extends Controller
             $this->ensureDirectoryExists('qr');
 
             $pdfName = Str::random(24) . '.pdf';
-            $pdfUrl = url('invoices/' . $pdfName);
+            $pdfUrl = Storage::url('invoices/' . $pdfName);
 
             // Generate QR code
             $qrImageName = $this->generateQRCode($pdfUrl);
@@ -388,7 +389,7 @@ class OrderController extends Controller
             $order->invoice_id = $invoice->id;
 
             // Generate PDF and save
-            $pdfPath = public_path('invoices/' . $pdfName);
+            $pdfPath = storage_path('app/public/invoices/' . $pdfName);
             Pdf::loadView('pdf.invoice', ['order' => $order])->save($pdfPath);
         }
 
@@ -457,8 +458,8 @@ class OrderController extends Controller
                         'quantity' => $item->quantity,
                         'total' => $item->total,
                         'tax' => $item->tax,
-                        // 'image_link' => $item->image_link,
-                        'image_link' => basename($item->image_link),
+                        'image_link' => $item->image_link,
+                        // 'image_link' => basename($item->image_link),
                         'color' => $item->color,
                         'size' => $item->size,
                         'product' => [
@@ -555,23 +556,22 @@ class OrderController extends Controller
         $upload = \App\Models\Upload::find($imageId);
 
         if ($upload && !empty($upload->path)) {
-            return url($upload->path);
+            return Storage::url($upload->path);
         }
 
         $defaultPath = 'logos/default_liwaas.png';
-        return file_exists(public_path($defaultPath)) ? url($defaultPath) : null;
+        return Storage::exists($defaultPath)
+            ? Storage::url($defaultPath)
+            : null;
     }
-    private function ensureDirectoryExists($dir)
+    private function ensureDirectoryExists(string $dir): void
     {
-        $path = public_path($dir);
-        if (!file_exists($path)) {
-            mkdir($path, 0755, true);
-        }
+        Storage::disk('public')->makeDirectory($dir);
     }
     private function generateQRCode($invoiceLink)
     {
         $qrImageName = 'qr_' . Str::random(24) . '.png';
-        $qrImagePath = public_path('qr/' . $qrImageName);
+        $qrImagePath = storage_path('app/public/qr/' . $qrImageName);
 
         $result = Builder::create()
             ->writer(new PngWriter())
@@ -649,7 +649,7 @@ class OrderController extends Controller
                             $upload = Upload::find($firstId);
                             if ($upload) {
                                 $imageId = $upload->id;
-                                $imageUrl = $upload->url;
+                                $imageUrl = Storage::url($upload->path);
                             }
                         }
                     }
@@ -736,7 +736,8 @@ class OrderController extends Controller
                             $upload = Upload::find($firstId);
                             if ($upload) {
                                 $imageId = $upload->id;
-                                $imageUrl = $upload->url;
+                                $imageUrl = Storage::url($upload->path)
+;
                             }
                         }
                     }

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\Category;
@@ -117,25 +117,15 @@ class CategoryController extends Controller
             if ($category->logo) {
                 $oldUpload = Upload::find($category->logo);
                 if ($oldUpload) {
-                    $oldPath = public_path($oldUpload->path);
-                    if (File::exists($oldPath)) {
-                        File::delete($oldPath);
-                    }
+                    Storage::disk('public')->delete($oldUpload->path);
                     $oldUpload->delete(); // remove from uploads table
                 }
             }
 
             $file = $request->file('logo');
             $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/categories');
-
-            if (!File::exists($destinationPath)) {
-                File::makeDirectory($destinationPath, 0755, true);
-            }
-
-            $file->move($destinationPath, $fileName);
-            $url = url('uploads/categories/' . $fileName);
-            $path = 'uploads/categories/' . $fileName;
+            $path = $file->storeAs('categories', $fileName, 'public');
+            $url  = Storage::url($path);
 
             // Save to uploads table
             $upload = Upload::create([
@@ -177,9 +167,10 @@ class CategoryController extends Controller
 
         // Delete logo file if it exists
         if ($category->logo) {
-            $logoPath = public_path(parse_url($category->logo, PHP_URL_PATH));
-            if (File::exists($logoPath)) {
-                File::delete($logoPath);
+            $upload = Upload::find($category->logo);
+            if ($upload) {
+                Storage::disk('public')->delete($upload->path);
+                $upload->delete();
             }
         }
 
