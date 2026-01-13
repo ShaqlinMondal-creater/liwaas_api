@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Brand;
 use App\Models\Upload;
 use Illuminate\Support\Str; // for form data
-use Illuminate\Support\Facades\File; // for file upload
+use Illuminate\Support\Facades\Storage;
 
 class BrandController extends Controller
 {
@@ -125,20 +125,13 @@ class BrandController extends Controller
 
         // Handle logo upload
         if ($request->hasFile('logo')) {
-            
+
             $file = $request->file('logo');
             $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/brands');
 
-            if (!File::exists($destinationPath)) {
-                File::makeDirectory($destinationPath, 0755, true);
-            }
+            $path = $file->storeAs('brands', $fileName, 'public');
+            $url = \Storage::url($path);
 
-            $file->move($destinationPath, $fileName);
-            $url = url('uploads/brands/' . $fileName);
-            $path = 'uploads/brands/' . $fileName;
-
-            // Save upload info to uploads table
             $upload = Upload::create([
                 'path' => $path,
                 'url' => $url,
@@ -146,9 +139,9 @@ class BrandController extends Controller
                 'extension' => $file->getClientOriginalExtension(),
             ]);
 
-            // Set logo to new upload ID
             $brand->logo = $upload->id;
         }
+
 
         $brand->save();
 
@@ -178,9 +171,10 @@ class BrandController extends Controller
 
         // Delete logo file from disk if it exists
         if ($brand->logo) {
-            $logoPath = public_path(parse_url($brand->logo, PHP_URL_PATH));
-            if (File::exists($logoPath)) {
-                File::delete($logoPath);
+            $upload = Upload::find($brand->logo);
+            if ($upload) {
+                \Storage::disk('public')->delete($upload->path);
+                $upload->delete();
             }
         }
 

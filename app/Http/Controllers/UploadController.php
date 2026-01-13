@@ -10,6 +10,7 @@ use App\Models\ProductVariations;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Upload;
+use Illuminate\Support\Facades\Storage;
 
 class UploadController extends Controller
 {
@@ -29,20 +30,15 @@ class UploadController extends Controller
 
         $files = $request->file('file');
 
-        $destination = public_path('uploads/products');
-        if (!File::exists($destination)) {
-            File::makeDirectory($destination, 0755, true);
-        }
-
         foreach ($files as $file) {
             if (!$file->isValid()) continue;
 
             $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-            $file->move($destination, $fileName);
+            $path = $file->storeAs('products', $fileName, 'public');
 
             $upload = Upload::create([
-                'path' => 'uploads/products/' . $fileName,
-                'url' => url('uploads/products/' . $fileName),
+                'path' => $path,                // products/filename.jpg
+                'url'  => Storage::url($path),  // /storage/products/filename.jpg
                 'file_name' => $fileName,
                 'extension' => $file->getClientOriginalExtension()
             ]);
@@ -88,11 +84,6 @@ class UploadController extends Controller
 
         $product = Product::where('aid', $request->aid)->firstOrFail();
         $files = $request->file('file');
-        $destination = public_path('uploads/products');
-
-        if (!File::exists($destination)) {
-            File::makeDirectory($destination, 0755, true);
-        }
 
         $variationUploadIds = [];
         $variationUrls = [];
@@ -101,11 +92,13 @@ class UploadController extends Controller
             if (!$file->isValid()) continue;
 
             $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-            $file->move($destination, $fileName);
+
+            // ✅ Store in storage/app/public/products
+            $path = $file->storeAs('products', $fileName, 'public');
 
             $upload = Upload::create([
-                'path' => 'uploads/products/' . $fileName,
-                'url' => url('uploads/products/' . $fileName),
+                'path' => $path,               // products/filename.jpg
+                'url'  => Storage::url($path), // /storage/products/filename.jpg
                 'file_name' => $fileName,
                 'extension' => $file->getClientOriginalExtension()
             ]);
@@ -114,11 +107,11 @@ class UploadController extends Controller
             $variationUrls[] = $upload->url;
         }
 
-        // Update product_variations table
+        // Update variation images
         $variation->images_id = implode(',', $variationUploadIds);
         $variation->save();
 
-        // Merge with existing product upload_id field
+        // Merge with product upload_id
         $existingIds = array_filter(explode(',', $product->upload_id ?? ''));
         $allProductIds = array_unique(array_merge($existingIds, $variationUploadIds));
         $product->upload_id = implode(',', $allProductIds);
@@ -148,17 +141,11 @@ class UploadController extends Controller
         $file = $request->file('file');
 
         $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-        $destination = public_path('uploads/brands');
-
-        if (!File::exists($destination)) {
-            File::makeDirectory($destination, 0755, true);
-        }
-
-        $file->move($destination, $fileName);
+        $path = $file->storeAs('brands', $fileName, 'public');
 
         // Prepare upload record
-        $relativePath = 'uploads/brands/' . $fileName;
-        $url = url($relativePath);
+        $relativePath = $path;            // brands/filename.jpg
+        $url = Storage::url($path);       // /storage/brands/filename.jpg
 
         $upload = Upload::create([
             'path' => $relativePath,
@@ -184,39 +171,6 @@ class UploadController extends Controller
     }
 
     // Upload category image
-    // public function uploadCategoryImages(Request $request)
-    // {
-    //     $request->validate([
-    //         'category_id' => 'required|integer|exists:categories,id',
-    //         'file' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240' // max 10MB
-    //     ]);
-
-    //     $category = Category::find($request->category_id);
-
-    //     $file = $request->file('file');
-    //     $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-    //     $destination = public_path('uploads/categories');
-
-    //     if (!File::exists($destination)) {
-    //         File::makeDirectory($destination, 0755, true);
-    //     }
-
-    //     $file->move($destination, $fileName);
-    //     $url = url('uploads/categories/' . $fileName);
-
-    //     $category->logo = $url;
-    //     $category->save();
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Category image uploaded and updated successfully.',
-    //         'data' => [
-    //             'category_id' => $category->id,
-    //             'name' => $category->name,
-    //             'logo_url' => $category->logo
-    //         ]
-    //     ]);
-    // }
     public function uploadCategoryImages(Request $request)
     {
         $request->validate([
@@ -228,16 +182,10 @@ class UploadController extends Controller
         $file = $request->file('file');
 
         $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
-        $destination = public_path('uploads/categories');
+        $path = $file->storeAs('categories', $fileName, 'public');
 
-        if (!File::exists($destination)) {
-            File::makeDirectory($destination, 0755, true);
-        }
-
-        $file->move($destination, $fileName);
-
-        $relativePath = 'uploads/categories/' . $fileName;
-        $url = url($relativePath);
+        $relativePath = $path;
+        $url = Storage::url($path);
 
         // Save in uploads table
         $upload = Upload::create([
@@ -285,10 +233,7 @@ class UploadController extends Controller
             $upload = Upload::find($id);
             if ($upload) {
                 // Delete file from storage
-                $filePath = public_path($upload->path);
-                if (File::exists($filePath)) {
-                    File::delete($filePath);
-                }
+                Storage::disk('public')->delete($upload->path);
     
                 // Delete the upload record
                 $upload->delete();

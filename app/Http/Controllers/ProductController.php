@@ -15,7 +15,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
-
 class ProductController extends Controller
 {
     // Add product simple and variation 
@@ -276,12 +275,14 @@ class ProductController extends Controller
             if ($request->filled('search')) {
                 $query->where(function ($q) use ($request) {
                     $search = $request->search;
+
                     $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('keyword', 'like', "%{$search}%")
-                        ->orWhere('slug', 'like', "%{$search}%")
-                        ->orWhere('aid', 'like', "%{$search}%");
-                })->orWhereHas('variations', function ($q) use ($request) {
-                    $q->where('uid', 'like', '%' . $request->search . '%');
+                    ->orWhere('keyword', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%")
+                    ->orWhere('aid', 'like', "%{$search}%")
+                    ->orWhereHas('variations', function ($v) use ($search) {
+                        $v->where('uid', 'like', "%{$search}%");
+                    });
                 });
             }
 
@@ -552,10 +553,7 @@ class ProductController extends Controller
             foreach ($imageIds as $id) {
                 $upload = Upload::find($id);
                 if ($upload) {
-                    $filePath = public_path($upload->path);
-                    if (file_exists($filePath)) {
-                        @unlink($filePath);
-                    }
+                    Storage::disk('public')->delete($upload->path);
                     $upload->delete();
                 }
             }
@@ -581,10 +579,7 @@ class ProductController extends Controller
                 foreach ($productImageIds as $id) {
                     $upload = Upload::find($id);
                     if ($upload) {
-                        $filePath = public_path($upload->path);
-                        if (file_exists($filePath)) {
-                            @unlink($filePath);
-                        }
+                        Storage::disk('public')->delete($upload->path);
                         $upload->delete();
                     }
                 }
@@ -648,10 +643,7 @@ class ProductController extends Controller
                 $uploads = Upload::whereIn('id', $allUploadIds)->get();
 
                 foreach ($uploads as $upload) {
-                    $filePath = public_path('uploads/products/' . $upload->file_name);
-                    if (file_exists($filePath)) {
-                        unlink($filePath);
-                    }
+                    Storage::disk('public')->delete($upload->path);
                     $upload->delete();
                 }
             }
@@ -725,10 +717,6 @@ class ProductController extends Controller
             // ✅ Handle new uploaded images (optional)
             $uploadedImages = $request->file('upload_image');
             if ($uploadedImages && is_array($uploadedImages)) {
-                $destination = public_path('uploads/products');
-                if (!File::exists($destination)) {
-                    File::makeDirectory($destination, 0755, true);
-                }
 
                 $existingProductUploadIds = array_filter(explode(',', $product->upload_id));
                 $variationOldImageIds = [];
@@ -739,10 +727,7 @@ class ProductController extends Controller
                     $oldUploads = Upload::whereIn('id', $variationOldImageIds)->get();
 
                     foreach ($oldUploads as $upload) {
-                        $filePath = public_path($upload->path);
-                        if (file_exists($filePath)) {
-                            unlink($filePath);
-                        }
+                        Storage::disk('public')->delete($upload->path);
                         $upload->delete();
                     }
                 }
@@ -753,11 +738,11 @@ class ProductController extends Controller
                     if (!$image->isValid()) continue;
 
                     $fileName = time() . '_' . Str::random(8) . '.' . $image->getClientOriginalExtension();
-                    $image->move($destination, $fileName);
+                    $path = $image->storeAs('products', $fileName, 'public');
 
                     $upload = Upload::create([
-                        'path' => 'uploads/products/' . $fileName,
-                        'url' => url('uploads/products/' . $fileName),
+                        'path' => $path,
+                        'url' => Storage::url($path),
                         'file_name' => $fileName,
                         'extension' => $image->getClientOriginalExtension()
                     ]);
