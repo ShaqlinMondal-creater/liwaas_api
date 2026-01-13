@@ -320,14 +320,30 @@ class ProductController extends Controller
 
                 // Resolve product-level images from upload_id
                 $productImageIds = array_filter(explode(',', $product->upload_id ?? ''));
-                $arr['upload'] = \App\Models\Upload::whereIn('id', $productImageIds)->get(['id', 'url', 'file_name']);
+                $arr['upload'] = Upload::whereIn('id', $productImageIds)->get()
+                    ->map(function ($u) {
+                        return [
+                            'id' => $u->id,
+                            'url' => url($u->url),
+                            'file_name' => $u->file_name,
+                        ];
+                    });
+
 
                 // Resolve variation images
                 $arr['variations'] = collect($product->variations)->map(function ($variation) {
                     $variationArr = $variation->toArray();
+                    $variationArr['size'] = $this->formatSize($variationArr['size']);
 
                     $imageIds = array_filter(explode(',', $variation->images_id ?? ''));
-                    $variationArr['images'] = \App\Models\Upload::whereIn('id', $imageIds)->get(['id', 'url', 'file_name']);
+                    $variationArr['images'] = Upload::whereIn('id', $imageIds)->get()
+                        ->map(function ($u) {
+                            return [
+                                'id' => $u->id,
+                                'url' => url($u->url),
+                                'file_name' => $u->file_name,
+                            ];
+                        });
 
                     return $variationArr;
                 });
@@ -380,7 +396,14 @@ class ProductController extends Controller
             // Attach variation images manually
             foreach ($data['variations'] as &$variation) {
                 $imageIds = array_filter(explode(',', $variation['images_id']));
-                $variation['images'] = Upload::whereIn('id', $imageIds)->get(['id', 'url', 'file_name']);
+                $variation['images'] = Upload::whereIn('id', $imageIds)->get()
+                    ->map(fn ($u) => [
+                        'id' => $u->id,
+                        'url' => url($u->url),
+                        'file_name' => $u->file_name,
+                    ]);
+
+                $variation['size'] = $this->formatSize($variation['size']);
 
                 // ✅ Product Specs (NEW)
                 $variation['specs'] = ProductSpecModel::where('uid', $variation['uid'])
@@ -389,7 +412,13 @@ class ProductController extends Controller
 
             // Attach product uploads manually using upload_id
             $uploadIds = array_filter(explode(',', $product->upload_id));
-            $data['upload'] = Upload::whereIn('id', $uploadIds)->get(['id', 'url', 'file_name']);
+            $data['upload'] = Upload::whereIn('id', $uploadIds)->get()
+                ->map(fn ($u) => [
+                    'id' => $u->id,
+                    'url' => url($u->url),
+                    'file_name' => $u->file_name,
+                ]);
+
 
             return response()->json([
                 'success' => true,
@@ -441,7 +470,12 @@ class ProductController extends Controller
 
             // Attach main uploads
             $uploadIds = array_filter(explode(',', $product->upload_id));
-            $data['upload'] = Upload::whereIn('id', $uploadIds)->get(['id', 'url', 'file_name']);
+            $data['upload'] = Upload::whereIn('id', $uploadIds)->get()
+                ->map(fn ($u) => [
+                    'id' => $u->id,
+                    'url' => url($u->url),
+                    'file_name' => $u->file_name,
+                ]);
 
             return response()->json([
                 'success' => true,
@@ -495,7 +529,14 @@ class ProductController extends Controller
                 ->get(['aid', 'uid', 'color', 'size', 'regular_price', 'sell_price', 'currency', 'gst', 'stock', 'images_id'])
                 ->map(function ($v) {
                     $imageIds = array_filter(explode(',', $v->images_id));
-                    $v->images = Upload::whereIn('id', $imageIds)->get(['id', 'url', 'file_name']);
+                    $v->images = Upload::whereIn('id', $imageIds)->get()
+                        ->map(fn ($u) => [
+                            'id' => $u->id,
+                            'url' => url($u->url),
+                            'file_name' => $u->file_name,
+                        ]);
+
+                    $v->size = $this->formatSize($v->size);
 
                     // ✅ Product Specs (NEW)
                     $v->specs = ProductSpecModel::where('uid', $v->uid)
@@ -511,7 +552,13 @@ class ProductController extends Controller
 
             // 6️⃣ Attach uploads for product itself
             $uploadIds = array_filter(explode(',', $product->upload_id));
-            $data['upload'] = Upload::whereIn('id', $uploadIds)->get(['id', 'url', 'file_name']);
+            $data['upload'] = Upload::whereIn('id', $uploadIds)->get()
+                ->map(fn ($u) => [
+                    'id' => $u->id,
+                    'url' => url($u->url),
+                    'file_name' => $u->file_name,
+                ]);
+
 
             // 7️⃣ Final structured response
             $data['selected_variation'] = $variations->firstWhere('uid', $uid);
@@ -531,6 +578,16 @@ class ProductController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function formatSize(?string $size): ?string
+    {
+        if (!$size) return null;
+
+        return collect(explode(',', $size))
+            ->map(fn ($s) => strtoupper(trim($s)))
+            ->unique()
+            ->implode(',');
     }
 
     // Delete Product Variations
