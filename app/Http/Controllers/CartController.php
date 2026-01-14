@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductVariations;
 use App\Models\Upload;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class CartController extends Controller
 {
@@ -170,17 +171,12 @@ class CartController extends Controller
             $imagesId = optional($cart->variation)->images_id;
             if ($imagesId) {
                 $imageIdsArray = array_filter(explode(',', $imagesId));
-                $uploads = Upload::whereIn('id', $imageIdsArray)->get(['id', 'url']);
-                // $imageUrls = $uploads->pluck('url')->map(fn($url) => asset('uploads/' . $url))->toArray();
-                $imageUrls = $uploads->pluck('url')->map(function ($url) {
-                    // If already a full URL, return as is
-                    if (preg_match('/^http(s)?:\/\//', $url)) {
-                        return $url;
-                    }
-                    // Otherwise prepend your uploads path
-                    return asset('uploads/' . ltrim($url, '/'));
-                })->toArray();
 
+                $uploads = Upload::whereIn('id', $imageIdsArray)->get(['id', 'url']);
+
+                $imageUrls = $uploads->pluck('url')->map(function ($url) {
+                    return str_starts_with($url, 'http') ? $url : asset($url);
+                })->toArray();
             }
 
             return [
