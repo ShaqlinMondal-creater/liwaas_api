@@ -111,7 +111,7 @@ class SectionViewController extends Controller
             $images = $uploads->map(function ($upload) {
                 return [
                     'upload_id' => $upload->id,
-                    'upload_url' => $upload->url,
+                    'upload_url' => url($upload->url),
                 ];
             });
 
@@ -458,7 +458,7 @@ class SectionViewController extends Controller
                         $reviewImages = $uploads->map(function ($upload) {
                             return [
                                 'upload_id' => $upload->id,
-                                'upload_url' => $upload->url,
+                                'upload_url' => url($upload->url),
                             ];
                         })->toArray();
                     }
@@ -559,7 +559,7 @@ class SectionViewController extends Controller
                     $images = $uploads->map(function ($upload) {
                         return [
                             'upload_id' => $upload->id,
-                            'upload_url' => $upload->url,
+                            'upload_url' => url($upload->url),
                         ];
                     });
 
