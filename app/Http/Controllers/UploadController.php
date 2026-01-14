@@ -55,6 +55,28 @@ class UploadController extends Controller
         $product->upload_id = implode(',', $allIds);
         $product->save();
 
+        /*
+        |--------------------------------------------------------------------------
+        | ✅ ALSO UPDATE PRODUCT VARIATIONS IMAGES
+        |--------------------------------------------------------------------------
+        */
+        $variations = ProductVariations::where('aid', $product->aid)->get();
+
+        foreach ($variations as $variation) {
+
+            // Existing variation image IDs
+            $existingVarIds = array_filter(
+                explode(',', $variation->images_id ?? '')
+            );
+            // Merge + unique
+            $mergedVarIds = array_unique(
+                array_merge($existingVarIds, $uploadIds)
+            );
+            // Save back
+            $variation->images_id = implode(',', $mergedVarIds);
+            $variation->save();
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Images uploaded and product updated.',
@@ -63,7 +85,8 @@ class UploadController extends Controller
                 'aid' => $product->aid,
                 'name' => $product->name,
                 'upload_id' => implode(',', $allIds),
-                'url' => $urls
+                'url' => $urls,
+                'variations_updated' => $variations->count()
             ]
         ]);
     }
