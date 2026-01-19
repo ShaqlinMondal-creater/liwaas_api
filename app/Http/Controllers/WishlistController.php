@@ -91,9 +91,6 @@ class WishlistController extends Controller
                     return asset($path);
                 }, $uploads);
             }
-
-
-
             return [
                 'id'           => $item->id,
                 'product_id'   => $item->products_id,

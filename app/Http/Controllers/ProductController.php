@@ -370,6 +370,146 @@ class ProductController extends Controller
         }
     }
 
+    // Get all variation product with Filters
+    public function getAllProductVariations(Request $request)
+    {
+        try {
+            $limit  = $request->input('limit', 10);
+            $offset = $request->input('offset', 0);
+
+            // Base query on variations
+            $query = Variation::with([
+                'product.brand:id,name,logo',
+                'product.category:id,name,logo'
+            ]);
+
+            // --------------------
+            // Filters
+            // --------------------
+
+            // Filter by product AID
+            if ($request->filled('aid')) {
+                $query->whereHas('product', function ($q) use ($request) {
+                    $q->where('aid', $request->aid);
+                });
+            }
+
+            // Filter by category_id
+            if ($request->filled('category_id')) {
+                $query->whereHas('product', function ($q) use ($request) {
+                    $q->where('category_id', $request->category_id);
+                });
+            }
+
+            // Filter by size
+            if ($request->filled('size')) {
+                $query->where('size', $request->size);
+            }
+
+            // Filter by color
+            if ($request->filled('color')) {
+                $query->where('color', $request->color);
+            }
+
+            // Filter by keyword (comma separated)
+            if ($request->filled('keyword')) {
+                $keywords = array_map('trim', explode(',', $request->keyword));
+
+                $query->whereHas('product', function ($q) use ($keywords) {
+                    $q->where(function ($qq) use ($keywords) {
+                        foreach ($keywords as $word) {
+                            $qq->orWhere('name', 'like', "%{$word}%")
+                            ->orWhere('keyword', 'like', "%{$word}%")
+                            ->orWhere('slug', 'like', "%{$word}%")
+                            ->orWhere('aid', 'like', "%{$word}%");
+                        }
+                    });
+                });
+            }
+
+            // Total before pagination
+            $total = $query->count();
+
+            // Pagination
+            $variations = $query->skip($offset)->take($limit)->get();
+
+            // --------------------
+            // Format Output
+            // --------------------
+
+            $data = $variations->map(function ($variation) {
+
+                $product = $variation->product;
+
+                // Resolve variation images
+                $imageIds = array_filter(explode(',', $variation->images_id ?? ''));
+                $images = Upload::whereIn('id', $imageIds)->get()
+                    ->map(function ($u) {
+                        return [
+                            'id'        => $u->id,
+                            'url'       => url($u->url),
+                            'file_name'=> $u->file_name,
+                        ];
+                    });
+
+                return [
+                    'product_id' => $product->id,
+                    'aid'        => $product->aid,
+                    'name'       => $product->name,
+                    'slug'       => $product->slug,
+                    'description' => $product->description,
+                    'gender'     => $product->gender,
+                    'cod'        => $product->cod,
+                    'shipping'   => $product->shipping,
+                    'ratings'   => $product->ratings,
+                    'keyword'   => $product->keyword,
+                    'product_status' => $product->product_status,
+                    'custom_design'  => $product->custom_design,
+
+                    'brand' => $product->brand ? [
+                        'id'   => $product->brand->id,
+                        'name' => $product->brand->name,
+                        'logo' => $product->brand->logo,
+                    ] : null,
+
+                    'category' => $product->category ? [
+                        'id'   => $product->category->id,
+                        'name' => $product->category->name,
+                        'logo' => $product->category->logo,
+                    ] : null,
+
+                    'variation' => [
+                        'uid'           => $variation->uid,
+                        'color'         => $variation->color,
+                        'size'          => $this->formatSize($variation->size),
+                        'regular_price'=> $variation->regular_price,
+                        'sell_price'   => $variation->sell_price,
+                        'currency'     => $variation->currency,
+                        'gst'          => $variation->gst,
+                        'stock'        => $variation->stock,
+                        'images'       => $images,
+                    ],
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product variations fetched successfully.',
+                'data'    => $data,
+                'total'   => $total,
+                'limit'   => (int) $limit,
+                'offset'  => (int) $offset,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching product variations.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     // Get Product by slug
     public function getProductsBySlug($slug)
     {
