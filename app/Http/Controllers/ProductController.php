@@ -377,8 +377,8 @@ class ProductController extends Controller
             $limit  = $request->input('limit', 10);
             $offset = $request->input('offset', 0);
 
-            // Base query on variations
-            $query = Variation::with([
+            // Base query on product_variations
+            $query = ProductVariations::with([
                 'product.brand:id,name,logo',
                 'product.category:id,name,logo'
             ]);
@@ -389,12 +389,10 @@ class ProductController extends Controller
 
             // Filter by product AID
             if ($request->filled('aid')) {
-                $query->whereHas('product', function ($q) use ($request) {
-                    $q->where('aid', $request->aid);
-                });
+                $query->where('aid', $request->aid);
             }
 
-            // Filter by category_id
+            // Filter by category_id (via product)
             if ($request->filled('category_id')) {
                 $query->whereHas('product', function ($q) use ($request) {
                     $q->where('category_id', $request->category_id);
@@ -411,7 +409,7 @@ class ProductController extends Controller
                 $query->where('color', $request->color);
             }
 
-            // Filter by keyword (comma separated)
+            // Filter by keyword (comma separated, on product fields)
             if ($request->filled('keyword')) {
                 $keywords = array_map('trim', explode(',', $request->keyword));
 
@@ -446,9 +444,9 @@ class ProductController extends Controller
                 $images = Upload::whereIn('id', $imageIds)->get()
                     ->map(function ($u) {
                         return [
-                            'id'        => $u->id,
-                            'url'       => url($u->url),
-                            'file_name'=> $u->file_name,
+                            'id'         => $u->id,
+                            'url'        => url($u->url),
+                            'file_name' => $u->file_name,
                         ];
                     });
 
