@@ -42,7 +42,7 @@ use App\Http\Controllers\PaymentController;
     Route::prefix('cart')->group(function () {
         Route::post('/create-cart', [CartController::class, 'createCart']);
         Route::post('/update-cart/{id}', [CartController::class, 'updateCart']);
-        Route::get('/get-cart', [CartController::class, 'getUserCart']);
+        Route::post('/get-cart', [CartController::class, 'getUserCart']);
         Route::delete('delete-cart/{id}', [CartController::class, 'deleteCart']);
     });
 
