@@ -86,8 +86,12 @@ class WishlistController extends Controller
             if ($variation && $variation->images_id) {
                 $imageIds = array_filter(explode(',', $variation->images_id));
                 $uploads = Upload::whereIn('id', $imageIds)->pluck('url')->toArray();
-                $images = $uploads; // Already full URLs
+
+                $images = array_map(function ($path) {
+                    return asset($path);
+                }, $uploads);
             }
+
 
 
             return [
