@@ -311,6 +311,44 @@ class ProductController extends Controller
                 });
             }
 
+            // 🔹 NEW: Price Range Filters
+            if ($request->filled('min_price')) {
+                $query->whereHas('variations', function ($q) use ($request) {
+                    $q->where('sell_price', '>=', $request->min_price);
+                });
+            }
+
+            if ($request->filled('max_price')) {
+                $query->whereHas('variations', function ($q) use ($request) {
+                    $q->where('sell_price', '<=', $request->max_price);
+                });
+            }
+
+            // 🔹 NEW: Sorting
+            if ($request->filled('sort')) {
+
+                if ($request->sort === 'featured') {
+
+                    $query->whereHas('variations', function ($q) {
+                        $q->whereRaw('((regular_price - sell_price) / regular_price) * 100 >= 15');
+                    });
+
+                } elseif ($request->sort === 'newest') {
+
+                    $query->where('created_at', '>=', now()->subDays(10));
+
+                } elseif ($request->sort === 'price_asc') {
+
+                    $query->withMin('variations', 'sell_price')
+                        ->orderBy('variations_min_sell_price', 'asc');
+
+                } elseif ($request->sort === 'price_desc') {
+
+                    $query->withMax('variations', 'sell_price')
+                        ->orderBy('variations_max_sell_price', 'desc');
+                }
+            }
+
             $total = $query->count();
             $products = $query->skip($offset)->take($limit)->get();
 
