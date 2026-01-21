@@ -337,12 +337,12 @@ class ProductController extends Controller
 
                     $query->where('created_at', '>=', now()->subDays(10));
 
-                } elseif ($request->sort === 'asc') {
+                } elseif ($request->sort === 'price_asc') {
 
                     $query->withMin('variations', 'sell_price')
                         ->orderBy('variations_min_sell_price', 'asc');
 
-                } elseif ($request->sort === 'desc') {
+                } elseif ($request->sort === 'price_desc') {
 
                     $query->withMax('variations', 'sell_price')
                         ->orderBy('variations_max_sell_price', 'desc');
