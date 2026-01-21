@@ -31,6 +31,11 @@ use App\Http\Controllers\PaymentController;
         Route::post('get-product-byAid/{aid}', [ProductController::class, 'getProductsByAid']); // through AID product filter
         Route::post('get-product-byUid/{uid}', [ProductController::class, 'getProductsByUid']); // through UID
 
+        Route::get('/newarrivals', [SectionViewController::class, 'getNewArriaval']); // get New arrival
+        Route::get('/trendings', [SectionViewController::class, 'getTrendings']); // get trending 
+        Route::get('/gallery', [SectionViewController::class, 'getGallery']); //get gallary
+        Route::post('/cat-products/{category_id}', [SectionViewController::class, 'getCategoryProducts']); //get category wise products
+
     });
     
 
