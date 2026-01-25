@@ -393,10 +393,10 @@ class OrderController extends Controller
                 'address' => $order->shipping && $order->shipping->address ? [
                     'id' => $order->shipping->address->id,
                     'name' => $order->shipping->address->name,
-                    'phone' => $order->shipping->address->phone,
+                    'phone' => $order->shipping->address->mobile,
                     'email' => $order->shipping->address->email,
-                    'address_line1' => $order->shipping->address->address_line1,
-                    'address_line2' => $order->shipping->address->address_line2,
+                    'address_line1' => $order->shipping->address->address_line_1,
+                    'address_line2' => $order->shipping->address->address_line_2,
                     'city' => $order->shipping->address->city,
                     'state' => $order->shipping->address->state,
                     'pincode' => $order->shipping->address->pincode,
