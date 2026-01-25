@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Razorpay\Api\Api;
 use App\Models\Orders;
-use App\Models\Payments;
+use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
 
 
