@@ -401,6 +401,123 @@ class OrderController extends Controller
         ]);
     }
 
+    // Get Single Customer Order Detail
+    public function getMyOrderDetail(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user || $user->role === 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access.'
+            ], 403);
+        }
+
+        $request->validate([
+            'order_id'   => 'nullable|exists:orders,id',
+            'order_code' => 'nullable|string',
+        ]);
+
+        if (!$request->filled('order_id') && !$request->filled('order_code')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'order_id or order_code is required.'
+            ], 422);
+        }
+
+        $query = Orders::with([
+            'items.variation',
+            'items.product',
+            'invoice',
+            'shipping',
+            'coupon',
+        ])->where('user_id', $user->id);
+
+        if ($request->filled('order_id')) {
+            $query->where('id', $request->order_id);
+        }
+
+        if ($request->filled('order_code')) {
+            $query->where('order_code', $request->order_code);
+        }
+
+        $order = $query->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found.'
+            ], 404);
+        }
+
+        $data = [
+            'id' => $order->id,
+            'order_code' => $order->order_code,
+            'invoice_no' => $order->invoice ? $order->invoice->invoice_no : null,
+            'invoice_link' => $order->invoice ? $order->invoice->invoice_link : null,
+
+            'shipping' => $order->shipping,
+            'payment_type' => $order->payment_type,
+            'payment_status' => optional($order->payment)->payment_status ?? null,
+            'delivery_status' => $order->delivery_status,
+
+            'tax_price' => $order->tax_price,
+            'coupon_discount' => $order->coupon_discount,
+            'grand_total' => $order->grand_total,
+
+            'items' => $order->items->map(function ($item) {
+
+                $imageId = null;
+                $imageUrl = null;
+
+                if ($item->variation && $item->variation->images_id) {
+                    $imageIds = explode(',', $item->variation->images_id);
+                    $firstId = trim($imageIds[0] ?? '');
+
+                    if ($firstId) {
+                        $upload = Upload::find($firstId);
+                        if ($upload) {
+                            $imageId = $upload->id;
+                            $imageUrl = Storage::url($upload->path);
+                        }
+                    }
+                }
+
+                return [
+                    'id' => $item->id,
+                    'product' => [
+                        'id' => $item->product->id,
+                        'name' => $item->product->name,
+                    ],
+                    'variation' => $item->variation ? [
+                        'uid' => $item->variation->uid,
+                        'color' => $item->variation->color,
+                        'size' => $item->variation->size,
+                        'sell_price' => $item->variation->sell_price,
+                    ] : null,
+                    'quantity' => $item->quantity,
+                    'total' => $item->total,
+                    'tax' => $item->tax,
+                    'image' => [
+                        'upload_id' => $imageId,
+                        'upload_url' => $imageUrl,
+                    ],
+                ];
+            }),
+
+            'created_at' => Carbon::parse($order->created_at)
+                ->timezone('Asia/Kolkata')
+                ->translatedFormat('jS M Y, h.iA'),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order detail fetched successfully.',
+            'data' => $data
+        ]);
+    }
+
+
     // Update Status For Admin
     public function updateOrderStatus(Request $request, $id)
     {

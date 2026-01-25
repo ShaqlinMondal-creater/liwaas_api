@@ -57,4 +57,9 @@ class Orders extends Model
         return $this->belongsTo(\App\Models\Shipping::class, 'shipping_id');
     }
 
+    public function payment()
+    {
+        return $this->belongsTo(\App\Models\Payment::class, 'payment_id');
+    }
+
 }
