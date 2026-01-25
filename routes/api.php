@@ -198,12 +198,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::prefix('order')->group(function () {
             Route::post('/create', [OrderController::class, 'createOrder']); //create order
             Route::post('/get-order', [OrderController::class, 'getMyOrders']); //get all order
-            Route::post('/upd-payment', [OrderController::class, 'handlePaymentCallback']); //get all order
-            
+            Route::post('/upd-payment', [OrderController::class, 'handlePaymentCallback']); //get all order 
             
         });
         
-        Route::post('/payments/verify', [PaymentController::class, 'verify']);
+        Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']); // Payment Verification
 
     });
 });

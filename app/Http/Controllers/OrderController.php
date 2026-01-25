@@ -161,20 +161,20 @@ class OrderController extends Controller
             }
 
             // 🔸 Create Invoice
-            // $invoice = Invoices::create([
-            //     'invoice_no' => 'INV-' . strtoupper(Str::random(6)),
-            //     'invoice_link' => null,
-            //     'invoice_qr' => null,
-            // ]);
+            $invoice = Invoices::create([
+                'invoice_no' => 'INV-' . strtoupper(Str::random(6)),
+                'invoice_link' => null,
+                'invoice_qr' => null,
+            ]);
 
-            // $order->invoice_id = $invoice->id;
+            $order->invoice_id = $invoice->id;
             $order->save();
 
             // 🔸 Send Email
-            // if ($user->email) {
-            //     $order->load('items');
-            //     Mail::to($user->email)->send(new \App\Mail\OrderPlacedMail($order));
-            // }
+            if ($user->email) {
+                $order->load('items');
+                Mail::to($user->email)->send(new \App\Mail\OrderPlacedMail($order));
+            }
 
             // 🔸 Clear Cart
             // Cart::where('user_id', $userId)->delete();
@@ -204,63 +204,63 @@ class OrderController extends Controller
         }
     }
 
-    // Make payment confirmation
-    public function handlePaymentCallback(Request $request)
-    {
-        $request->validate([
-            'razorpay_order_id' => 'required|string',
-            'razorpay_payment_id' => 'nullable|string',
-            'status' => 'required|in:success,failed,cancelled',
-            'response' => 'required|array', // entire Razorpay or gateway response
-        ]);
+    // Make payment confirmation -> now we ignore this function
+    // public function handlePaymentCallback(Request $request)
+    // {
+    //     $request->validate([
+    //         'razorpay_order_id' => 'required|string',
+    //         'razorpay_payment_id' => 'nullable|string',
+    //         'status' => 'required|in:success,failed,cancelled',
+    //         'response' => 'required|array', // entire Razorpay or gateway response
+    //     ]);
 
-        DB::beginTransaction();
+    //     DB::beginTransaction();
 
-        try {
-            // 🔍 Find payment by Razorpay order ID
-            $payment = Payment::where('genarate_order_id', $request->razorpay_order_id)->first();
+    //     try {
+    //         // 🔍 Find payment by Razorpay order ID
+    //         $payment = Payment::where('genarate_order_id', $request->razorpay_order_id)->first();
 
-            if (!$payment) {
-                return response()->json(['error' => 'Payment not found'], 404);
-            }
+    //         if (!$payment) {
+    //             return response()->json(['error' => 'Payment not found'], 404);
+    //         }
 
-            // 🔄 Update payment status and gateway info
-            $payment->transaction_payment_id = $request->razorpay_payment_id ?? null;
-            $payment->payment_status = $request->status;
-            $payment->response_ = json_encode($request->response);
-            $payment->save();
+    //         // 🔄 Update payment status and gateway info
+    //         $payment->transaction_payment_id = $request->razorpay_payment_id ?? null;
+    //         $payment->payment_status = $request->status;
+    //         $payment->response_ = json_encode($request->response);
+    //         $payment->save();
 
-            // 🔄 Optionally update order delivery status
-            // if ($payment->order_id) {
-            //     $order = Orders::find($payment->order_id);
-            //     if ($order) {
-            //         if ($request->status === 'success') {
-            //             $order->delivery_status = 'confirmed';
-            //         } elseif ($request->status === 'failed') {
-            //             $order->delivery_status = 'payment_failed';
-            //         } elseif ($request->status === 'cancelled') {
-            //             $order->delivery_status = 'cancelled';
-            //         }
-            //         $order->save();
-            //     }
-            // }
+    //         // 🔄 Optionally update order delivery status
+    //         // if ($payment->order_id) {
+    //         //     $order = Orders::find($payment->order_id);
+    //         //     if ($order) {
+    //         //         if ($request->status === 'success') {
+    //         //             $order->delivery_status = 'confirmed';
+    //         //         } elseif ($request->status === 'failed') {
+    //         //             $order->delivery_status = 'payment_failed';
+    //         //         } elseif ($request->status === 'cancelled') {
+    //         //             $order->delivery_status = 'cancelled';
+    //         //         }
+    //         //         $order->save();
+    //         //     }
+    //         // }
 
-            DB::commit();
+    //         DB::commit();
 
-            return response()->json([
-                'message' => 'Payment status updated successfully',
-                'payment_status' => $payment->payment_status,
-                'order_id' => $payment->order_id,
-            ]);
+    //         return response()->json([
+    //             'message' => 'Payment status updated successfully',
+    //             'payment_status' => $payment->payment_status,
+    //             'order_id' => $payment->order_id,
+    //         ]);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'error' => 'Payment update failed',
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         return response()->json([
+    //             'error' => 'Payment update failed',
+    //             'message' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
     // Response like :
     // {
     //     "razorpay_order_id": "order_LXy0df123abc",
@@ -314,27 +314,91 @@ class OrderController extends Controller
         });
     }
 
-    public function deleteOrder($id)  // Delete order
+    // Get Customer Order
+    public function getMyOrders(Request $request)
     {
-        $order = Orders::find($id);
+        $user = Auth::user();
 
-        if (!$order) {
+        if (!$user || $user->role === 'admin') {
             return response()->json([
-                'status' => false,
-                'message' => 'Order not found'
-            ], 404);
+                'success' => false,
+                'message' => 'Unauthorized access.'
+            ], 403);
         }
 
-        // Delete related order items first (if using foreign key with cascade, optional)
-        $order->items()->delete();
+        $limit = (int) $request->input('limit', 15);
+        $offset = (int) $request->input('offset', 0);
 
-        // Delete the order
-        $order->delete();
+        $query = Orders::with(['items.variation', 'items.product', 'invoice'])
+            ->where('user_id', $user->id);
+
+        $total = $query->count();
+
+        $orders = $query->orderByDesc('created_at')
+            ->skip($offset)
+            ->take($limit)
+            ->get();
+
+        $data = $orders->map(function ($order) {
+            return [
+                'id' => $order->id,
+                'order_code' => $order->order_code,
+                'invoice_no' => $order->invoice ? $order->invoice->invoice_no : null,
+                'invoice_link' => $order->invoice ? $order->invoice->invoice_link : null,
+                'shipping' => $order->shipping,
+                'payment_type' => $order->payment_type,
+                'payment_status' => $order->payment_status,
+                'delivery_status' => $order->delivery_status,
+                'grand_total' => $order->grand_total,
+                'items' => $order->items->map(function ($item) {
+                    $imageId = null;
+                    $imageUrl = null;
+
+                    if ($item->variation && $item->variation->images_id) {
+                        $imageIds = explode(',', $item->variation->images_id);
+                        $firstId = trim($imageIds[0] ?? '');
+                        if ($firstId) {
+                            $upload = Upload::find($firstId);
+                            if ($upload) {
+                                $imageId = $upload->id;
+                                $imageUrl = Storage::url($upload->path);
+                            }
+                        }
+                    }
+
+                    return [
+                        'id' => $item->id,
+                        'product' => [
+                            'id' => $item->product->id,
+                            'name' => $item->product->name,
+                            'image' => [
+                                'upload_id' => $imageId,
+                                'upload_url' => $imageUrl,
+                            ]
+                        ],
+                        'variation' => $item->variation ? [
+                            'uid' => $item->variation->uid,
+                            'color' => $item->variation->color,
+                            'size' => $item->variation->size,
+                            'sell_price' => $item->variation->sell_price,
+                        ] : null,
+                        'quantity' => $item->quantity,
+                        'total' => $item->total,
+                        'tax' => $item->tax,
+                    ];
+                }),
+                'created_at' => Carbon::parse($order->created_at)
+                    ->timezone('Asia/Kolkata')
+                    ->translatedFormat('jS M Y, h.iA'),
+            ];
+        });
 
         return response()->json([
-            'status' => true,
-            'message' => 'Order and related items deleted successfully'
-        ], 200);
+            'success' => true,
+            'message' => 'Your orders fetched successfully.',
+            'total' => $total,
+            'data' => $data
+        ]);
     }
 
     // Update Status For Admin
@@ -521,6 +585,29 @@ class OrderController extends Controller
 
     }
 
+    public function deleteOrder($id)  // Delete order
+    {
+        $order = Orders::find($id);
+
+        if (!$order) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Order not found'
+            ], 404);
+        }
+
+        // Delete related order items first (if using foreign key with cascade, optional)
+        $order->items()->delete();
+
+        // Delete the order
+        $order->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Order and related items deleted successfully'
+        ], 200);
+    }
+
     // Update Status Helper functions
     private function generateInvoiceNo($order)
     {
@@ -684,94 +771,6 @@ class OrderController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'All orders fetched successfully.',
-            'total' => $total,
-            'data' => $data
-        ]);
-    }
-
-    // Get Customer Order
-    public function getMyOrders(Request $request)
-    {
-        $user = Auth::user();
-
-        if (!$user || $user->role === 'admin') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized access.'
-            ], 403);
-        }
-
-        $limit = (int) $request->input('limit', 15);
-        $offset = (int) $request->input('offset', 0);
-
-        $query = Orders::with(['items.variation', 'items.product', 'invoice'])
-            ->where('user_id', $user->id);
-
-        $total = $query->count();
-
-        $orders = $query->orderByDesc('created_at')
-            ->skip($offset)
-            ->take($limit)
-            ->get();
-
-        $data = $orders->map(function ($order) {
-            return [
-                'id' => $order->id,
-                'order_code' => $order->order_code,
-                'invoice_no' => $order->invoice ? $order->invoice->invoice_no : null,
-                'invoice_link' => $order->invoice ? $order->invoice->invoice_link : null,
-                'shipping' => $order->shipping,
-                'payment_type' => $order->payment_type,
-                'payment_status' => $order->payment_status,
-                'delivery_status' => $order->delivery_status,
-                'grand_total' => $order->grand_total,
-                'items' => $order->items->map(function ($item) {
-                    $imageId = null;
-                    $imageUrl = null;
-
-                    if ($item->variation && $item->variation->images_id) {
-                        $imageIds = explode(',', $item->variation->images_id);
-                        $firstId = trim($imageIds[0] ?? '');
-                        if ($firstId) {
-                            $upload = Upload::find($firstId);
-                            if ($upload) {
-                                $imageId = $upload->id;
-                                $imageUrl = Storage::url($upload->path)
-;
-                            }
-                        }
-                    }
-
-                    return [
-                        'id' => $item->id,
-                        'product' => [
-                            'id' => $item->product->id,
-                            'name' => $item->product->name,
-                            'image' => [
-                                'upload_id' => $imageId,
-                                'upload_url' => $imageUrl,
-                            ]
-                        ],
-                        'variation' => $item->variation ? [
-                            'uid' => $item->variation->uid,
-                            'color' => $item->variation->color,
-                            'size' => $item->variation->size,
-                            'sell_price' => $item->variation->sell_price,
-                        ] : null,
-                        'quantity' => $item->quantity,
-                        'total' => $item->total,
-                        'tax' => $item->tax,
-                    ];
-                }),
-                'created_at' => Carbon::parse($order->created_at)
-                    ->timezone('Asia/Kolkata')
-                    ->translatedFormat('jS M Y, h.iA'),
-            ];
-        });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Your orders fetched successfully.',
             'total' => $total,
             'data' => $data
         ]);
