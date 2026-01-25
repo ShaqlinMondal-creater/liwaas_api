@@ -378,91 +378,84 @@ class OrderController extends Controller
         }
 
         $data = [
-    'id' => $order->id,
-    'order_code' => $order->order_code,
-    'invoice_no' => $order->invoice ? $order->invoice->invoice_no : null,
-    'invoice_link' => $order->invoice ? $order->invoice->invoice_link : null,
+            'id' => $order->id,
+            'order_code' => $order->order_code,
+            'invoice_no' => $order->invoice ? $order->invoice->invoice_no : null,
+            'invoice_link' => $order->invoice ? $order->invoice->invoice_link : null,
+            'shipping' => [
+                'id' => $order->shipping->id ?? null,
+                'shipping_status' => $order->shipping->shipping_status ?? null,
+                'shipping_type' => $order->shipping->shipping_type ?? null,
+                'shipping_by' => $order->shipping->shipping_by ?? null,
+                'shipping_charge' => $order->shipping->shipping_charge ?? null,
 
-    'shipping' => [
-        'id' => $order->shipping->id ?? null,
-        'shipping_status' => $order->shipping->shipping_status ?? null,
-        'shipping_type' => $order->shipping->shipping_type ?? null,
-        'shipping_by' => $order->shipping->shipping_by ?? null,
-        'shipping_charge' => $order->shipping->shipping_charge ?? null,
+                // ✅ FULL ADDRESS
+                'address' => $order->shipping && $order->shipping->address ? [
+                    'id' => $order->shipping->address->id,
+                    'name' => $order->shipping->address->name,
+                    'phone' => $order->shipping->address->phone,
+                    'email' => $order->shipping->address->email,
+                    'address_line1' => $order->shipping->address->address_line1,
+                    'address_line2' => $order->shipping->address->address_line2,
+                    'city' => $order->shipping->address->city,
+                    'state' => $order->shipping->address->state,
+                    'pincode' => $order->shipping->address->pincode,
+                    'country' => $order->shipping->address->country,
+                ] : null,
+            ],
+            'payment_type' => $order->payment_type,
+            // ✅ PAYMENT DETAILS
+            'payment_status' => optional($order->payment)->payment_status ?? null,
+            'transaction_payment_id' => optional($order->payment)->transaction_payment_id ?? null,
+            'delivery_status' => $order->delivery_status,
+            'tax_price' => $order->tax_price,
+            'coupon_discount' => $order->coupon_discount,
+            'grand_total' => $order->grand_total,
+            'items' => $order->items->map(function ($item) {
 
-        // ✅ FULL ADDRESS
-        'address' => $order->shipping && $order->shipping->address ? [
-            'id' => $order->shipping->address->id,
-            'name' => $order->shipping->address->name,
-            'phone' => $order->shipping->address->phone,
-            'email' => $order->shipping->address->email,
-            'address_line1' => $order->shipping->address->address_line1,
-            'address_line2' => $order->shipping->address->address_line2,
-            'city' => $order->shipping->address->city,
-            'state' => $order->shipping->address->state,
-            'pincode' => $order->shipping->address->pincode,
-            'country' => $order->shipping->address->country,
-        ] : null,
-    ],
+                $imageId = null;
+                $imageUrl = null;
 
-    'payment_type' => $order->payment_type,
+                if ($item->variation && $item->variation->images_id) {
+                    $imageIds = explode(',', $item->variation->images_id);
+                    $firstId = trim($imageIds[0] ?? '');
 
-    // ✅ PAYMENT DETAILS
-    'payment_status' => optional($order->payment)->payment_status ?? null,
-    'transaction_payment_id' => optional($order->payment)->transaction_payment_id ?? null,
-
-    'delivery_status' => $order->delivery_status,
-
-    'tax_price' => $order->tax_price,
-    'coupon_discount' => $order->coupon_discount,
-    'grand_total' => $order->grand_total,
-
-    'items' => $order->items->map(function ($item) {
-
-        $imageId = null;
-        $imageUrl = null;
-
-        if ($item->variation && $item->variation->images_id) {
-            $imageIds = explode(',', $item->variation->images_id);
-            $firstId = trim($imageIds[0] ?? '');
-
-            if ($firstId) {
-                $upload = Upload::find($firstId);
-                if ($upload) {
-                    $imageId = $upload->id;
-                    // 🔧 FIX: use url() not Storage::url()
-                    $imageUrl = url($upload->url);
+                    if ($firstId) {
+                        $upload = Upload::find($firstId);
+                        if ($upload) {
+                            $imageId = $upload->id;
+                            // 🔧 FIX: use url() not Storage::url()
+                            $imageUrl = url($upload->url);
+                        }
+                    }
                 }
-            }
-        }
 
-        return [
-            'id' => $item->id,
-            'product' => [
-                'id' => $item->product->id,
-                'name' => $item->product->name,
-            ],
-            'variation' => $item->variation ? [
-                'uid' => $item->variation->uid,
-                'color' => $item->variation->color,
-                'size' => $item->variation->size,
-                'sell_price' => $item->variation->sell_price,
-            ] : null,
-            'quantity' => $item->quantity,
-            'total' => $item->total,
-            'tax' => $item->tax,
-            'image' => [
-                'upload_id' => $imageId,
-                'upload_url' => $imageUrl,
-            ],
+                return [
+                    'id' => $item->id,
+                    'product' => [
+                        'id' => $item->product->id,
+                        'name' => $item->product->name,
+                    ],
+                    'variation' => $item->variation ? [
+                        'uid' => $item->variation->uid,
+                        'color' => $item->variation->color,
+                        'size' => $item->variation->size,
+                        'sell_price' => $item->variation->sell_price,
+                    ] : null,
+                    'quantity' => $item->quantity,
+                    'total' => $item->total,
+                    'tax' => $item->tax,
+                    'image' => [
+                        'upload_id' => $imageId,
+                        'upload_url' => $imageUrl,
+                    ],
+                ];
+            }),
+
+            'created_at' => Carbon::parse($order->created_at)
+                ->timezone('Asia/Kolkata')
+                ->translatedFormat('jS M Y, h.iA'),
         ];
-    }),
-
-    'created_at' => Carbon::parse($order->created_at)
-        ->timezone('Asia/Kolkata')
-        ->translatedFormat('jS M Y, h.iA'),
-];
-
 
         return response()->json([
             'success' => true,
@@ -470,7 +463,6 @@ class OrderController extends Controller
             'data' => $data
         ]);
     }
-
 
     // Update Status For Admin
     public function updateOrderStatus(Request $request, $id)
