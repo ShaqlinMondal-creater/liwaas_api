@@ -75,8 +75,8 @@ class OrderController extends Controller
                 $subTotal += $totalPrice;
             }
 
-            $tax = round($subTotal * 0.18, 2);
-            $shippingCharge = $subTotal > 1000 ? 0 : 80;
+            $tax = round($subTotal * 0.05, 2);
+            $shippingCharge = $subTotal > 1000 ? 0 : 120;
 
             $discount = 0;
             $couponId = null;
@@ -146,7 +146,7 @@ class OrderController extends Controller
             foreach ($cartItems as $item) {
                 $variation = $item->variation;
                 $total = $variation->sell_price * $item->quantity;
-                $itemTax = round($total * 0.18, 2);
+                $itemTax = round($total * 0.05, 2);
 
                 OrderItems::create([
                     'order_id' => $order->id,
@@ -204,81 +204,7 @@ class OrderController extends Controller
         }
     }
 
-    // Make payment confirmation -> now we ignore this function
-    // public function handlePaymentCallback(Request $request)
-    // {
-    //     $request->validate([
-    //         'razorpay_order_id' => 'required|string',
-    //         'razorpay_payment_id' => 'nullable|string',
-    //         'status' => 'required|in:success,failed,cancelled',
-    //         'response' => 'required|array', // entire Razorpay or gateway response
-    //     ]);
-
-    //     DB::beginTransaction();
-
-    //     try {
-    //         // 🔍 Find payment by Razorpay order ID
-    //         $payment = Payment::where('genarate_order_id', $request->razorpay_order_id)->first();
-
-    //         if (!$payment) {
-    //             return response()->json(['error' => 'Payment not found'], 404);
-    //         }
-
-    //         // 🔄 Update payment status and gateway info
-    //         $payment->transaction_payment_id = $request->razorpay_payment_id ?? null;
-    //         $payment->payment_status = $request->status;
-    //         $payment->response_ = json_encode($request->response);
-    //         $payment->save();
-
-    //         // 🔄 Optionally update order delivery status
-    //         // if ($payment->order_id) {
-    //         //     $order = Orders::find($payment->order_id);
-    //         //     if ($order) {
-    //         //         if ($request->status === 'success') {
-    //         //             $order->delivery_status = 'confirmed';
-    //         //         } elseif ($request->status === 'failed') {
-    //         //             $order->delivery_status = 'payment_failed';
-    //         //         } elseif ($request->status === 'cancelled') {
-    //         //             $order->delivery_status = 'cancelled';
-    //         //         }
-    //         //         $order->save();
-    //         //     }
-    //         // }
-
-    //         DB::commit();
-
-    //         return response()->json([
-    //             'message' => 'Payment status updated successfully',
-    //             'payment_status' => $payment->payment_status,
-    //             'order_id' => $payment->order_id,
-    //         ]);
-
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         return response()->json([
-    //             'error' => 'Payment update failed',
-    //             'message' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
-    // Response like :
-    // {
-    //     "razorpay_order_id": "order_LXy0df123abc",
-    //     "razorpay_payment_id": "pay_LXy987xyz",
-    //     "status": "success",
-    //         "response": {
-    //             "id": "pay_LXy987xyz",
-    //             "entity": "payment",
-    //             "amount": 19000,
-    //             "currency": "INR",
-    //             "status": "captured",
-    //             "order_id": "order_LXy0df123abc",
-    //             "method": "upi",
-    //             "email": "user@example.com",
-    //             ...
-    //         }
-    // }
-
+    // Generate Order Code
     protected function generateOrderCode(): string
     {
         $prefix = now()->format('Ydm'); // Example: 20252606
@@ -361,7 +287,7 @@ class OrderController extends Controller
                             $upload = Upload::find($firstId);
                             if ($upload) {
                                 $imageId = $upload->id;
-                                $imageUrl = Storage::url($upload->path);
+                                $imageUrl = url($upload->url);
                             }
                         }
                     }
@@ -429,7 +355,8 @@ class OrderController extends Controller
             'items.variation',
             'items.product',
             'invoice',
-            'shipping',
+            'shipping.address',
+            'payment',
             'coupon',
         ])->where('user_id', $user->id);
 
@@ -451,64 +378,91 @@ class OrderController extends Controller
         }
 
         $data = [
-            'id' => $order->id,
-            'order_code' => $order->order_code,
-            'invoice_no' => $order->invoice ? $order->invoice->invoice_no : null,
-            'invoice_link' => $order->invoice ? $order->invoice->invoice_link : null,
+    'id' => $order->id,
+    'order_code' => $order->order_code,
+    'invoice_no' => $order->invoice ? $order->invoice->invoice_no : null,
+    'invoice_link' => $order->invoice ? $order->invoice->invoice_link : null,
 
-            'shipping' => $order->shipping,
-            'payment_type' => $order->payment_type,
-            'payment_status' => optional($order->payment)->payment_status ?? null,
-            'delivery_status' => $order->delivery_status,
+    'shipping' => [
+        'id' => $order->shipping->id ?? null,
+        'shipping_status' => $order->shipping->shipping_status ?? null,
+        'shipping_type' => $order->shipping->shipping_type ?? null,
+        'shipping_by' => $order->shipping->shipping_by ?? null,
+        'shipping_charge' => $order->shipping->shipping_charge ?? null,
 
-            'tax_price' => $order->tax_price,
-            'coupon_discount' => $order->coupon_discount,
-            'grand_total' => $order->grand_total,
+        // ✅ FULL ADDRESS
+        'address' => $order->shipping && $order->shipping->address ? [
+            'id' => $order->shipping->address->id,
+            'name' => $order->shipping->address->name,
+            'phone' => $order->shipping->address->phone,
+            'email' => $order->shipping->address->email,
+            'address_line1' => $order->shipping->address->address_line1,
+            'address_line2' => $order->shipping->address->address_line2,
+            'city' => $order->shipping->address->city,
+            'state' => $order->shipping->address->state,
+            'pincode' => $order->shipping->address->pincode,
+            'country' => $order->shipping->address->country,
+        ] : null,
+    ],
 
-            'items' => $order->items->map(function ($item) {
+    'payment_type' => $order->payment_type,
 
-                $imageId = null;
-                $imageUrl = null;
+    // ✅ PAYMENT DETAILS
+    'payment_status' => optional($order->payment)->payment_status ?? null,
+    'transaction_payment_id' => optional($order->payment)->transaction_payment_id ?? null,
 
-                if ($item->variation && $item->variation->images_id) {
-                    $imageIds = explode(',', $item->variation->images_id);
-                    $firstId = trim($imageIds[0] ?? '');
+    'delivery_status' => $order->delivery_status,
 
-                    if ($firstId) {
-                        $upload = Upload::find($firstId);
-                        if ($upload) {
-                            $imageId = $upload->id;
-                            $imageUrl = Storage::url($upload->path);
-                        }
-                    }
+    'tax_price' => $order->tax_price,
+    'coupon_discount' => $order->coupon_discount,
+    'grand_total' => $order->grand_total,
+
+    'items' => $order->items->map(function ($item) {
+
+        $imageId = null;
+        $imageUrl = null;
+
+        if ($item->variation && $item->variation->images_id) {
+            $imageIds = explode(',', $item->variation->images_id);
+            $firstId = trim($imageIds[0] ?? '');
+
+            if ($firstId) {
+                $upload = Upload::find($firstId);
+                if ($upload) {
+                    $imageId = $upload->id;
+                    // 🔧 FIX: use url() not Storage::url()
+                    $imageUrl = url($upload->url);
                 }
+            }
+        }
 
-                return [
-                    'id' => $item->id,
-                    'product' => [
-                        'id' => $item->product->id,
-                        'name' => $item->product->name,
-                    ],
-                    'variation' => $item->variation ? [
-                        'uid' => $item->variation->uid,
-                        'color' => $item->variation->color,
-                        'size' => $item->variation->size,
-                        'sell_price' => $item->variation->sell_price,
-                    ] : null,
-                    'quantity' => $item->quantity,
-                    'total' => $item->total,
-                    'tax' => $item->tax,
-                    'image' => [
-                        'upload_id' => $imageId,
-                        'upload_url' => $imageUrl,
-                    ],
-                ];
-            }),
-
-            'created_at' => Carbon::parse($order->created_at)
-                ->timezone('Asia/Kolkata')
-                ->translatedFormat('jS M Y, h.iA'),
+        return [
+            'id' => $item->id,
+            'product' => [
+                'id' => $item->product->id,
+                'name' => $item->product->name,
+            ],
+            'variation' => $item->variation ? [
+                'uid' => $item->variation->uid,
+                'color' => $item->variation->color,
+                'size' => $item->variation->size,
+                'sell_price' => $item->variation->sell_price,
+            ] : null,
+            'quantity' => $item->quantity,
+            'total' => $item->total,
+            'tax' => $item->tax,
+            'image' => [
+                'upload_id' => $imageId,
+                'upload_url' => $imageUrl,
+            ],
         ];
+    }),
+
+    'created_at' => Carbon::parse($order->created_at)
+        ->timezone('Asia/Kolkata')
+        ->translatedFormat('jS M Y, h.iA'),
+];
+
 
         return response()->json([
             'success' => true,
@@ -853,7 +807,7 @@ class OrderController extends Controller
                             $upload = Upload::find($firstId);
                             if ($upload) {
                                 $imageId = $upload->id;
-                                $imageUrl = Storage::url($upload->path);
+                                $imageUrl = url($upload->url);
                             }
                         }
                     }
