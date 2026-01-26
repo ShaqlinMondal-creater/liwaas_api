@@ -45,6 +45,8 @@ class CouponController extends Controller
             ->offset($offset)
             ->get();
 
+        $coupons->makeHidden(['created_at', 'updated_at']);
+
         return response()->json([
             'success' => true,
             'total'   => $total,
@@ -88,6 +90,7 @@ class CouponController extends Controller
             ], 400);
         }
 
+        $coupon->makeHidden(['created_at', 'updated_at']);
         return response()->json([
             'success' => true,
             'data' => $coupon
@@ -113,6 +116,7 @@ class CouponController extends Controller
             'end_date'
         ]));
 
+        $coupon->makeHidden(['created_at', 'updated_at']);
         return response()->json([
             'success' => true,
             'message' => 'Coupon created successfully',
@@ -147,7 +151,7 @@ class CouponController extends Controller
             'start_date',
             'end_date'
         ]));
-
+        $coupon->makeHidden(['created_at', 'updated_at']);
         return response()->json([
             'success' => true,
             'message' => 'Coupon updated successfully',
