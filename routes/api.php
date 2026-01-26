@@ -18,7 +18,7 @@ use App\Http\Controllers\ExtrasController;
 use App\Http\Controllers\SectionViewController;
 use App\Http\Controllers\HelperController;
 use App\Http\Controllers\PaymentController;
-
+use App\Http\Controllers\CouponController;
 
     // Public routes
     Route::post('/register', [AuthController::class, 'register']);
@@ -53,6 +53,7 @@ use App\Http\Controllers\PaymentController;
     });
 
     Route::post('/make_user', [AuthController::class, 'makeUser']);
+    Route::post('/coupons/validate-coupon', [CouponController::class, 'validateCoupon']); // validate/apply
 
 Route::middleware(['auth:sanctum'])->group(function () {
 
@@ -154,6 +155,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::put('/update-status/{id}', [OrderController::class, 'updateOrderStatus']); // update order status
             Route::delete('/delete/{id}', [OrderController::class, 'deleteOrder']); // delete order by order id
         }); 
+
+        // For Coupons
+        Route::prefix('coupons')->group(function () {
+            Route::get('/get-all', [CouponController::class, 'getAll']);                // all active
+            // Admin routes
+            Route::post('/create', [CouponController::class, 'createCoupon']);
+            Route::post('/update/{id}', [CouponController::class, 'updateCoupon']);
+            Route::delete('/delete/{id}', [CouponController::class, 'deleteCoupon']);
+        });
 
     });
 
