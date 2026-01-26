@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('key_name')->unique();              // coupon code/key
             $table->decimal('value', 10, 2)->default(0);       // discount value (flat or %)
-            $table->enum('status', ['active', 'deactive'])->default('active');
+            $table->enum('status', ['active', 'inactive'])->default('active');
             $table->string('start_date')->nullable();          // string format (e.g., Y-m-d)
             $table->string('end_date')->nullable();            // string format (e.g., Y-m-d)
             $table->timestamps();                              // created_at & updated_at

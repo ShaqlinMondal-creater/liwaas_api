@@ -9,24 +9,48 @@ use Carbon\Carbon;
 class CouponController extends Controller
 {
      // ✅ Get all active coupons
-    public function getAll()
+    public function getAll(Request $request)
     {
-        $today = Carbon::today();
+        $query = Coupon::query();
 
-        $coupons = Coupon::where('status', 'active')
-            ->where(function ($q) use ($today) {
-                $q->whereNull('start_date')
-                  ->orWhere('start_date', '<=', $today);
-            })
-            ->where(function ($q) use ($today) {
-                $q->whereNull('end_date')
-                  ->orWhere('end_date', '>=', $today);
-            })
+        // 🔎 Filter: key_name (search)
+        if ($request->filled('key_name')) {
+            $query->where('key_name', 'LIKE', '%' . $request->key_name . '%');
+        }
+
+        // 🔎 Filter: status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // 🔎 Filter: start_date (from)
+        if ($request->filled('start_date')) {
+            $query->whereDate('start_date', '>=', $request->start_date);
+        }
+
+        // 🔎 Filter: end_date (to)
+        if ($request->filled('end_date')) {
+            $query->whereDate('end_date', '<=', $request->end_date);
+        }
+
+        // 📌 Pagination: limit & offset (BODY)
+        $limit  = (int) $request->input('limit', 20);   // default 20
+        $offset = (int) $request->input('offset', 0);   // default 0
+
+        $total = $query->count();
+
+        $coupons = $query
+            ->orderBy('id', 'desc')
+            ->limit($limit)
+            ->offset($offset)
             ->get();
 
         return response()->json([
             'success' => true,
-            'data' => $coupons
+            'total'   => $total,
+            'limit'   => $limit,
+            'offset'  => $offset,
+            'data'    => $coupons
         ]);
     }
 

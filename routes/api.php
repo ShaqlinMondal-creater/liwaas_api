@@ -158,7 +158,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // For Coupons
         Route::prefix('coupons')->group(function () {
-            Route::get('/get-all', [CouponController::class, 'getAll']);                // all active
+            Route::post('/get-all', [CouponController::class, 'getAll']);                // all active
             // Admin routes
             Route::post('/create', [CouponController::class, 'createCoupon']);
             Route::post('/update/{id}', [CouponController::class, 'updateCoupon']);
