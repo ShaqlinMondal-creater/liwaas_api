@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Mail\CreateUserMail;
 use Illuminate\Support\Facades\Mail;
+use App\Services\FirebaseAuthService;
 
 class AuthController extends Controller
 {
@@ -107,6 +108,97 @@ class AuthController extends Controller
         }
     }
 
+    // Google Login
+    public function googleLogin(Request $request, FirebaseAuthService $firebase)
+    {
+        $request->validate([
+            'idToken' => 'required|string',
+        ]);
+
+        try {
+            // ✅ Verify Firebase token
+            $claims = $firebase->verifyIdToken($request->idToken);
+
+            $email = $claims['email'] ?? null;
+            $name  = $claims['name'] ?? 'Google User';
+            $firebaseUid = $claims['sub'];
+
+            if (!$email) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid Google token',
+                ], 401);
+            }
+
+            $user = User::where('email', $email)->first();
+
+            // 🆕 New Google user
+            if (!$user) {
+                $user = User::create([
+                    'name' => $name,
+                    'email' => $email,
+                    'password' => Hash::make(Str::random(16)),
+                    'auth_provider' => 'google',
+                    'google_id' => $firebaseUid,
+                    'email_verified_at' => now(),
+                    'role' => 'customer',
+                    'is_active' => 'true',
+                    'is_logged_in' => 'true',
+                ]);
+            } else {
+                // 🚨 Security check
+                if ($user->google_id && $user->google_id !== $firebaseUid) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Google account mismatch detected.',
+                    ], 403);
+                }
+
+                // Do NOT overwrite local users
+                if ($user->auth_provider === 'local') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This email is registered with password login.',
+                    ], 403);
+                }
+
+                $user->update([
+                    'google_id' => $firebaseUid,
+                    'is_logged_in' => 'true',
+                ]);
+            }
+
+            // 🔐 Revoke old tokens
+            $user->tokens()->delete();
+
+            // ✅ Create new Sanctum token
+            $token = $user->createToken('api-token')->plainTextToken;
+
+            $userData = $user->toArray();
+            unset(
+                $userData['password'],
+                $userData['created_at'],
+                $userData['updated_at'],
+                $userData['email_verified_at'],
+                $userData['is_deleted'],
+                $userData['is_logged_in']
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Google login successful',
+                'token' => $token,
+                'user' => $userData,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Google authentication failed',
+            ], 401);
+        }
+    }
+
     // Logout method
     public function logout(Request $request)
     {
@@ -132,6 +224,59 @@ class AuthController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    // Guest to AUth User Make
+    public function makeUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users,email',
+            'mobile' => 'required|string|unique:users,mobile',
+            'guest_id' => 'required|string'
+        ]);
+
+        // ✅ Check if guest_id exists in carts table
+        $guestCartExists = Cart::where('user_id', $request->guest_id)->exists();
+        if (!$guestCartExists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No cart found for the provided guest_id',
+            ], 404);
+        }
+
+        // ✅ Generate random password
+        $password = Str::random(8);
+
+        // ✅ Create user
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'mobile' => $request->mobile,
+            'password' => Hash::make($password),
+            'role' => 'customer',
+            'is_active' => 'true',
+            'is_logged_in' => 'true',
+        ]);
+
+        // ✅ Send mail with name, email, mobile, password
+        Mail::to($user->email)->send(new CreateUserMail($user, $password));
+
+
+        // ✅ Replace guest_id with new user_id in carts table
+        Cart::where('user_id', $request->guest_id)
+            ->update(['user_id' => $user->id]);
+
+        $user->makeHidden(['created_at', 'updated_at']);
+        // ✅ Generate token
+        $token = $user->createToken('authToken')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User created successfully and cart updated',
+            'token' => $token,
+            'user' => $user,
+        ], 201);
     }
 
     // Fetch Profile
@@ -214,59 +359,4 @@ class AuthController extends Controller
             'data'    => $user
         ], 200);
     }
-
-    // Guest to AUth User Make
-    public function makeUser(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email|unique:users,email',
-            'mobile' => 'required|string|unique:users,mobile',
-            'guest_id' => 'required|string'
-        ]);
-
-        // ✅ Check if guest_id exists in carts table
-        $guestCartExists = Cart::where('user_id', $request->guest_id)->exists();
-        if (!$guestCartExists) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No cart found for the provided guest_id',
-            ], 404);
-        }
-
-        // ✅ Generate random password
-        $password = Str::random(8);
-
-        // ✅ Create user
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'mobile' => $request->mobile,
-            'password' => Hash::make($password),
-            'role' => 'customer',
-            'is_active' => 'true',
-            'is_logged_in' => 'true',
-        ]);
-
-        // ✅ Send mail with name, email, mobile, password
-        Mail::to($user->email)->send(new CreateUserMail($user, $password));
-
-
-        // ✅ Replace guest_id with new user_id in carts table
-        Cart::where('user_id', $request->guest_id)
-            ->update(['user_id' => $user->id]);
-
-        $user->makeHidden(['created_at', 'updated_at']);
-        // ✅ Generate token
-        $token = $user->createToken('authToken')->plainTextToken;
-
-        return response()->json([
-            'success' => true,
-            'message' => 'User created successfully and cart updated',
-            'token' => $token,
-            'user' => $user,
-        ], 201);
-    }
-
-
 }

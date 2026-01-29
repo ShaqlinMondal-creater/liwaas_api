@@ -44,6 +44,9 @@ return [
         'email' => env('SHIPROCKET_EMAIL'),
         'password' => env('SHIPROCKET_PASSWORD'),
     ],
+    'firebase' => [
+        'credentials' => env('FIREBASE_CREDENTIALS'),
+    ],
 
 
 ];

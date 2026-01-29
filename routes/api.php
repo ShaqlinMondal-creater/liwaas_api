@@ -23,6 +23,7 @@ use App\Http\Controllers\CouponController;
     // Public routes
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/auth/google', [AuthController::class, 'googleLogin']);
 
     Route::prefix('products')->group(function () {
         Route::post('get-product-byslug/{slug}', [ProductController::class, 'getProductsBySlug']); // through slug product filter 

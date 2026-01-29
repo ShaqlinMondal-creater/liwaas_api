@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->enum('role', ['customer', 'admin'])->default('customer');
             $table->string('mobile')->unique();
+            $table->string('google_id')->nullable()->unique();
+            $table->string('auth_provider')->default('email'); // email | google
             $table->enum('is_active', ['true', 'false'])->default('false');
             $table->enum('is_logged_in', ['true', 'false'])->default('false');
             $table->timestamp('is_deleted')->nullable();
