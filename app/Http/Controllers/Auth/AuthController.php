@@ -164,7 +164,9 @@ class AuthController extends Controller
 
                 $user->update([
                     'google_id' => $firebaseUid,
+                    'auth_provider' => 'google',
                     'is_logged_in' => 'true',
+                    'email_verified_at' => $user->email_verified_at ?? now(),
                 ]);
             }
 
