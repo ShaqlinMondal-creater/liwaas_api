@@ -35,7 +35,7 @@
 
                             <!-- Login Button -->
                             <p style="margin:30px 0;">
-                                <a href="{{ config('app.url') }}/login" 
+                                <a href="{{ config('app.frontend_url') }}/sign-in" 
                                    style="background:#ff6b6b; color:#fff; padding:12px 25px; text-decoration:none; border-radius:6px; font-size:15px;">
                                    Login to Your Account
                                 </a>
