@@ -76,7 +76,7 @@ class OrderController extends Controller
             }
 
             $tax = round($subTotal * 0.05, 2);
-            $shippingCharge = $subTotal > 1000 ? 0 : 120;
+            $shippingCharge = $subTotal > 10000 ? 0 : 120;
 
             $discount = 0;
             $couponId = null;

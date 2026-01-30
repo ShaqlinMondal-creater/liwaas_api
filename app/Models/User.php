@@ -24,6 +24,7 @@ class User extends Authenticatable
         'password',
         'google_id',
         'auth_provider',
+        'email_verified_at',   // 👈 MUST BE HERE
         'role',
         'mobile',
         'is_active',

@@ -146,7 +146,7 @@ class AuthController extends Controller
                     'is_logged_in' => 'true',
                 ]);
             } else {
-                // 🚨 Security check
+                // 🚨 Security check: Prevent different Google account hijack
                 if ($user->google_id && $user->google_id !== $firebaseUid) {
                     return response()->json([
                         'success' => false,
@@ -154,7 +154,7 @@ class AuthController extends Controller
                     ], 403);
                 }
 
-                // Do NOT overwrite local users
+                // 🚨 Prevent login if this email was created using password login
                 if ($user->auth_provider === 'local') {
                     return response()->json([
                         'success' => false,
@@ -162,13 +162,19 @@ class AuthController extends Controller
                     ], 403);
                 }
 
-                $user->update([
-                    'google_id' => $firebaseUid,
-                    'auth_provider' => 'google',
-                    'is_logged_in' => 'true',
-                    'email_verified_at' => $user->email_verified_at ?? now(),
-                ]);
+                // ✅ Mark email verified if not already verified
+                if (!$user->email_verified_at) {
+                    $user->email_verified_at = now();
+                }
+
+                // ✅ Update Google info safely
+                $user->google_id = $firebaseUid;
+                $user->auth_provider = 'google';
+                $user->is_logged_in = 'true';
+
+                $user->save();
             }
+
 
             // 🔐 Revoke old tokens
             $user->tokens()->delete();
