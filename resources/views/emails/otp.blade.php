@@ -7,7 +7,7 @@
 <body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color:#f9f9f9;">
     <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-            <td style="padding:30px 0;">
+            <td style="padding:30px 0;" align="center">
                 <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1); overflow:hidden;">
                     
                     <!-- Header -->
