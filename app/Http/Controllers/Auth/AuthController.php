@@ -11,6 +11,7 @@ use App\Models\Cart;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Mail\CreateUserMail;
+use App\Mail\OtpMail;
 use Illuminate\Support\Facades\Mail;
 use App\Services\FirebaseAuthService;
 
