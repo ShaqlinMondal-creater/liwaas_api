@@ -253,7 +253,6 @@ class AuthController extends Controller
         // Generate 6 digit OTP
         $otp = rand(100000, 999999);
 
-        // Save OTP (hashed for security)
         $user->otp = Hash::make($otp);
         $user->otp_expires_at = now()->addMinutes(10);
         $user->save();
