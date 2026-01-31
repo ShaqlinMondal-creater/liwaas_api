@@ -258,7 +258,7 @@ class AuthController extends Controller
         $user->save();
 
         // Send Email
-        Mail::to($user->email)->send(new OtpMail($otp));
+        Mail::to($user->email)->send(new OtpMail($otp, $user));
 
         return response()->json([
             'success' => true,
