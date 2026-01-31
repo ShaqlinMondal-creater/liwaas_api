@@ -7,7 +7,7 @@
 <body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color:#f9f9f9;">
     <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-            <td align="center" style="padding:30px 0;">
+            <td style="padding:30px 0;">
                 <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1); overflow:hidden;">
                     
                     <!-- Header -->
@@ -19,7 +19,7 @@
 
                     <!-- Body -->
                     <tr style="background:#000; color:#fff;">
-                        <td style="padding:35px; text-align:center;">
+                        <td style="padding:35px;">
 
                             <p style="font-size:16px;">
                                 Hello <strong>{{ $user->name ?? 'Customer' }}</strong>,
@@ -34,7 +34,7 @@
                             </p>
 
                             <!-- OTP BOX -->
-                            <div style="margin:30px 0;">
+                            <div style="margin:30px 0;" align="center">
                                 <span style="
                                     display:inline-block;
                                     background:linear-gradient(135deg,#deb64c,#1a1a1a);
@@ -62,7 +62,7 @@
 
                     <!-- Footer -->
                     <tr>
-                        <td align="center" style="background:linear-gradient(90deg,#1a1a1a,#deb64c,#1a1a1a); padding:15px; font-size:13px; color:#fff;">
+                        <td align="left" style="background:linear-gradient(90deg,#1a1a1a,#deb64c,#1a1a1a); padding:15px; font-size:13px; color:#fff;">
                             Thanks,<br>
                             {{ config('app.frontend_name') }}
                         </td>
