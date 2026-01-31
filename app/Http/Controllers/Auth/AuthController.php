@@ -234,6 +234,102 @@ class AuthController extends Controller
         }
     }
 
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email not found'
+            ], 404);
+        }
+
+        // Generate 6 digit OTP
+        $otp = rand(100000, 999999);
+
+        // Save OTP (hashed for security)
+        $user->otp = Hash::make($otp);
+        $user->otp_expires_at = now()->addMinutes(10);
+        $user->save();
+
+        // Send Email
+        Mail::to($user->email)->send(new OtpMail($otp));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP sent to your email'
+        ]);
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp'   => 'required|digits:6'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (
+            !$user ||
+            !$user->otp ||
+            !Hash::check($request->otp, $user->otp) ||
+            now()->greaterThan($user->otp_expires_at)
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired OTP'
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP verified successfully'
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|digits:6',
+            'password' => 'required|min:6|confirmed'
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (
+            !$user ||
+            !$user->otp ||
+            !Hash::check($request->otp, $user->otp) ||
+            now()->greaterThan($user->otp_expires_at)
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired OTP'
+            ], 400);
+        }
+
+        // Update password
+        $user->password = $request->password; // hashed automatically (model cast)
+        
+        // Clear OTP after use
+        $user->otp = null;
+        $user->otp_expires_at = null;
+
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset successful'
+        ]);
+    }
+
     // Guest to AUth User Make
     public function makeUser(Request $request)
     {
