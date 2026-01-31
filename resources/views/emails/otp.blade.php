@@ -64,7 +64,7 @@
                     <tr>
                         <td align="center" style="background:linear-gradient(90deg,#1a1a1a,#deb64c,#1a1a1a); padding:15px; font-size:13px; color:#fff;">
                             Thanks,<br>
-                            {{ config('app.name') }}
+                            {{ config('app.frontend_name') }}
                         </td>
                     </tr>
 
