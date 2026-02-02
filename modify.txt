@@ -3,5 +3,5 @@ api update :
 -> /products/allProducts   -> add 'max-min price' filter
 
 
--> forget-password -> setup api 
+-> forget-password -> setup api ✅done
 -> setup messege notifications -> api setup

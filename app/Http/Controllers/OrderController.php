@@ -777,11 +777,12 @@ class OrderController extends Controller
                 'order_code' => $order->order_code,
                 'invoice_no' => $order->invoice_no,
                 'invoice_link' => $order->invoice_link,
-                'user' => [
+                'user' => $order->user ? [
                     'id' => $order->user->id,
                     'name' => $order->user->name,
                     'email' => $order->user->email,
-                ],
+                ] : null,
+
                 'shipping' => $order->shipping,
                 'payment_type' => $order->payment_type,
                 'payment_status' => $order->payment_status,
