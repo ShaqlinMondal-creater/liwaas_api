@@ -5,3 +5,20 @@ api update :
 
 -> forget-password -> setup api ✅done
 -> setup messege notifications -> api setup
+
+For admin: create
+admin Dashboard count
+create user
+update user
+deactive account
+cancel order by admin or user
+
+Create Messege notification
+Fetch Messege notification 
+Update Messege notification 
+Delete Messege notification
+
+
+For admin: modify
+fetch cart : add filter
+fetch wishlist : add filter
