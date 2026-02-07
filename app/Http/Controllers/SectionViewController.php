@@ -337,7 +337,7 @@ class SectionViewController extends Controller
     {
         $minQty = $request->query('min_qty', 15);
 
-        // Step 1: Get trending UIDs
+        // Step 1: Get trending UIDs from order items
         $trendingUIDs = OrderItems::select('uid')
             ->selectRaw('SUM(quantity) as total_qty')
             ->groupBy('uid')
@@ -347,47 +347,123 @@ class SectionViewController extends Controller
         if ($trendingUIDs->isEmpty()) {
             return response()->json([
                 'success' => true,
-                'message' => 'No trending products found.',
+                'message' => "Products for section 'Trending' fetched successfully.",
+                'total' => 0,
                 'data' => []
             ]);
         }
 
-        // Step 2: Get AIDs directly from trending variations
-        $aids = ProductVariations::whereIn('uid', $trendingUIDs)
-            ->pluck('aid')
-            ->unique();
+        // Step 2: Get sections matching trending UIDs
+        $sections = Section::whereIn('uid', $trendingUIDs)
+            ->where('section_name', 'Trending')
+            ->where('status', '1')
+            ->get();
 
-        // Step 3: Load products with ONLY trending variations
-        $products = Product::with([
-            'variations' => function ($query) use ($trendingUIDs) {
-                $query->whereIn('uid', $trendingUIDs);
-            }
-        ])
-        ->whereIn('aid', $aids)
-        ->where('product_status', 'active')
-        ->get();
+        if ($sections->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Products for section 'Trending' fetched successfully.",
+                'total' => 0,
+                'data' => []
+            ]);
+        }
 
-        // Step 4: Format response
-        $data = $products->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'aid' => $product->aid,
-                'name' => $product->name,
-                'variations' => $product->variations->map(function ($var) {
-                    return [
-                        'id' => $var->id,
-                        'uid' => $var->uid,
-                        'color' => $var->color,
-                        'size' => $var->size,
-                    ];
-                })->values()
+        // Step 3: Load products with relationships
+        $productsData = [];
+
+        foreach ($sections as $section) {
+
+            $variation = ProductVariations::where('uid', $section->uid)->first();
+            if (!$variation) continue;
+
+            $product = Product::with(['brand', 'category', 'upload'])
+                ->where('aid', $variation->aid)
+                ->where('product_status', 'active')
+                ->first();
+
+            if (!$product) continue;
+
+            $productsData[] = [
+                'section' => [
+                    'id' => $section->id,
+                    'section_name' => $section->section_name,
+                    'uid' => $section->uid,
+                    'status' => $section->status,
+                    'force_status' => $section->force_status,
+                ],
+                'product' => [
+                    'id' => $product->id,
+                    'aid' => $product->aid,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'gender' => $product->gender,
+                    'image_url' => $product->image_url,
+                    'upload_id' => $product->upload_id,
+                    'product_status' => $product->product_status,
+                    'brand' => $product->brand ? [
+                        'id' => $product->brand->id,
+                        'name' => $product->brand->name,
+                    ] : null,
+                    'category' => $product->category ? [
+                        'id' => $product->category->id,
+                        'name' => $product->category->name,
+                    ] : null,
+                    'upload' => $product->upload ? [
+                        'id' => $product->upload->id,
+                        'url' => $product->upload->url,
+                    ] : null,
+                    'variation' => $variation
+                ]
             ];
-        });
+        }
+
+        // Step 4: Group by AID (Product-wise)
+        $grouped = collect($productsData)
+            ->groupBy('product.aid')
+            ->map(function ($items) {
+
+                $first = $items->first();
+
+                return [
+                    'section' => $first['section'],
+                    'product' => [
+                        'id' => $first['product']['id'],
+                        'aid' => $first['product']['aid'],
+                        'name' => $first['product']['name'],
+                        'slug' => $first['product']['slug'],
+                        'gender' => $first['product']['gender'],
+                        'image_url' => $first['product']['image_url'],
+                        'upload_id' => $first['product']['upload_id'],
+                        'product_status' => $first['product']['product_status'],
+                        'brand' => $first['product']['brand'],
+                        'category' => $first['product']['category'],
+                        'upload' => $first['product']['upload'],
+
+                        // Merge all variations under same product
+                        'variations' => $items->map(function ($item) {
+                            $var = $item['product']['variation'];
+
+                            return [
+                                'id' => $var->id,
+                                'uid' => $var->uid,
+                                'aid' => $var->aid,
+                                'color' => $var->color,
+                                'size' => $var->size,
+                                'regular_price' => $var->regular_price,
+                                'sell_price' => $var->sell_price,
+                                'images' => $var->images ?? []
+                            ];
+                        })->values()
+                    ]
+                ];
+            })
+            ->values();
 
         return response()->json([
             'success' => true,
-            'message' => 'Trending products fetched successfully.',
-            'data' => $data,
+            'message' => "Products for section 'Trending' fetched successfully.",
+            'total' => $grouped->count(),
+            'data' => $grouped
         ]);
     }
 
