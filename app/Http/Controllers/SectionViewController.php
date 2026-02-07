@@ -332,11 +332,12 @@ class SectionViewController extends Controller
             'data' => $flattened,
         ]);
     }    
-    public function getTrendings(Request $request) // Trending Products
-    {
-        $minQty = $request->query('min_qty', 15); // default to 10
 
-        // Step 1: Get UID with quantity sum > threshold
+    public function getTrendings(Request $request)
+    {
+        $minQty = $request->query('min_qty', 15);
+
+        // Step 1: Get trending UIDs
         $trendingUIDs = OrderItems::select('uid')
             ->selectRaw('SUM(quantity) as total_qty')
             ->groupBy('uid')
@@ -351,63 +352,122 @@ class SectionViewController extends Controller
             ]);
         }
 
-        // Step 2: Get variations with these UIDs
-        $variations = ProductVariations::whereIn('uid', $trendingUIDs)->get();
+        // Step 2: Get AIDs directly from trending variations
+        $aids = ProductVariations::whereIn('uid', $trendingUIDs)
+            ->pluck('aid')
+            ->unique();
 
-        // Step 3: Get unique AIDs from variations
-        $aids = $variations->pluck('aid')->unique();
+        // Step 3: Load products with ONLY trending variations
+        $products = Product::with([
+            'variations' => function ($query) use ($trendingUIDs) {
+                $query->whereIn('uid', $trendingUIDs);
+            }
+        ])
+        ->whereIn('aid', $aids)
+        ->where('product_status', 'active')
+        ->get();
 
-        // Step 4: Fetch products with relationships
-        $products = Product::with(['brand', 'category', 'upload', 'variations'])
-            ->whereIn('aid', $aids)
-            ->where('product_status', 'active')
-            ->get();
-
-        // Step 5: Format the response
-        $filtered = $products->map(function ($product) use ($trendingUIDs) {
+        // Step 4: Format response
+        $data = $products->map(function ($product) {
             return [
                 'id' => $product->id,
                 'aid' => $product->aid,
                 'name' => $product->name,
-                // 'gender' => $product->gender,
-                // 'image_url' => $product->image_url,
-                // 'upload_id' => $product->upload_id,
-                // 'product_status' => $product->product_status,
-                // 'brand' => $product->brand ? [
-                //     'id' => $product->brand->id,
-                //     'name' => $product->brand->name,
-                // ] : null,
-                // 'category' => $product->category ? [
-                //     'id' => $product->category->id,
-                //     'name' => $product->category->name,
-                // ] : null,
-                // 'upload' => $product->upload ? [
-                //     'id' => $product->upload->id,
-                //     'url' => $product->upload->url,
-                // ] : null,
-                'variations' => $product->variations
-                    ->whereIn('uid', $trendingUIDs)
-                    ->map(function ($var) {
-                        return [
-                            'id' => $var->id,
-                            'uid' => $var->uid,
-                            // 'aid' => $var->aid,
-                            'color' => $var->color,
-                            'size' => $var->size,
-                            // 'regular_price' => $var->regular_price,
-                            // 'sell_price' => $var->sell_price,
-                            // 'images_id' => $var->images_id,
-                        ];
-                    })->values()
+                'variations' => $product->variations->map(function ($var) {
+                    return [
+                        'id' => $var->id,
+                        'uid' => $var->uid,
+                        'color' => $var->color,
+                        'size' => $var->size,
+                    ];
+                })->values()
             ];
         });
 
         return response()->json([
             'success' => true,
             'message' => 'Trending products fetched successfully.',
-            'data' => $filtered,
+            'data' => $data,
         ]);
-    }  
+    }
+
+    // public function getTrendings(Request $request) // Trending Products
+    // {
+    //     $minQty = $request->query('min_qty', 15); // default to 10
+
+    //     // Step 1: Get UID with quantity sum > threshold
+    //     $trendingUIDs = OrderItems::select('uid')
+    //         ->selectRaw('SUM(quantity) as total_qty')
+    //         ->groupBy('uid')
+    //         ->havingRaw('SUM(quantity) >= ?', [$minQty])
+    //         ->pluck('uid');
+
+    //     if ($trendingUIDs->isEmpty()) {
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'No trending products found.',
+    //             'data' => []
+    //         ]);
+    //     }
+
+    //     // Step 2: Get variations with these UIDs
+    //     $variations = ProductVariations::whereIn('uid', $trendingUIDs)->get();
+
+    //     // Step 3: Get unique AIDs from variations
+    //     $aids = $variations->pluck('aid')->unique();
+
+    //     // Step 4: Fetch products with relationships
+    //     $products = Product::with(['brand', 'category', 'upload', 'variations'])
+    //         ->whereIn('aid', $aids)
+    //         ->where('product_status', 'active')
+    //         ->get();
+
+    //     // Step 5: Format the response
+    //     $filtered = $products->map(function ($product) use ($trendingUIDs) {
+    //         return [
+    //             'id' => $product->id,
+    //             'aid' => $product->aid,
+    //             'name' => $product->name,
+    //             // 'gender' => $product->gender,
+    //             // 'image_url' => $product->image_url,
+    //             // 'upload_id' => $product->upload_id,
+    //             // 'product_status' => $product->product_status,
+    //             // 'brand' => $product->brand ? [
+    //             //     'id' => $product->brand->id,
+    //             //     'name' => $product->brand->name,
+    //             // ] : null,
+    //             // 'category' => $product->category ? [
+    //             //     'id' => $product->category->id,
+    //             //     'name' => $product->category->name,
+    //             // ] : null,
+    //             // 'upload' => $product->upload ? [
+    //             //     'id' => $product->upload->id,
+    //             //     'url' => $product->upload->url,
+    //             // ] : null,
+    //             'variations' => $product->variations
+    //                 ->whereIn('uid', $trendingUIDs)
+    //                 ->map(function ($var) {
+    //                     return [
+    //                         'id' => $var->id,
+    //                         'uid' => $var->uid,
+    //                         // 'aid' => $var->aid,
+    //                         'color' => $var->color,
+    //                         'size' => $var->size,
+    //                         // 'regular_price' => $var->regular_price,
+    //                         // 'sell_price' => $var->sell_price,
+    //                         // 'images_id' => $var->images_id,
+    //                     ];
+    //                 })->values()
+    //         ];
+    //     });
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Trending products fetched successfully.',
+    //         'data' => $filtered,
+    //     ]);
+    // } 
+
     public function getGallery() // Gallery Products
     {
         $reviewedUids = ProductReview::pluck('uid')->unique();
