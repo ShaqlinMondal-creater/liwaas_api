@@ -333,90 +333,88 @@ class SectionViewController extends Controller
         ]);
     }    
 
-public function getTrendings(Request $request)
-{
-    // Step 1: Get all Trending section UIDs
-    $sectionUIDs = Section::where('section_name', 'Trending')
-        ->where('status', 1)
-        ->pluck('uid');
+    public function getTrendings(Request $request)
+    {
+        // Step 1: Get all Trending section UIDs
+        $sectionUIDs = Section::where('section_name', 'Trending')
+            ->where('status', 1)
+            ->pluck('uid');
 
-    if ($sectionUIDs->isEmpty()) {
+        if ($sectionUIDs->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Products for section 'Trending' fetched successfully.",
+                'total' => 0,
+                'data' => []
+            ]);
+        }
+
+        // Step 2: Get variations using those UIDs
+        $variations = ProductVariations::whereIn('uid', $sectionUIDs)->get();
+
+        if ($variations->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Products for section 'Trending' fetched successfully.",
+                'total' => 0,
+                'data' => []
+            ]);
+        }
+
+        // Step 3: Group variations by AID
+        $grouped = $variations->groupBy('aid');
+
+        // Step 4: Fetch products in one query
+        $products = Product::with(['brand', 'category', 'upload'])
+            ->whereIn('aid', $grouped->keys())
+            ->where('product_status', 'active')
+            ->get()
+            ->keyBy('aid');
+
+        $finalProducts = [];
+
+        foreach ($grouped as $aid => $vars) {
+
+            if (!isset($products[$aid])) continue;
+
+            $product = $products[$aid];
+
+            $finalProducts[] = [
+                'id' => $product->id,
+                'aid' => $product->aid,
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'gender' => $product->gender,
+                'image_url' => $product->image_url,
+                'upload_id' => $product->upload_id,
+                'product_status' => $product->product_status,
+                'brand' => $product->brand,
+                'category' => $product->category,
+                'upload' => $product->upload,
+                'variations' => $vars->map(function ($var) {
+                    return [
+                        'id' => $var->id,
+                        'uid' => $var->uid,
+                        'color' => $var->color,
+                        'size' => $var->size,
+                        'regular_price' => $var->regular_price,
+                        'sell_price' => $var->sell_price,
+                        'images' => $var->images ?? []
+                    ];
+                })->values()
+            ];
+        }
+
         return response()->json([
             'success' => true,
             'message' => "Products for section 'Trending' fetched successfully.",
-            'total' => 0,
-            'data' => []
+            'total' => count($finalProducts),
+            'data' => [
+                'section' => 'Trending',
+                'products' => $finalProducts
+            ]
         ]);
     }
-
-    // Step 2: Get variations using those UIDs
-    $variations = ProductVariations::whereIn('uid', $sectionUIDs)->get();
-
-    if ($variations->isEmpty()) {
-        return response()->json([
-            'success' => true,
-            'message' => "Products for section 'Trending' fetched successfully.",
-            'total' => 0,
-            'data' => []
-        ]);
-    }
-
-    // Step 3: Group variations by AID
-    $grouped = $variations->groupBy('aid');
-
-    // Step 4: Fetch products in one query
-    $products = Product::with(['brand', 'category', 'upload'])
-        ->whereIn('aid', $grouped->keys())
-        ->where('product_status', 'active')
-        ->get()
-        ->keyBy('aid');
-
-    $finalProducts = [];
-
-    foreach ($grouped as $aid => $vars) {
-
-        if (!isset($products[$aid])) continue;
-
-        $product = $products[$aid];
-
-        $finalProducts[] = [
-            'id' => $product->id,
-            'aid' => $product->aid,
-            'name' => $product->name,
-            'slug' => $product->slug,
-            'gender' => $product->gender,
-            'image_url' => $product->image_url,
-            'upload_id' => $product->upload_id,
-            'product_status' => $product->product_status,
-            'brand' => $product->brand,
-            'category' => $product->category,
-            'upload' => $product->upload,
-            'variations' => $vars->map(function ($var) {
-                return [
-                    'id' => $var->id,
-                    'uid' => $var->uid,
-                    'color' => $var->color,
-                    'size' => $var->size,
-                    'regular_price' => $var->regular_price,
-                    'sell_price' => $var->sell_price,
-                    'images' => $var->images ?? []
-                ];
-            })->values()
-        ];
-    }
-
-    return response()->json([
-        'success' => true,
-        'message' => "Products for section 'Trending' fetched successfully.",
-        'total' => count($finalProducts),
-        'data' => [
-            'section' => 'Trending',
-            'products' => $finalProducts
-        ]
-    ]);
-}
-
-
 
     // public function getTrendings(Request $request) // Trending Products
     // {
