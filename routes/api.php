@@ -125,7 +125,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::delete('/variation-delete/{uid}', [ProductController::class, 'deleteVariation']); // delete variation only
             Route::delete('/product-delete/{aid}', [ProductController::class, 'deleteProduct']); // delete product with there variations
             // Route::post('/product-update', [ProductController::class, 'updateProduct']);
-            Route::post('/product-update', [ProductController::class, 'updateProductDetails']);
+            Route::post('/product-update', [ProductController::class, 'updateProduct']);
             Route::post('/add-specs', [ProductController::class, 'addProductSpecs']);
             Route::post('/fetch-specs', [ProductController::class, 'getProductSpecs']);
             Route::post('/delete-specs', [ProductController::class, 'deleteProductSpecs']);
