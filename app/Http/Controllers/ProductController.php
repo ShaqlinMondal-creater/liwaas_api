@@ -637,7 +637,13 @@ class ProductController extends Controller
             // Attach variation images
             foreach ($data['variations'] as &$variation) {
                 $imageIds = array_filter(explode(',', $variation['images_id']));
-                $variation['images'] = Upload::whereIn('id', $imageIds)->get(['id', 'url', 'file_name']);
+                $variation['images'] = Upload::whereIn('id', $imageIds)
+                    ->get()
+                    ->map(fn ($u) => [
+                        'id' => $u->id,
+                        'url' => url($u->url),   // 🔥 FIX
+                        'file_name' => $u->file_name,
+                    ]);
 
                 // ✅ Product Specs (NEW)
                 $variation['specs'] = ProductSpecModel::where('uid', $variation['uid'])
