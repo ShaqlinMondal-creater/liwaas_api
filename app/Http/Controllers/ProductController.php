@@ -908,7 +908,7 @@ class ProductController extends Controller
     }
 
     // Update Product
-    public function updateProduct(Request $request)
+    public function updateProductDetails(Request $request)
     {
         $request->validate([
             'aid' => 'required|string|exists:products,aid',
