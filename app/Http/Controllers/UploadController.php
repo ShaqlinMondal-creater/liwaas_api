@@ -337,6 +337,48 @@ class UploadController extends Controller
         ]);
     }
 
+    // Get all uploads
+    public function getAllUploads(Request $request)
+    {
+        try {
+
+            $limit = $request->input('limit', 50);
+            $offset = $request->input('offset', 0);
+
+            $uploads = Upload::orderBy('id', 'desc')
+                ->skip($offset)
+                ->take($limit)
+                ->get()
+                ->map(function ($upload) {
+                    return [
+                        'id' => $upload->id,
+                        'url' => url($upload->url), // full URL
+                        'file_name' => $upload->file_name,
+                        'extension' => $upload->extension,
+                        'created_at' => $upload->created_at,
+                    ];
+                });
+
+            $total = Upload::count();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Uploads fetched successfully.',
+                'total' => $total,
+                'data' => $uploads
+            ]);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch uploads.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
     // Delete Product Variation Images
     // public function deleteProductImages(Request $request)
     // {
