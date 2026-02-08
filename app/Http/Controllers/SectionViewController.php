@@ -264,6 +264,7 @@ class SectionViewController extends Controller
                         return [
                             'id' => $variation->id,
                             'uid' => $variation->uid,
+                            'aid' => $variation->aid, // 👈 added
                             'color' => $variation->color,
                             'size' => $variation->size,
                             'regular_price' => $variation->regular_price,
