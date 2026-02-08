@@ -908,107 +908,83 @@ class ProductController extends Controller
     }
 
     // Update Product
-    public function updateProduct(Request $request)
+    public function updateProductDetails(Request $request)
     {
         $request->validate([
             'aid' => 'required|string|exists:products,aid',
-            'uid' => 'required|integer|exists:product_variations,uid',
+
+            // product fields
             'name' => 'nullable|string',
-            'brand_id' => 'nullable|integer',
-            'category_id' => 'nullable|integer',
+            'slug' => 'nullable|string',
+            'brand' => 'nullable|integer',
+            'category' => 'nullable|integer',
             'description' => 'nullable|string',
-            'specification' => 'nullable|string',
             'gender' => 'nullable|string',
             'cod' => 'nullable|string',
             'shipping' => 'nullable|string',
             'keyword' => 'nullable|string',
             'custom_design' => 'nullable|string',
-            'regular_price' => 'nullable|numeric',
-            'sell_price' => 'nullable|numeric',
-            'stock' => 'nullable|integer',
-            'color' => 'nullable|string',
-            'size' => 'nullable|string',
-            'upload_image.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240'
+
+            // variations
+            'variations' => 'nullable|array',
+            'variations.*.uid' => 'required|exists:product_variations,uid',
+            'variations.*.regular_price' => 'nullable|numeric',
+            'variations.*.sale_price' => 'nullable|numeric',
+            'variations.*.stock' => 'nullable|integer',
+            'variations.*.color' => 'nullable|string',
+            'variations.*.size' => 'nullable|string',
         ]);
 
         try {
-            $product = Product::where('aid', $request->aid)->first();
-            $variation = ProductVariations::where('uid', $request->uid)->first();
 
-            if (!$product || !$variation) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Product or Variation not found.'
-                ], 404);
-            }
+            $product = Product::where('aid', $request->aid)->firstOrFail();
 
-            // ✅ Update product fields
-            $product->update($request->only([
-                'name', 'brand_id', 'category_id', 'description', 'specification', 'gender',
-                'cod', 'shipping', 'keyword', 'custom_design'
-            ]));
+            // =========================
+            // Update product
+            // =========================
+            $product->update([
+                'name' => $request->name,
+                'slug' => $request->slug,
+                'brand_id' => $request->brand,
+                'category_id' => $request->category,
+                'description' => $request->description,
+                'gender' => $request->gender,
+                'cod' => $request->cod,
+                'shipping' => $request->shipping,
+                'keyword' => $request->keyword,
+                'custom_design' => $request->custom_design,
+            ]);
 
-            // ✅ Update variation fields
-            $variation->update($request->only([
-                'regular_price', 'sell_price', 'stock', 'color', 'size'
-            ]));
+            // =========================
+            // Update variations
+            // =========================
+            if ($request->has('variations')) {
 
-            // ✅ Handle new uploaded images (optional)
-            $uploadedImages = $request->file('upload_image');
-            if ($uploadedImages && is_array($uploadedImages)) {
+                foreach ($request->variations as $variationData) {
 
-                $existingProductUploadIds = array_filter(explode(',', $product->upload_id));
-                $variationOldImageIds = [];
+                    $variation = ProductVariations::where('aid', $request->aid)
+                        ->where('uid', $variationData['uid'])
+                        ->first();
 
-                // 🔴 Delete old variation images
-                if ($variation->images_id) {
-                    $variationOldImageIds = array_filter(explode(',', $variation->images_id));
-                    $oldUploads = Upload::whereIn('id', $variationOldImageIds)->get();
+                    if (!$variation) continue;
 
-                    foreach ($oldUploads as $upload) {
-                        Storage::disk('public')->delete($upload->path);
-                        $upload->delete();
-                    }
-                }
-
-                // 🟢 Upload new images
-                $newUploadIds = [];
-                foreach ($uploadedImages as $image) {
-                    if (!$image->isValid()) continue;
-
-                    $fileName = time() . '_' . Str::random(8) . '.' . $image->getClientOriginalExtension();
-                    $path = $image->storeAs('products', $fileName, 'public');
-
-                    $upload = Upload::create([
-                        'path' => $path,
-                        'url' => Storage::url($path),
-                        'file_name' => $fileName,
-                        'extension' => $image->getClientOriginalExtension()
+                    $variation->update([
+                        'regular_price' => $variationData['regular_price'] ?? $variation->regular_price,
+                        'sell_price' => $variationData['sale_price'] ?? $variation->sell_price,
+                        'stock' => $variationData['stock'] ?? $variation->stock,
+                        'color' => $variationData['color'] ?? $variation->color,
+                        'size' => $variationData['size'] ?? $variation->size,
                     ]);
-
-                    $newUploadIds[] = $upload->id;
                 }
-
-                // ✅ Update variation
-                $variation->images_id = implode(',', $newUploadIds);
-                $variation->save();
-
-                // ✅ Update product upload_id by:
-                // - Removing old variation image IDs
-                // - Adding new ones
-                $remainingProductUploadIds = array_diff($existingProductUploadIds, $variationOldImageIds);
-                $finalUploadIds = array_unique(array_merge($remainingProductUploadIds, $newUploadIds));
-
-                $product->upload_id = implode(',', $finalUploadIds);
-                $product->save();
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Product and variation updated successfully.'
+                'message' => 'Product and variations updated successfully.'
             ], 200);
 
         } catch (\Exception $e) {
+
             return response()->json([
                 'success' => false,
                 'message' => 'Update failed.',
@@ -1016,6 +992,115 @@ class ProductController extends Controller
             ], 500);
         }
     }
+
+    // public function updateProduct(Request $request)
+    // {
+    //     $request->validate([
+    //         'aid' => 'required|string|exists:products,aid',
+    //         'uid' => 'required|integer|exists:product_variations,uid',
+    //         'name' => 'nullable|string',
+    //         'brand_id' => 'nullable|integer',
+    //         'category_id' => 'nullable|integer',
+    //         'description' => 'nullable|string',
+    //         'specification' => 'nullable|string',
+    //         'gender' => 'nullable|string',
+    //         'cod' => 'nullable|string',
+    //         'shipping' => 'nullable|string',
+    //         'keyword' => 'nullable|string',
+    //         'custom_design' => 'nullable|string',
+    //         'regular_price' => 'nullable|numeric',
+    //         'sell_price' => 'nullable|numeric',
+    //         'stock' => 'nullable|integer',
+    //         'color' => 'nullable|string',
+    //         'size' => 'nullable|string',
+    //         'upload_image.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10240'
+    //     ]);
+
+    //     try {
+    //         $product = Product::where('aid', $request->aid)->first();
+    //         $variation = ProductVariations::where('uid', $request->uid)->first();
+
+    //         if (!$product || !$variation) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Product or Variation not found.'
+    //             ], 404);
+    //         }
+
+    //         // ✅ Update product fields
+    //         $product->update($request->only([
+    //             'name', 'brand_id', 'category_id', 'description', 'specification', 'gender',
+    //             'cod', 'shipping', 'keyword', 'custom_design'
+    //         ]));
+
+    //         // ✅ Update variation fields
+    //         $variation->update($request->only([
+    //             'regular_price', 'sell_price', 'stock', 'color', 'size'
+    //         ]));
+
+    //         // ✅ Handle new uploaded images (optional)
+    //         $uploadedImages = $request->file('upload_image');
+    //         if ($uploadedImages && is_array($uploadedImages)) {
+
+    //             $existingProductUploadIds = array_filter(explode(',', $product->upload_id));
+    //             $variationOldImageIds = [];
+
+    //             // 🔴 Delete old variation images
+    //             if ($variation->images_id) {
+    //                 $variationOldImageIds = array_filter(explode(',', $variation->images_id));
+    //                 $oldUploads = Upload::whereIn('id', $variationOldImageIds)->get();
+
+    //                 foreach ($oldUploads as $upload) {
+    //                     Storage::disk('public')->delete($upload->path);
+    //                     $upload->delete();
+    //                 }
+    //             }
+
+    //             // 🟢 Upload new images
+    //             $newUploadIds = [];
+    //             foreach ($uploadedImages as $image) {
+    //                 if (!$image->isValid()) continue;
+
+    //                 $fileName = time() . '_' . Str::random(8) . '.' . $image->getClientOriginalExtension();
+    //                 $path = $image->storeAs('products', $fileName, 'public');
+
+    //                 $upload = Upload::create([
+    //                     'path' => $path,
+    //                     'url' => Storage::url($path),
+    //                     'file_name' => $fileName,
+    //                     'extension' => $image->getClientOriginalExtension()
+    //                 ]);
+
+    //                 $newUploadIds[] = $upload->id;
+    //             }
+
+    //             // ✅ Update variation
+    //             $variation->images_id = implode(',', $newUploadIds);
+    //             $variation->save();
+
+    //             // ✅ Update product upload_id by:
+    //             // - Removing old variation image IDs
+    //             // - Adding new ones
+    //             $remainingProductUploadIds = array_diff($existingProductUploadIds, $variationOldImageIds);
+    //             $finalUploadIds = array_unique(array_merge($remainingProductUploadIds, $newUploadIds));
+
+    //             $product->upload_id = implode(',', $finalUploadIds);
+    //             $product->save();
+    //         }
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Product and variation updated successfully.'
+    //         ], 200);
+
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Update failed.',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
     // Add Product Specs
     public function addProductSpecs(Request $request)
