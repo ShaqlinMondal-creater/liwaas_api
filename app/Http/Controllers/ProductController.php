@@ -908,12 +908,11 @@ class ProductController extends Controller
     }
 
     // Update Product
-    public function updateProductDetails(Request $request)
+    public function updateProduct(Request $request)
     {
         $request->validate([
             'aid' => 'required|string|exists:products,aid',
 
-            // product fields
             'name' => 'nullable|string',
             'slug' => 'nullable|string',
             'brand' => 'nullable|integer',
@@ -925,9 +924,8 @@ class ProductController extends Controller
             'keyword' => 'nullable|string',
             'custom_design' => 'nullable|string',
 
-            // variations
             'variations' => 'nullable|array',
-            'variations.*.uid' => 'required|exists:product_variations,uid',
+            'variations.*.uid' => 'nullable|integer',
             'variations.*.regular_price' => 'nullable|numeric',
             'variations.*.sale_price' => 'nullable|numeric',
             'variations.*.stock' => 'nullable|integer',
@@ -935,14 +933,16 @@ class ProductController extends Controller
             'variations.*.size' => 'nullable|string',
         ]);
 
+        DB::beginTransaction();
+
         try {
 
             $product = Product::where('aid', $request->aid)->firstOrFail();
 
             // =========================
-            // Update product
+            // Update product safely
             // =========================
-            $product->update([
+            $product->update(array_filter([
                 'name' => $request->name,
                 'slug' => $request->slug,
                 'brand_id' => $request->brand,
@@ -953,37 +953,78 @@ class ProductController extends Controller
                 'shipping' => $request->shipping,
                 'keyword' => $request->keyword,
                 'custom_design' => $request->custom_design,
-            ]);
+            ], fn($v) => !is_null($v)));
 
             // =========================
-            // Update variations
+            // Sync Variations
             // =========================
             if ($request->has('variations')) {
 
+                $existingVariations = ProductVariations::where('aid', $request->aid)->get();
+                $existingUIDs = $existingVariations->pluck('uid')->toArray();
+
+                $incomingUIDs = collect($request->variations)
+                    ->pluck('uid')
+                    ->filter()
+                    ->toArray();
+
+                // ======================
+                // DELETE removed variations
+                // ======================
+                $uidsToDelete = array_diff($existingUIDs, $incomingUIDs);
+
+                if (!empty($uidsToDelete)) {
+                    ProductVariations::whereIn('uid', $uidsToDelete)->delete();
+                }
+
+                // ======================
+                // UPDATE or CREATE
+                // ======================
                 foreach ($request->variations as $variationData) {
 
-                    $variation = ProductVariations::where('aid', $request->aid)
-                        ->where('uid', $variationData['uid'])
-                        ->first();
+                    if (!empty($variationData['uid'])) {
+                        // UPDATE
+                        $variation = ProductVariations::where('aid', $request->aid)
+                            ->where('uid', $variationData['uid'])
+                            ->first();
 
-                    if (!$variation) continue;
+                        if ($variation) {
+                            $variation->update([
+                                'regular_price' => $variationData['regular_price'] ?? $variation->regular_price,
+                                'sell_price' => $variationData['sale_price'] ?? $variation->sell_price,
+                                'stock' => $variationData['stock'] ?? $variation->stock,
+                                'color' => $variationData['color'] ?? $variation->color,
+                                'size' => $variationData['size'] ?? $variation->size,
+                            ]);
+                        }
 
-                    $variation->update([
-                        'regular_price' => $variationData['regular_price'] ?? $variation->regular_price,
-                        'sell_price' => $variationData['sale_price'] ?? $variation->sell_price,
-                        'stock' => $variationData['stock'] ?? $variation->stock,
-                        'color' => $variationData['color'] ?? $variation->color,
-                        'size' => $variationData['size'] ?? $variation->size,
-                    ]);
+                    } else {
+                        // CREATE new variation
+                        ProductVariations::create([
+                            'aid' => $request->aid,
+                            'uid' => time() . rand(100, 999),
+                            'regular_price' => $variationData['regular_price'] ?? 0,
+                            'sell_price' => $variationData['sale_price'] ?? 0,
+                            'stock' => $variationData['stock'] ?? 0,
+                            'color' => $variationData['color'] ?? '',
+                            'size' => $variationData['size'] ?? '',
+                            'currency' => 'INR',
+                            'gst' => 18,
+                        ]);
+                    }
                 }
             }
 
+            DB::commit();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Product and variations updated successfully.'
-            ], 200);
+                'message' => 'Product and variations synced successfully.'
+            ]);
 
         } catch (\Exception $e) {
+
+            DB::rollBack();
 
             return response()->json([
                 'success' => false,
