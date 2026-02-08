@@ -151,7 +151,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/brand-images', [UploadController::class, 'uploadBrandImages']); // Upload Brand Images
             Route::post('/category-images', [UploadController::class, 'uploadCategoryImages']); // Upload Category Images
 
-            Route::delete('/delete-images', [UploadController::class, 'deleteProductImages']); // Delete Product Images
+            Route::post('/delete-images', [UploadController::class, 'deleteProductImages']); // Delete Product Images
         });
         
         // For Orders

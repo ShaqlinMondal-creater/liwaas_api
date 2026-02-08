@@ -91,6 +91,51 @@ class UploadController extends Controller
         ]);
     }
 
+    // Delete Product Images
+    public function deleteProductImages(Request $request)
+    {
+        $request->validate([
+            'aid' => 'required|string|exists:products,aid',
+            'ids' => 'required|string' // Expecting comma-separated ids as string
+        ]);
+    
+        $product = Product::where('aid', $request->aid)->first();
+    
+        // Convert the comma-separated ids to an array
+        $idsToDelete = explode(',', $request->ids);
+    
+        // Get the existing upload IDs from the product
+        $existingIds = array_filter(explode(',', $product->upload_id ?? ''));
+        $remainingIds = array_diff($existingIds, $idsToDelete); // Remove the IDs to be deleted
+    
+        // Loop through and delete the corresponding files and records in the uploads table
+        foreach ($idsToDelete as $id) {
+            $upload = Upload::find($id);
+            if ($upload) {
+                // Delete file from storage
+                Storage::disk('public')->delete($upload->path);
+    
+                // Delete the upload record
+                $upload->delete();
+            }
+        }
+    
+        // Update product's upload_id field with remaining IDs
+        $product->upload_id = implode(',', $remainingIds);
+        $product->save();
+    
+        return response()->json([
+            'success' => true,
+            'message' => 'Selected image(s) deleted successfully.',
+            'data' => [
+                'product_id' => $product->id,
+                'aid' => $product->aid,
+                'name' => $product->name,
+                'remaining_upload_id' => $product->upload_id
+            ]
+        ]);
+    }
+
     // Upload Images for a Product Variation
     public function uploadVariationsImages(Request $request)
     {
@@ -234,49 +279,49 @@ class UploadController extends Controller
         ]);
     }
 
-    // Delete Product Images
-    public function deleteProductImages(Request $request)
-    {
-        $request->validate([
-            'aid' => 'required|string|exists:products,aid',
-            'ids' => 'required|string' // Expecting comma-separated ids as string
-        ]);
+    // Delete Product Variation Images
+    // public function deleteProductImages(Request $request)
+    // {
+    //     $request->validate([
+    //         'aid' => 'required|string|exists:products,aid',
+    //         'ids' => 'required|string' // Expecting comma-separated ids as string
+    //     ]);
     
-        $product = Product::where('aid', $request->aid)->first();
+    //     $product = Product::where('aid', $request->aid)->first();
     
-        // Convert the comma-separated ids to an array
-        $idsToDelete = explode(',', $request->ids);
+    //     // Convert the comma-separated ids to an array
+    //     $idsToDelete = explode(',', $request->ids);
     
-        // Get the existing upload IDs from the product
-        $existingIds = array_filter(explode(',', $product->upload_id ?? ''));
-        $remainingIds = array_diff($existingIds, $idsToDelete); // Remove the IDs to be deleted
+    //     // Get the existing upload IDs from the product
+    //     $existingIds = array_filter(explode(',', $product->upload_id ?? ''));
+    //     $remainingIds = array_diff($existingIds, $idsToDelete); // Remove the IDs to be deleted
     
-        // Loop through and delete the corresponding files and records in the uploads table
-        foreach ($idsToDelete as $id) {
-            $upload = Upload::find($id);
-            if ($upload) {
-                // Delete file from storage
-                Storage::disk('public')->delete($upload->path);
+    //     // Loop through and delete the corresponding files and records in the uploads table
+    //     foreach ($idsToDelete as $id) {
+    //         $upload = Upload::find($id);
+    //         if ($upload) {
+    //             // Delete file from storage
+    //             Storage::disk('public')->delete($upload->path);
     
-                // Delete the upload record
-                $upload->delete();
-            }
-        }
+    //             // Delete the upload record
+    //             $upload->delete();
+    //         }
+    //     }
     
-        // Update product's upload_id field with remaining IDs
-        $product->upload_id = implode(',', $remainingIds);
-        $product->save();
+    //     // Update product's upload_id field with remaining IDs
+    //     $product->upload_id = implode(',', $remainingIds);
+    //     $product->save();
     
-        return response()->json([
-            'success' => true,
-            'message' => 'Selected image(s) deleted successfully.',
-            'data' => [
-                'product_id' => $product->id,
-                'aid' => $product->aid,
-                'name' => $product->name,
-                'remaining_upload_id' => $product->upload_id
-            ]
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Selected image(s) deleted successfully.',
+    //         'data' => [
+    //             'product_id' => $product->id,
+    //             'aid' => $product->aid,
+    //             'name' => $product->name,
+    //             'remaining_upload_id' => $product->upload_id
+    //         ]
+    //     ]);
+    // }
     
 }
