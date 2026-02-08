@@ -197,6 +197,64 @@ class UploadController extends Controller
         ]);
     }
 
+    // Delete Variation Images (Using UID only)
+    public function deleteVariationImages(Request $request)
+    {
+        $request->validate([
+            'uid' => 'required|string|exists:product_variations,uid',
+            'ids' => 'required|string' // comma-separated upload IDs
+        ]);
+
+        // Find variation
+        $variation = ProductVariations::where('uid', $request->uid)->firstOrFail();
+
+        // Find product via variation AID
+        $product = Product::where('aid', $variation->aid)->firstOrFail();
+
+        $idsToDelete = array_filter(explode(',', $request->ids));
+
+        // =========================
+        // Remove from variation
+        // =========================
+        $existingVariationIds = array_filter(explode(',', $variation->images_id ?? ''));
+        $remainingVariationIds = array_diff($existingVariationIds, $idsToDelete);
+
+        $variation->images_id = implode(',', $remainingVariationIds);
+        $variation->save();
+
+        // =========================
+        // Remove from product upload_id
+        // =========================
+        $existingProductIds = array_filter(explode(',', $product->upload_id ?? ''));
+        $remainingProductIds = array_diff($existingProductIds, $idsToDelete);
+
+        $product->upload_id = implode(',', $remainingProductIds);
+        $product->save();
+
+        // =========================
+        // Delete file + upload record
+        // =========================
+        foreach ($idsToDelete as $id) {
+
+            $upload = Upload::find($id);
+
+            if ($upload) {
+                Storage::disk('public')->delete($upload->path);
+                $upload->delete();
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Selected variation image(s) deleted successfully.',
+            'data' => [
+                'uid' => $variation->uid,
+                'remaining_variation_images_id' => $variation->images_id,
+                'remaining_product_upload_id' => $product->upload_id
+            ]
+        ]);
+    }
+
     // Upload brand image
     public function uploadBrandImages(Request $request)
     {
