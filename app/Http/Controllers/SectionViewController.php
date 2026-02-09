@@ -16,20 +16,29 @@ use Carbon\Carbon;
 class SectionViewController extends Controller
 {
     
-    public function markedSectionProducts(Request $request) // Marked Section Products
+    public function markedSectionProducts(Request $request)
     {
         $request->validate([
-            'uid' => 'required|string',
+            'aid' => 'required|string|exists:products,aid',
             'section_name' => 'required|string',
         ]);
 
         try {
-            // Check if same uid and section_name already exists
-            $existing = SectionView::where('uid', $request->uid)
+
+            // Check if same aid + section already exists
+            $existing = SectionView::where('aid', $request->aid)
                 ->where('section_name', $request->section_name)
                 ->first();
 
             if ($existing) {
+
+                // Optional: Reactivate if disabled
+                if ($existing->status == 0) {
+                    $existing->update([
+                        'status' => 1
+                    ]);
+                }
+
                 return response()->json([
                     'success' => false,
                     'message' => 'This product is already marked in this section.',
@@ -37,9 +46,9 @@ class SectionViewController extends Controller
                 ], 200);
             }
 
-            // Create new record if not exists
+            // Create new record
             $sectionView = SectionView::create([
-                'uid' => $request->uid,
+                'aid' => $request->aid,
                 'section_name' => $request->section_name,
                 'status' => 1,
                 'force_status' => 0,
@@ -52,121 +61,56 @@ class SectionViewController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage(),
             ], 500);
         }
-    }   
-    // public function getSectionsProducts(Request $request) // Get Section products
+    }
+
+    // public function markedSectionProducts(Request $request) // Marked Section Products
     // {
-    //     $sectionName = $request->input('section_name');
-    //     $status = $request->input('status'); // optional
-    //     $limit = (int) $request->input('limit', 12);
-    //     $offset = (int) $request->input('offset', 0);
-
-    //     // Step 1: Get section views
-    //     $query = SectionView::query();
-
-    //     if (!empty($sectionName)) {
-    //         $query->where('section_name', $sectionName);
-    //     }
-
-    //     if (!is_null($status)) {
-    //         $query->where('status', filter_var($status, FILTER_VALIDATE_BOOLEAN));
-    //     }
-
-    //     $total = $query->count();
-
-    //     $sectionViews = $query
-    //         ->orderBy('section_name', 'asc')
-    //         ->skip($offset)
-    //         ->take($limit)
-    //         ->get();
-
-    //     $uids = $sectionViews->pluck('uid')->toArray();
-
-    //     // Step 2: Fetch all variations with product info
-    //     $variations = \App\Models\ProductVariations::with([
-    //         'product',
-    //         'product.brand',
-    //         'product.category',
-    //         'product.upload'
-    //     ])->whereIn('uid', $uids)->get()
-    //     ->keyBy('uid'); // So we can fetch by UID quickly
-
-    //     $response = [];
-
-    //     foreach ($sectionViews as $section) {
-    //         $variation = $variations->get($section->uid);
-
-    //         if (!$variation || !$variation->product) continue;
-
-    //         $product = $variation->product;
-
-    //         // Resolve image uploads
-    //         $imageIds = array_filter(explode(',', $variation->images_id));
-    //         $uploads = \App\Models\Upload::whereIn('id', $imageIds)->get();
-
-    //         $images = $uploads->map(function ($upload) {
-    //             return [
-    //                 'upload_id' => $upload->id,
-    //                 'upload_url' => url($upload->url),
-    //             ];
-    //         });
-
-    //         $response[] = [
-    //             'section' => [
-    //                 'id' => $section->id,
-    //                 'section_name' => $section->section_name,
-    //                 'uid' => $section->uid,
-    //                 'status' => $section->status,
-    //                 'force_status' => $section->force_status
-    //             ],
-    //             'product' => [
-    //                 'id' => $product->id,
-    //                 'aid' => $product->aid,
-    //                 'name' => $product->name,
-    //                 'slug' => $product->slug,
-    //                 'gender' => $product->gender,
-    //                 'image_url' => $product->image_url,
-    //                 'upload_id' => $product->upload_id,
-    //                 'product_status' => $product->product_status,
-    //                 'brand' => $product->brand ? [
-    //                     'id' => $product->brand->id,
-    //                     'name' => $product->brand->name,
-    //                 ] : null,
-    //                 'category' => $product->category ? [
-    //                     'id' => $product->category->id,
-    //                     'name' => $product->category->name,
-    //                 ] : null,
-    //                 'upload' => $product->upload ? [
-    //                     'id' => $product->upload->id,
-    //                     'url' => $product->upload->url,
-    //                 ] : null,
-    //                 'variation' => [
-    //                     'id' => $variation->id,
-    //                     'uid' => $variation->uid,
-    //                     'aid' => $variation->aid,
-    //                     'color' => $variation->color,
-    //                     'size' => $variation->size,
-    //                     'regular_price' => $variation->regular_price,
-    //                     'sell_price' => $variation->sell_price,
-    //                     'images' => $images,
-    //                 ]
-    //             ]
-    //         ];
-    //     }
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => $sectionName
-    //             ? "Products for section '{$sectionName}' fetched successfully."
-    //             : "Products for all sections fetched successfully.",
-    //         'total' => $total,
-    //         'data' => $response
+    //     $request->validate([
+    //         'uid' => 'required|string',
+    //         'section_name' => 'required|string',
     //     ]);
-    // }
+
+    //     try {
+    //         // Check if same uid and section_name already exists
+    //         $existing = SectionView::where('uid', $request->uid)
+    //             ->where('section_name', $request->section_name)
+    //             ->first();
+
+    //         if ($existing) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'This product is already marked in this section.',
+    //                 'data' => $existing,
+    //             ], 200);
+    //         }
+
+    //         // Create new record if not exists
+    //         $sectionView = SectionView::create([
+    //             'uid' => $request->uid,
+    //             'section_name' => $request->section_name,
+    //             'status' => 1,
+    //             'force_status' => 0,
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Section product marked successfully.',
+    //             'data' => $sectionView,
+    //         ], 201);
+
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Error: ' . $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }   
 
     public function getSectionsProducts(Request $request)
     {

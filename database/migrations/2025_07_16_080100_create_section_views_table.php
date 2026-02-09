@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('section_views', function (Blueprint $table) {
             $table->id();
             $table->string('section_name');
-            $table->unsignedBigInteger('uid');
+            $table->string('aid');
             $table->boolean('status')->default(true);         // true = active
             $table->boolean('force_status')->default(false);  // true = locked
             $table->timestamps(); // includes `created_at` and `updated_at`
