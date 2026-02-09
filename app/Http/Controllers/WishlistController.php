@@ -276,9 +276,14 @@ class WishlistController extends Controller
 
         } elseif ($sortBy === 'most_liked') {
 
-            $query->select('wishlists.*')
-                ->selectRaw('(SELECT COUNT(*) FROM wishlists w2 WHERE w2.product_id = wishlists.product_id) as total_likes')
-                ->orderByDesc('total_likes');
+            $query->leftJoin(
+                \DB::raw('(SELECT products_id, COUNT(*) as total_likes FROM wishlists GROUP BY products_id) as likes'),
+                'wishlists.products_id',
+                '=',
+                'likes.products_id'
+            )
+            ->orderByDesc('likes.total_likes')
+            ->select('wishlists.*');
 
         } else {
             $query->orderByDesc('wishlists.id');
