@@ -73,8 +73,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::get('/reviews', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
         Route::post('/carts', [CartController::class, 'getAllCartsForAdmin']); // For Carts
-        Route::post('/cart/delete/{id}', [CartController::class, 'deleteCartByAdmin']); // For Carts
+        Route::de;ete('/cart/delete/{id}', [CartController::class, 'deleteCartByAdmin']); // For Carts
         Route::get('/wishlists', [WishlistController::class, 'getAllWishlists']); // For Wishlist
+        Route::get('/wishlist/delete/{id}', [WishlistController::class, 'getAllWishlists']); // For Wishlist
 
         // Settings Data
             // Sections Get API DATA no Table
