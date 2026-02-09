@@ -225,6 +225,7 @@ class CartController extends Controller
         ], 200);
     }
 
+    // For admin use
     public function getAllCartsForAdmin(Request $request)
     {
         // Admin check
@@ -344,85 +345,43 @@ class CartController extends Controller
             ]
         ], 200);
     }
+    public function deleteCartByAdmin($id)
+    {
+        // Admin check
+        if (!auth()->user() || auth()->user()->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only admins can delete carts.'
+            ], 403);
+        }
 
-    // public function getAllCartsForAdmin(Request $request)
-    // {
-    //     // Optional: Admin check
-    //     if (!auth()->user() || auth()->user()->role !== 'admin') {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Unauthorized. Only admins can access all carts.'
-    //         ], 403);
-    //     }
+        try {
 
-    //     // Get limit and offset from request body (JSON)
-    //     $limit = $request->input('limit', 10);    // default: 10
-    //     $offset = $request->input('offset', 0);   // default: 0
+            $cart = Cart::find($id);
 
-    //     // Prepare base query
-    //     $query = Cart::with(['user', 'product', 'variation']);
+            if (!$cart) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cart not found.'
+                ], 404);
+            }
 
-    //     // Get total before pagination
-    //     $total = $query->count();
+            $cart->delete();
 
-    //     // Apply pagination
-    //     $carts = $query->skip($offset)->take($limit)->get();
+            return response()->json([
+                'success' => true,
+                'message' => 'Cart deleted successfully.',
+                'deleted_cart_id' => $id
+            ], 200);
 
-    //     // Format cart data
-    //     $formatted = $carts->map(function ($cart) {
-    //         $variation = $cart->variation;
-    //         $imageUrls = [];
+        } catch (\Exception $e) {
 
-    //         if ($variation && $variation->images_id) {
-    //             $ids = explode(',', $variation->images_id);
-    //             $uploads = \App\Models\Upload::whereIn('id', $ids)->get();
-
-    //             $imageUrls = $uploads->map(fn($upload) =>
-    //                 $upload->url ?? asset('uploads/' . $upload->path)
-    //             )->toArray();
-    //         }
-
-    //         return [
-    //             'id' => $cart->id,
-    //             'user_id' => $cart->user_id,
-    //             'cart' => [
-    //                 'user_name' => $cart->user->name ?? null,
-    //                 'product_id' => $cart->products_id,
-    //                 'variation_uid' => $cart->uid,
-    //                 'variation_aid' => $cart->aid,
-    //                 'quantity' => $cart->quantity,
-    //                 'regular_price' => $cart->regular_price,
-    //                 'sell_price' => $cart->sell_price,
-    //                 'total_price' => $cart->total_price,
-    //                 'created_at' => $cart->created_at,
-    //                 'updated_at' => $cart->updated_at,
-    //                 'product' => optional($cart->product)->only(['id', 'name', 'aid']),
-    //                 'variation' => $variation ? [
-    //                     'id' => $variation->id,
-    //                     'uid' => $variation->uid,
-    //                     'aid' => $variation->aid,
-    //                     'color' => $variation->color,
-    //                     'size' => $variation->size,
-    //                     'regular_price' => $variation->regular_price,
-    //                     'sell_price' => $variation->sell_price,
-    //                     'stock' => $variation->stock,
-    //                     'images' => $imageUrls
-    //                 ] : null,
-    //             ]
-    //         ];
-    //     });
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'All carts retrieved successfully.',
-    //         'data' => $formatted,
-    //         'meta' => [
-    //             'total' => $total,
-    //             'limit' => (int) $limit,
-    //             'offset' => (int) $offset
-    //         ]
-    //     ], 200);
-    // }
-
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete cart.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
 }
