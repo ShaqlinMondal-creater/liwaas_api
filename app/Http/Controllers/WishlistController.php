@@ -216,6 +216,143 @@ class WishlistController extends Controller
     }
 
     // For admin
+    // public function getAllWishlistsForAdmin(Request $request)
+    // {
+    //     if (!auth()->user() || auth()->user()->role !== 'admin') {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Unauthorized.'
+    //         ], 403);
+    //     }
+
+    //     $userName    = $request->input('user_name');
+    //     $productName = $request->input('product_name');
+    //     $sortBy      = $request->input('sort_by');
+    //     $limit       = (int) $request->input('limit', 10);
+    //     $offset      = (int) $request->input('offset', 0);
+
+    //     $query = Wishlist::query()
+    //         ->with([
+    //             'user:id,name',
+    //             'product:id,name,aid',
+    //             'variation:id,uid,aid,color,size,sell_price,images_id'
+    //         ]);
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | FILTERS
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     if (!empty($userName)) {
+    //         $query->whereHas('user', function ($q) use ($userName) {
+    //             $q->where('name', 'like', "%{$userName}%");
+    //         });
+    //     }
+
+    //     if (!empty($productName)) {
+    //         $query->whereHas('product', function ($q) use ($productName) {
+    //             $q->where('name', 'like', "%{$productName}%");
+    //         });
+    //     }
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | SORTING
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     if ($sortBy === 'price_desc') {
+
+    //         $query->leftJoin('product_variations', 'wishlists.uid', '=', 'product_variations.uid')
+    //             ->orderByDesc('product_variations.sell_price')
+    //             ->select('wishlists.*');
+
+    //     } elseif ($sortBy === 'price_asc') {
+
+    //         $query->leftJoin('product_variations', 'wishlists.uid', '=', 'product_variations.uid')
+    //             ->orderBy('product_variations.sell_price', 'asc')
+    //             ->select('wishlists.*');
+
+    //     } elseif ($sortBy === 'most_liked') {
+
+    //         $query->select('wishlists.*')
+    //             ->selectRaw('(SELECT COUNT(*) FROM wishlists w2 WHERE w2.product_id = wishlists.product_id) as total_likes')
+    //             ->orderByDesc('total_likes');
+    //     } else {
+    //         $query->orderByDesc('wishlists.id');
+    //     }
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | PAGINATION
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $total = (clone $query)->count();
+
+    //     $wishlists = $query
+    //         ->skip($offset)
+    //         ->take($limit)
+    //         ->get();
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | GROUP RESPONSE (Same as your structure)
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $groupedData = [];
+
+    //     foreach ($wishlists as $wishlist) {
+
+    //         $userId = $wishlist->user_id;
+    //         $userName = $wishlist->user->name ?? null;
+
+    //         if (!isset($groupedData[$userId])) {
+    //             $groupedData[$userId] = [
+    //                 'user_id' => $userId,
+    //                 'name' => $userName,
+    //                 'product' => []
+    //             ];
+    //         }
+
+    //         $images = [];
+
+    //         if ($wishlist->variation && $wishlist->variation->images_id) {
+    //             $ids = explode(',', $wishlist->variation->images_id);
+    //             $uploads = Upload::whereIn('id', $ids)->get();
+    //             $images = $uploads->map(fn($u) => url($u->url))->toArray();
+    //         }
+
+    //         $variationData = [
+    //             'uid' => $wishlist->variation->uid ?? null,
+    //             'aid' => $wishlist->variation->aid ?? null,
+    //             'color' => $wishlist->variation->color ?? null,
+    //             'size' => $wishlist->variation->size ?? null,
+    //             'sell_price' => $wishlist->variation->sell_price ?? null,
+    //             'images' => $images
+    //         ];
+
+    //         $groupedData[$userId]['product'][] = [
+    //             'product_id' => $wishlist->product->id ?? null,
+    //             'product_name' => $wishlist->product->name ?? null,
+    //             'aid' => $wishlist->product->aid ?? null,
+    //             'variation' => [$variationData]
+    //         ];
+    //     }
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Wishlist data retrieved successfully.',
+    //         'data' => array_values($groupedData),
+    //         'meta' => [
+    //             'total' => $total,
+    //             'limit' => $limit,
+    //             'offset' => $offset
+    //         ]
+    //     ]);
+    // }
     public function getAllWishlistsForAdmin(Request $request)
     {
         if (!auth()->user() || auth()->user()->role !== 'admin') {
@@ -279,6 +416,7 @@ class WishlistController extends Controller
             $query->select('wishlists.*')
                 ->selectRaw('(SELECT COUNT(*) FROM wishlists w2 WHERE w2.product_id = wishlists.product_id) as total_likes')
                 ->orderByDesc('total_likes');
+
         } else {
             $query->orderByDesc('wishlists.id');
         }
@@ -298,61 +436,58 @@ class WishlistController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | GROUP RESPONSE (Same as your structure)
+        | FORMAT RESPONSE (Wishlist Wise)
         |--------------------------------------------------------------------------
         */
 
-        $groupedData = [];
-
-        foreach ($wishlists as $wishlist) {
-
-            $userId = $wishlist->user_id;
-            $userName = $wishlist->user->name ?? null;
-
-            if (!isset($groupedData[$userId])) {
-                $groupedData[$userId] = [
-                    'user_id' => $userId,
-                    'name' => $userName,
-                    'product' => []
-                ];
-            }
+        $formatted = $wishlists->map(function ($wishlist) {
 
             $images = [];
 
             if ($wishlist->variation && $wishlist->variation->images_id) {
                 $ids = explode(',', $wishlist->variation->images_id);
                 $uploads = Upload::whereIn('id', $ids)->get();
-                $images = $uploads->map(fn($u) => url($u->url))->toArray();
+
+                $images = $uploads->map(function ($upload) {
+                    return url($upload->url);
+                })->toArray();
             }
 
-            $variationData = [
-                'uid' => $wishlist->variation->uid ?? null,
-                'aid' => $wishlist->variation->aid ?? null,
-                'color' => $wishlist->variation->color ?? null,
-                'size' => $wishlist->variation->size ?? null,
-                'sell_price' => $wishlist->variation->sell_price ?? null,
-                'images' => $images
+            return [
+                'wishlist_id' => $wishlist->id,
+                'user' => [
+                    'id' => $wishlist->user->id ?? null,
+                    'name' => $wishlist->user->name ?? null,
+                ],
+                'product' => [
+                    'id' => $wishlist->product->id ?? null,
+                    'name' => $wishlist->product->name ?? null,
+                    'aid' => $wishlist->product->aid ?? null,
+                ],
+                'variation' => $wishlist->variation ? [
+                    'uid' => $wishlist->variation->uid,
+                    'aid' => $wishlist->variation->aid,
+                    'color' => $wishlist->variation->color,
+                    'size' => $wishlist->variation->size,
+                    'sell_price' => $wishlist->variation->sell_price,
+                    'images' => $images
+                ] : null,
+                'created_at' => $wishlist->created_at,
             ];
-
-            $groupedData[$userId]['product'][] = [
-                'product_id' => $wishlist->product->id ?? null,
-                'product_name' => $wishlist->product->name ?? null,
-                'aid' => $wishlist->product->aid ?? null,
-                'variation' => [$variationData]
-            ];
-        }
+        });
 
         return response()->json([
             'success' => true,
             'message' => 'Wishlist data retrieved successfully.',
-            'data' => array_values($groupedData),
+            'data' => $formatted,
             'meta' => [
                 'total' => $total,
                 'limit' => $limit,
                 'offset' => $offset
             ]
-        ]);
+        ], 200);
     }
+
 
     public function deleteWishlistByAdmin($id)
     {
