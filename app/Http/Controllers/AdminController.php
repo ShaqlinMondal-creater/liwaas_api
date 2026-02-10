@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\{
     User, Product, Category, Brand, ProductVariations,
     ProductSpecModel, Upload, Extra, Orders, OrderItems,
-    Cart, Wishlist, ProductReview, Coupon,
+    Cart, Wishlist, ProductReview, Coupon, AddressModel,
     Payment, Shipping, Invoices, Counter
 };
 
