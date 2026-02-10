@@ -107,11 +107,11 @@ class AdminController extends Controller
         /* ================= ORDERS ================= */
         $orders = [
             'total_orders'     => Orders::count(),
-            'pending_orders'   => Orders::where('order_status', 'pending')->count(),
-            'confirmed_orders' => Orders::where('order_status', 'confirmed')->count(),
-            'shipped_orders'   => Orders::where('order_status', 'shipped')->count(),
-            'delivered_orders' => Orders::where('order_status', 'delivered')->count(),
-            'cancelled_orders' => Orders::where('order_status', 'cancelled')->count(),
+            'pending_orders'   => Orders::where('delivery_status', 'pending')->count(),
+            'confirmed_orders' => Orders::where('delivery_status', 'arrived')->count(),
+            'shipped_orders'   => Orders::where('delivery_status', 'shipped')->count(),
+            'delivered_orders' => Orders::where('delivery_status', 'delivered')->count(),
+            'cancelled_orders' => Orders::where('delivery_status', 'cancel')->count(),
         ];
 
         /* ================= ORDER ITEMS ================= */
