@@ -15,110 +15,180 @@ class AdminController extends Controller
 {
     public function adminDashboard()
     {
-        /* ============================
-           USERS
-        ============================ */
+        /* ================= USERS ================= */
         $users = [
-            'total_users' => User::count(),
-            'active_users' => User::where('is_active', 1)->count(),
-            'logged_in_users' => User::where('is_loggedin', 1)->count(),
-            'verified_users' => User::whereNotNull('email_verified_at')->count(),
-            'users_with_cart' => Cart::distinct('user_id')->count('user_id'),
-            'users_with_wishlist' => Wishlist::distinct('user_id')->count('user_id'),
+            'total_users'       => User::count(),
+            'active_users'      => User::where('is_active', 1)->count(),
+            'inactive_users'    => User::where('is_active', 0)->count(),
+            'verified_users'    => User::whereNotNull('email_verified_at')->count(),
+            'unverified_users'  => User::whereNull('email_verified_at')->count(),
+            'logged_in_users'   => User::where('is_loggedin', 1)->count(),
         ];
 
-        /* ============================
-           PRODUCTS & CATALOG
-        ============================ */
+        /* ================= PRODUCTS ================= */
         $products = [
-            'total_products' => Product::count(),
-            'active_products' => Product::where('is_active', 1)->count(),
-            'inactive_products' => Product::where('is_active', 0)->count(),
-            'total_categories' => Category::count(),
-            'total_brands' => Brand::count(),
-            'total_variations' => ProductVariations::count(),
-            'total_specifications' => ProductSpecModel::count(),
-            'total_extras' => Extra::count(),
+            'total_products'    => Product::count(),
+            'active_products'   => Product::where('status', 'active')->count(),
+            'inactive_products' => Product::where('status', 'inactive')->count(),
+            'simple_products'   => Product::where('product_type', 'simple')->count(),
+            'variable_products' => Product::where('product_type', 'variable')->count(),
+            'out_of_stock_products' => Product::where('stock', '<=', 0)->count(),
         ];
 
-        /* ============================
-           ORDERS & SALES
-        ============================ */
+        /* ================= PRODUCT VARIATIONS ================= */
+        $productVariations = [
+            'total_variations'   => ProductVariations::count(),
+            'active_variations'  => ProductVariations::where('status', 'active')->count(),
+            'inactive_variations'=> ProductVariations::where('status', 'inactive')->count(),
+        ];
+
+        /* ================= PRODUCT SPECS ================= */
+        $productSpecs = [
+            'total_specs' => ProductSpecModel::count(),
+        ];
+
+        /* ================= CATEGORIES ================= */
+        $categories = [
+            'total_categories'   => Category::count(),
+            'active_categories'  => Category::where('status', 'active')->count(),
+            'inactive_categories'=> Category::where('status', 'inactive')->count(),
+        ];
+
+        /* ================= BRANDS ================= */
+        $brands = [
+            'total_brands'   => Brand::count(),
+            'active_brands'  => Brand::where('status', 'active')->count(),
+            'inactive_brands'=> Brand::where('status', 'inactive')->count(),
+        ];
+
+        /* ================= UPLOADS ================= */
+        $uploads = [
+            'total_uploads' => Upload::count(),
+        ];
+
+        /* ================= WISHLISTS ================= */
+        $wishlists = [
+            'total_wishlist_items' => Wishlist::count(),
+            'unique_users'         => Wishlist::distinct('user_id')->count('user_id'),
+            'unique_products'      => Wishlist::distinct('product_id')->count('product_id'),
+            'most_liked_product_likes' =>
+                Wishlist::select(DB::raw('COUNT(*) as likes'))
+                    ->groupBy('product_id')
+                    ->orderByDesc('likes')
+                    ->value('likes'),
+        ];
+
+        /* ================= CART ================= */
+        $cart = [
+            'total_cart_items' => Cart::count(),
+            'active_carts'     => Cart::where('is_active', 1)->count(),
+            'abandoned_carts'  => Cart::where('is_active', 0)->count(),
+        ];
+
+        /* ================= ORDERS ================= */
         $orders = [
-            'total_orders' => Orders::count(),
-            'completed_orders' => Orders::where('order_status', 'completed')->count(),
-            'pending_orders' => Orders::where('order_status', 'pending')->count(),
+            'total_orders'     => Orders::count(),
+            'pending_orders'   => Orders::where('order_status', 'pending')->count(),
+            'confirmed_orders' => Orders::where('order_status', 'confirmed')->count(),
+            'shipped_orders'   => Orders::where('order_status', 'shipped')->count(),
+            'delivered_orders' => Orders::where('order_status', 'delivered')->count(),
             'cancelled_orders' => Orders::where('order_status', 'cancelled')->count(),
-            'total_items_sold' => OrderItems::sum('quantity'),
-            'total_revenue' => Orders::where('order_status', 'completed')->sum('grand_total'),
         ];
 
-        /* ============================
-           PAYMENTS
-        ============================ */
+        /* ================= ORDER ITEMS ================= */
+        $orderItems = [
+            'total_order_items' => OrderItems::count(),
+            'total_products_sold' => OrderItems::sum('quantity'),
+        ];
+
+        /* ================= PAYMENTS ================= */
         $payments = [
-            'total_payments' => Payment::count(),
-            'online_payments' => Payment::where('payment_method', 'online')->count(),
-            'cod_payments' => Payment::where('payment_method', 'cod')->count(),
-            'successful_payments' => Payment::where('payment_status', 'success')->count(),
-            'pending_payments' => Payment::where('payment_status', 'pending')->count(),
+            'total_payments'      => Payment::count(),
+            'paid_orders'         => Payment::where('payment_status', 'paid')->count(),
+            'pending_payments'    => Payment::where('payment_status', 'pending')->count(),
+            'cod_orders'          => Payment::where('payment_method', 'cod')->count(),
+            'online_paid_orders'  => Payment::where('payment_method', '!=', 'cod')
+                                             ->where('payment_status', 'paid')->count(),
+            'total_revenue'       => Payment::where('payment_status', 'paid')->sum('amount'),
         ];
 
-        /* ============================
-           SHIPPING
-        ============================ */
+        /* ================= SHIPPING ================= */
         $shipping = [
-            'total_shipments' => Shipping::count(),
-            'shipped_orders' => Shipping::where('shipping_status', 'shipped')->count(),
-            'pending_shipments' => Shipping::where('shipping_status', 'pending')->count(),
+            'total_shipments'     => Shipping::count(),
+            'pending_shipments'   => Shipping::where('shipping_status', 'pending')->count(),
+            'in_transit_shipments'=> Shipping::where('shipping_status', 'in_transit')->count(),
+            'delivered_shipments' => Shipping::where('shipping_status', 'delivered')->count(),
         ];
 
-        /* ============================
-           WISHLIST & REVIEWS
-        ============================ */
-        $wishlist = [
-            'total_wishlists' => Wishlist::count(),
-            'most_liked_product' => Wishlist::select('product_id', DB::raw('COUNT(*) as likes'))
-                ->groupBy('product_id')
-                ->orderByDesc('likes')
-                ->first(),
-        ];
-
-        $reviews = [
-            'total_reviews' => ProductReview::count(),
-            'average_rating' => round(ProductReview::avg('rating'), 2),
-        ];
-
-        /* ============================
-           COUPONS
-        ============================ */
-        $coupons = [
-            'total_coupons' => Coupon::count(),
-            'active_coupons' => Coupon::where('is_active', 1)->count(),
-            'used_coupons' => Orders::whereNotNull('coupon_id')->count(),
-        ];
-
-        /* ============================
-           SYSTEM
-        ============================ */
-        $system = [
+        /* ================= INVOICES ================= */
+        $invoices = [
             'total_invoices' => Invoices::count(),
-            'order_counter' => Counter::first(),
+        ];
+
+        /* ================= COUPONS ================= */
+        $coupons = [
+            'total_coupons'   => Coupon::count(),
+            'active_coupons'  => Coupon::where('status', 'active')->count(),
+            'expired_coupons' => Coupon::where('status', 'expired')->count(),
+            'total_coupon_usage' => Coupon::sum('used_count'),
+        ];
+
+        /* ================= EXTRAS ================= */
+        $extras = [
+            'total_extras'  => Extra::count(),
+            'active_extras' => Extra::where('status', 'active')->count(),
+        ];
+
+        /* ================= ADDRESSES ================= */
+        $addresses = [
+            'total_addresses'      => AddressModel::count(),
+            'users_with_addresses' => AddressModel::distinct('user_id')->count('user_id'),
+        ];
+
+        /* ================= REVIEWS ================= */
+        $reviews = [
+            'total_reviews'    => ProductReview::count(),
+            'approved_reviews' => ProductReview::where('status', 'approved')->count(),
+            'pending_reviews'  => ProductReview::where('status', 'pending')->count(),
+            'average_rating'   => round(ProductReview::avg('rating'), 1),
+        ];
+
+        /* ================= SECTION VIEWS ================= */
+        $sectionViews = [
+            'total_views' => SectionView::sum('views'),
+        ];
+
+        /* ================= COUNTERS ================= */
+        $counters = [
+            'total_visitors'   => Counter::sum('total_visits'),
+            'today_visitors'   => Counter::whereDate('created_at', now())->sum('total_visits'),
+            'monthly_visitors' => Counter::whereMonth('created_at', now()->month)->sum('total_visits'),
         ];
 
         return response()->json([
             'success' => true,
-            'message' => 'Admin dashboard statistics fetched successfully',
+            'message' => 'Dashboard statistics fetched successfully',
             'data' => compact(
                 'users',
                 'products',
+                'productVariations',
+                'productSpecs',
+                'categories',
+                'brands',
+                'uploads',
+                'wishlists',
+                'cart',
                 'orders',
+                'orderItems',
                 'payments',
                 'shipping',
-                'wishlist',
-                'reviews',
+                'invoices',
                 'coupons',
-                'system'
+                'extras',
+                'addresses',
+                'reviews',
+                'sectionViews',
+                'counters'
             )
         ]);
     }
