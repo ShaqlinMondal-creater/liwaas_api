@@ -19,8 +19,4 @@ Update Messege notification
 Delete Messege notification
 
 
-For admin: modify
-fetch cart : add filter
-fetch wishlist : add filter
-
 Section products
