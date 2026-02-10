@@ -28,12 +28,33 @@ class AdminController extends Controller
         /* ================= PRODUCTS ================= */
         $products = [
             'total_products'    => Product::count(),
-            'active_products'   => Product::where('status', 'active')->count(),
-            'inactive_products' => Product::where('status', 'inactive')->count(),
-            'simple_products'   => Product::where('product_type', 'simple')->count(),
-            'variable_products' => Product::where('product_type', 'variable')->count(),
-            'out_of_stock_products' => Product::where('stock', '<=', 0)->count(),
+
+            'active_products'   => Product::where('product_status', 'active')->count(),
+            'inactive_products' => Product::where('product_status', 'inactive')->count(),
+
+            // 👇 YOUR LOGIC
+            'simple_products'   => Product::whereNotIn(
+                'aid',
+                ProductVariations::select('aid')->distinct()
+            )->count(),
+
+            'variable_products' => Product::whereIn(
+                'aid',
+                ProductVariations::select('aid')->distinct()
+            )->count(),
+
+            'cod_available_products' =>
+                Product::where('cod', 'available')->count(),
+
+            'shipping_available_products' =>
+                Product::where('shipping', 'available')->count(),
+
+            'custom_design_products' =>
+                Product::where('custom_design', 'available')->count(),
+
+            'avg_rating' => round(Product::avg('ratings'), 1),
         ];
+
 
         /* ================= PRODUCT VARIATIONS ================= */
         $productVariations = [
