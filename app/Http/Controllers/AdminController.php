@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Models\{
     User, Product, Category, Brand, ProductVariations,
-    ProductSpecModel, Extra, Orders, OrderItems,
+    ProductSpecModel, Upload, Extra, Orders, OrderItems,
     Cart, Wishlist, ProductReview, Coupon,
     Payment, Shipping, Invoices, Counter
 };
