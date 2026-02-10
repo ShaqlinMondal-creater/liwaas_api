@@ -128,7 +128,7 @@ class AdminController extends Controller
             'cod_orders'          => Payment::where('payment_type', 'COD')->count(),
             'pre-paid_orders'  => Payment::where('payment_type', '!=', 'COD')
                                              ->where('payment_status', 'success')->count(),
-            'total_revenue'       => Payment::where('payment_status', 'success')->sum('amount'),
+            'total_revenue'       => Payment::where('payment_status', 'success')->sum('payment_amount'),
         ];
 
         /* ================= SHIPPING ================= */
