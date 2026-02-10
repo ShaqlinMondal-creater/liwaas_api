@@ -22,7 +22,7 @@ class AdminController extends Controller
             'inactive_users'    => User::where('is_active', 0)->count(),
             'verified_users'    => User::whereNotNull('email_verified_at')->count(),
             'unverified_users'  => User::whereNull('email_verified_at')->count(),
-            'logged_in_users'   => User::where('is_loggedin', 1)->count(),
+            'logged_in_users'   => User::where('is_logged_in', 'true')->count(),
         ];
 
         /* ================= PRODUCTS ================= */
