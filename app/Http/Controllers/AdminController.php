@@ -20,7 +20,9 @@ class AdminController extends Controller
         ============================ */
         $users = [
             'total_users' => User::count(),
-            'active_users' => User::where('status', 'active')->count(),
+            'active_users' => User::where('is_active', 1)->count(),
+            'logged_in_users' => User::where('is_loggedin', 1)->count(),
+            'verified_users' => User::whereNotNull('email_verified_at')->count(),
             'users_with_cart' => Cart::distinct('user_id')->count('user_id'),
             'users_with_wishlist' => Wishlist::distinct('user_id')->count('user_id'),
         ];
@@ -30,8 +32,8 @@ class AdminController extends Controller
         ============================ */
         $products = [
             'total_products' => Product::count(),
-            'active_products' => Product::where('status', 'active')->count(),
-            'inactive_products' => Product::where('status', 'inactive')->count(),
+            'active_products' => Product::where('is_active', 1)->count(),
+            'inactive_products' => Product::where('is_active', 0)->count(),
             'total_categories' => Category::count(),
             'total_brands' => Brand::count(),
             'total_variations' => ProductVariations::count(),
@@ -44,11 +46,11 @@ class AdminController extends Controller
         ============================ */
         $orders = [
             'total_orders' => Orders::count(),
-            'completed_orders' => Orders::where('status', 'completed')->count(),
-            'pending_orders' => Orders::where('status', 'pending')->count(),
-            'cancelled_orders' => Orders::where('status', 'cancelled')->count(),
+            'completed_orders' => Orders::where('order_status', 'completed')->count(),
+            'pending_orders' => Orders::where('order_status', 'pending')->count(),
+            'cancelled_orders' => Orders::where('order_status', 'cancelled')->count(),
             'total_items_sold' => OrderItems::sum('quantity'),
-            'total_revenue' => Orders::where('status', 'completed')->sum('grand_total'),
+            'total_revenue' => Orders::where('order_status', 'completed')->sum('grand_total'),
         ];
 
         /* ============================
@@ -56,10 +58,10 @@ class AdminController extends Controller
         ============================ */
         $payments = [
             'total_payments' => Payment::count(),
-            'online_payments' => Payment::where('method', 'online')->count(),
-            'cod_payments' => Payment::where('method', 'cod')->count(),
-            'successful_payments' => Payment::where('status', 'success')->count(),
-            'pending_payments' => Payment::where('status', 'pending')->count(),
+            'online_payments' => Payment::where('payment_method', 'online')->count(),
+            'cod_payments' => Payment::where('payment_method', 'cod')->count(),
+            'successful_payments' => Payment::where('payment_status', 'success')->count(),
+            'pending_payments' => Payment::where('payment_status', 'pending')->count(),
         ];
 
         /* ============================
@@ -67,8 +69,8 @@ class AdminController extends Controller
         ============================ */
         $shipping = [
             'total_shipments' => Shipping::count(),
-            'shipped_orders' => Shipping::where('status', 'shipped')->count(),
-            'pending_shipments' => Shipping::where('status', 'pending')->count(),
+            'shipped_orders' => Shipping::where('shipping_status', 'shipped')->count(),
+            'pending_shipments' => Shipping::where('shipping_status', 'pending')->count(),
         ];
 
         /* ============================
@@ -88,42 +90,39 @@ class AdminController extends Controller
         ];
 
         /* ============================
-           COUPONS & DISCOUNTS
+           COUPONS
         ============================ */
         $coupons = [
             'total_coupons' => Coupon::count(),
-            'active_coupons' => Coupon::where('status', 'active')->count(),
+            'active_coupons' => Coupon::where('is_active', 1)->count(),
             'used_coupons' => Orders::whereNotNull('coupon_id')->count(),
         ];
 
         /* ============================
-           INVOICES & COUNTERS
+           SYSTEM
         ============================ */
         $system = [
             'total_invoices' => Invoices::count(),
             'order_counter' => Counter::first(),
         ];
 
-        /* ============================
-           FINAL RESPONSE
-        ============================ */
         return response()->json([
             'success' => true,
             'message' => 'Admin dashboard statistics fetched successfully',
-            'data' => [
-                'users' => $users,
-                'products' => $products,
-                'orders' => $orders,
-                'payments' => $payments,
-                'shipping' => $shipping,
-                'wishlist' => $wishlist,
-                'reviews' => $reviews,
-                'coupons' => $coupons,
-                'system' => $system,
-            ]
+            'data' => compact(
+                'users',
+                'products',
+                'orders',
+                'payments',
+                'shipping',
+                'wishlist',
+                'reviews',
+                'coupons',
+                'system'
+            )
         ]);
     }
-    
+
     public function getAllUsers(Request $request)
     {
         try {
