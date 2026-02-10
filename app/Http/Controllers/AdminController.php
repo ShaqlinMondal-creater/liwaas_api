@@ -89,10 +89,10 @@ class AdminController extends Controller
         $wishlists = [
             'total_wishlist_items' => Wishlist::count(),
             'unique_users'         => Wishlist::distinct('user_id')->count('user_id'),
-            'unique_products'      => Wishlist::distinct('product_id')->count('product_id'),
+            'unique_products'      => Wishlist::distinct('aid')->count('aid'),
             'most_liked_product_likes' =>
                 Wishlist::select(DB::raw('COUNT(*) as likes'))
-                    ->groupBy('product_id')
+                    ->groupBy('aid')
                     ->orderByDesc('likes')
                     ->value('likes'),
         ];
@@ -100,8 +100,8 @@ class AdminController extends Controller
         /* ================= CART ================= */
         $cart = [
             'total_cart_items' => Cart::count(),
-            'active_carts'     => Cart::where('is_active', 1)->count(),
-            'abandoned_carts'  => Cart::where('is_active', 0)->count(),
+            // 'active_carts'     => Cart::where('is_active', 1)->count(),
+            // 'abandoned_carts'  => Cart::where('is_active', 0)->count(),
         ];
 
         /* ================= ORDERS ================= */
