@@ -58,9 +58,7 @@ class AdminController extends Controller
 
         /* ================= PRODUCT VARIATIONS ================= */
         $productVariations = [
-            'total_variations'   => ProductVariations::count(),
-            'active_variations'  => ProductVariations::where('status', 'active')->count(),
-            'inactive_variations'=> ProductVariations::where('status', 'inactive')->count(),
+            'total_variations'   => ProductVariations::count()
         ];
 
         /* ================= PRODUCT SPECS ================= */
@@ -71,15 +69,15 @@ class AdminController extends Controller
         /* ================= CATEGORIES ================= */
         $categories = [
             'total_categories'   => Category::count(),
-            'active_categories'  => Category::where('status', 'active')->count(),
-            'inactive_categories'=> Category::where('status', 'inactive')->count(),
+            // 'active_categories'  => Category::where('status', 'active')->count(),
+            // 'inactive_categories'=> Category::where('status', 'inactive')->count(),
         ];
 
         /* ================= BRANDS ================= */
         $brands = [
             'total_brands'   => Brand::count(),
-            'active_brands'  => Brand::where('status', 'active')->count(),
-            'inactive_brands'=> Brand::where('status', 'inactive')->count(),
+            // 'active_brands'  => Brand::where('status', 'active')->count(),
+            // 'inactive_brands'=> Brand::where('status', 'inactive')->count(),
         ];
 
         /* ================= UPLOADS ================= */
