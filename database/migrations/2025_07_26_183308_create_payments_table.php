@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('t_payments', function (Blueprint $table) {
             $table->id();
             $table->string('genarate_order_id')->nullable();       // Gateway-generated ID
-            $table->enum('payment_type', ['COD', 'Preppaid', 'Postpaid'])->default('COD');           // e.g., Razorpay, COD
+            $table->enum('payment_type', ['COD', 'Preppaid'])->default('COD');           // e.g., Razorpay, COD
             $table->string('transaction_payment_id')->nullable();         // Payment ID from gateway
             $table->decimal('payment_amount', 10, 2)->default(0);   // Amount paid
-            $table->enum('payment_status', ['pending', 'completed', 'cancelled', 'In Queue'])->default('pending');   // e.g., Pending, Success, Failed
+            $table->enum('payment_status', ['pending', 'success', 'cancelled', 'failed', 'processing'])->default('pending');   // e.g., Pending, Success, Failed
             $table->unsignedBigInteger('order_id')->nullable();     // Link to your orders table
             $table->unsignedBigInteger('user_id')->nullable();      // Link to your users table
             $table->text('response_')->nullable();                  // JSON or raw text

@@ -123,20 +123,20 @@ class AdminController extends Controller
         /* ================= PAYMENTS ================= */
         $payments = [
             'total_payments'      => Payment::count(),
-            'paid_orders'         => Payment::where('payment_status', 'paid')->count(),
+            'paid_orders'         => Payment::where('payment_status', 'success')->count(),
             'pending_payments'    => Payment::where('payment_status', 'pending')->count(),
-            'cod_orders'          => Payment::where('payment_method', 'cod')->count(),
-            'online_paid_orders'  => Payment::where('payment_method', '!=', 'cod')
-                                             ->where('payment_status', 'paid')->count(),
-            'total_revenue'       => Payment::where('payment_status', 'paid')->sum('amount'),
+            'cod_orders'          => Payment::where('payment_type', 'COD')->count(),
+            'pre-paid_orders'  => Payment::where('payment_type', '!=', 'COD')
+                                             ->where('payment_status', 'success')->count(),
+            'total_revenue'       => Payment::where('payment_status', 'success')->sum('amount'),
         ];
 
         /* ================= SHIPPING ================= */
         $shipping = [
             'total_shipments'     => Shipping::count(),
             'pending_shipments'   => Shipping::where('shipping_status', 'pending')->count(),
-            'in_transit_shipments'=> Shipping::where('shipping_status', 'in_transit')->count(),
-            'delivered_shipments' => Shipping::where('shipping_status', 'delivered')->count(),
+            'approved_shipments'=> Shipping::where('shipping_status', 'Approved')->count(),
+            'delivered_shipments' => Shipping::where('shipping_status', 'Completed')->count(),
         ];
 
         /* ================= INVOICES ================= */
@@ -148,15 +148,15 @@ class AdminController extends Controller
         $coupons = [
             'total_coupons'   => Coupon::count(),
             'active_coupons'  => Coupon::where('status', 'active')->count(),
-            'expired_coupons' => Coupon::where('status', 'expired')->count(),
-            'total_coupon_usage' => Coupon::sum('used_count'),
+            'expired_coupons' => Coupon::where('status', 'inactive')->count(),
+            // 'total_coupon_usage' => Coupon::sum('used_count'),
         ];
 
         /* ================= EXTRAS ================= */
-        $extras = [
-            'total_extras'  => Extra::count(),
-            'active_extras' => Extra::where('status', 'active')->count(),
-        ];
+        // $extras = [
+        //     'total_extras'  => Extra::count(),
+        //     'active_extras' => Extra::where('status', 'active')->count(),
+        // ];
 
         /* ================= ADDRESSES ================= */
         $addresses = [
@@ -165,24 +165,24 @@ class AdminController extends Controller
         ];
 
         /* ================= REVIEWS ================= */
-        $reviews = [
-            'total_reviews'    => ProductReview::count(),
-            'approved_reviews' => ProductReview::where('status', 'approved')->count(),
-            'pending_reviews'  => ProductReview::where('status', 'pending')->count(),
-            'average_rating'   => round(ProductReview::avg('rating'), 1),
-        ];
+        // $reviews = [
+        //     'total_reviews'    => ProductReview::count(),
+        //     'approved_reviews' => ProductReview::where('status', 'approved')->count(),
+        //     'pending_reviews'  => ProductReview::where('status', 'pending')->count(),
+        //     'average_rating'   => round(ProductReview::avg('rating'), 1),
+        // ];
 
         /* ================= SECTION VIEWS ================= */
-        $sectionViews = [
-            'total_views' => SectionView::sum('views'),
-        ];
+        // $sectionViews = [
+        //     'total_views' => SectionView::sum('views'),
+        // ];
 
         /* ================= COUNTERS ================= */
-        $counters = [
-            'total_visitors'   => Counter::sum('total_visits'),
-            'today_visitors'   => Counter::whereDate('created_at', now())->sum('total_visits'),
-            'monthly_visitors' => Counter::whereMonth('created_at', now()->month)->sum('total_visits'),
-        ];
+        // $counters = [
+        //     'total_visitors'   => Counter::sum('total_visits'),
+        //     'today_visitors'   => Counter::whereDate('created_at', now())->sum('total_visits'),
+        //     'monthly_visitors' => Counter::whereMonth('created_at', now()->month)->sum('total_visits'),
+        // ];
 
         return response()->json([
             'success' => true,
@@ -203,11 +203,11 @@ class AdminController extends Controller
                 'shipping',
                 'invoices',
                 'coupons',
-                'extras',
+                // 'extras',
                 'addresses',
-                'reviews',
-                'sectionViews',
-                'counters'
+                // 'reviews',
+                // 'sectionViews',
+                // 'counters'
             )
         ]);
     }
