@@ -229,6 +229,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']); // Payment Verification
 
     });
+    
     Route::post('/payments/checkPaymentCorn', [PaymentController::class, 'autoUpdatePendingOrders']); // Payment Verification
     Route::post('/payments/cancelPayment', [PaymentController::class, 'cancelPayment']); // Payment Verification
 });
