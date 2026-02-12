@@ -135,6 +135,7 @@ class OrderController extends Controller
                 'payment_type' => $request->payment_type,
                 'payment_id' => $payment->id,
                 'delivery_status' => 'pending',
+                'order_status' => 'pending', // ✅ NEW
                 'coupon_id' => $couponId,
                 'coupon_discount' => $discount,
             ]);
@@ -275,6 +276,7 @@ class OrderController extends Controller
                 'payment_type' => $order->payment_type,
                 'payment_status' => $order->payment_status,
                 'delivery_status' => $order->delivery_status,
+                'order_status' => $order->order_status,
                 'grand_total' => $order->grand_total,
                 'items' => $order->items->map(function ($item) {
                     $imageId = null;
@@ -408,6 +410,7 @@ class OrderController extends Controller
             'payment_status' => optional($order->payment)->payment_status ?? null,
             'transaction_payment_id' => optional($order->payment)->transaction_payment_id ?? null,
             'delivery_status' => $order->delivery_status,
+            'order_status' => $order->order_status,
             'tax_price' => $order->tax_price,
             'coupon_discount' => $order->coupon_discount,
             'grand_total' => $order->grand_total,
@@ -470,6 +473,7 @@ class OrderController extends Controller
         $request->validate([
             'shipping' => 'nullable|string|in:Pending,Approved,Completed',
             'delivery_status' => 'nullable|string|in:pending,delivered,arrived,shipped,Near You,cancel',
+            'order_status' => 'nullable|string|in:pending,confirmed,completed,cancelled',
         ]);
 
         // Get the order
@@ -484,6 +488,9 @@ class OrderController extends Controller
             }
         }
 
+        if (!empty($request->order_status)) {
+            $order->order_status = $request->order_status;
+        }
         // ✅ 2. Update delivery_status in orders table
         if (!empty($request->delivery_status)) {
             $order->delivery_status = $request->delivery_status;
@@ -787,6 +794,7 @@ class OrderController extends Controller
                 'payment_type' => $order->payment_type,
                 'payment_status' => $order->payment_status,
                 'delivery_status' => $order->delivery_status,
+                'order_status' => $order->order_status,
                 'grand_total' => $order->grand_total,
                 'items' => $order->items->map(function ($item) {
                     // 🔍 Handle image from variation

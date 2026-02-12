@@ -20,6 +20,7 @@ class Orders extends Model
         'payment_type',
         'payment_id',
         'delivery_status',
+        'order_status',
         'coupon_id',
         'coupon_discount',
         'other_text',
