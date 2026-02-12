@@ -188,49 +188,60 @@ class PaymentController extends Controller
 
             DB::beginTransaction();
 
-            // 🔵 1️⃣ Move to PROCESSING after 5 minutes
-            $processingOrders = Orders::where('order_status', 'pending')
-                ->where('payment_type', 'Prepaid')
-                ->whereHas('payment', function ($q) {
-                    $q->where('payment_status', 'pending');
+            /*
+            🔵 1️⃣ After 5 minutes → payment becomes PROCESSING
+            Order remains PENDING
+            */
+            $processingPayments = Payment::where('payment_status', 'pending')
+                ->whereHas('order', function ($q) {
+                    $q->where('order_status', 'pending')
+                    ->where('payment_type', 'Prepaid')
+                    ->whereBetween('created_at', [
+                        now()->subMinutes(9),
+                        now()->subMinutes(5)
+                    ]);
                 })
-                ->whereBetween('created_at', [
-                    now()->subMinutes(9),
-                    now()->subMinutes(5)
-                ])
                 ->get();
 
-            foreach ($processingOrders as $order) {
-                $order->order_status = 'processing';
-                $order->save();
+            foreach ($processingPayments as $payment) {
+                $payment->payment_status = 'processing';
+                $payment->save();
             }
 
-            // 🔴 2️⃣ Move to CANCELLED after 9 minutes
-            $cancelOrders = Orders::whereIn('order_status', ['pending', 'processing'])
+
+            /*
+            🔴 2️⃣ After 9 minutes → cancel everything
+            */
+            $cancelOrders = Orders::where('order_status', 'pending')
                 ->where('payment_type', 'Prepaid')
                 ->whereHas('payment', function ($q) {
-                    $q->where('payment_status', 'pending');
+                    $q->whereIn('payment_status', ['pending', 'processing']);
                 })
                 ->where('created_at', '<=', now()->subMinutes(9))
                 ->get();
 
             foreach ($cancelOrders as $order) {
 
-                // Cancel order
+                // Cancel Order
                 $order->order_status = 'cancelled';
                 $order->save();
 
-                // Cancel payment
-                $payment = $order->payment;
-                if ($payment) {
-                    $payment->payment_status = 'failed';
-                    $payment->save();
+                // Cancel Payment
+                if ($order->payment) {
+                    $order->payment->payment_status = 'failed';
+                    $order->payment->save();
+                }
+
+                // Cancel Shipping
+                if ($order->shipping) {
+                    $order->shipping->shipping_status = 'Cancelled';
+                    $order->shipping->save();
                 }
 
                 // Log
                 PaymentLog::create([
                     'order_id' => $order->id,
-                    'payment_id' => $payment?->id,
+                    'payment_id' => $order->payment?->id,
                     'status' => 'auto_cancelled',
                     'request_payload' => null,
                     'response_payload' => 'Auto cancelled after 9 minutes timeout',
@@ -241,9 +252,9 @@ class PaymentController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Auto order update executed successfully.',
-                'processing_updated' => $processingOrders->count(),
-                'cancelled_updated' => $cancelOrders->count()
+                'message' => 'Auto update executed successfully.',
+                'processing_payments' => $processingPayments->count(),
+                'cancelled_orders' => $cancelOrders->count()
             ]);
 
         } catch (\Exception $e) {
@@ -257,6 +268,87 @@ class PaymentController extends Controller
             ], 500);
         }
     }
+
+    // public function autoUpdatePendingOrders()
+    // {
+    //     try {
+
+    //         DB::beginTransaction();
+
+    //         // 🔵 1️⃣ Move to PROCESSING after 5 minutes
+    //         $processingOrders = Orders::where('order_status', 'pending')
+    //             ->where('payment_type', 'Prepaid')
+    //             ->whereHas('payment', function ($q) {
+    //                 $q->where('payment_status', 'pending');
+    //             })
+    //             ->whereBetween('created_at', [
+    //                 now()->subMinutes(9),
+    //                 now()->subMinutes(5)
+    //             ])
+    //             ->get();
+
+    //         foreach ($processingOrders as $order) {
+    //             $order->order_status = 'processing';
+    //             $order->save();
+    //         }
+
+    //         // 🔴 2️⃣ Move to CANCELLED after 9 minutes
+    //         $cancelOrders = Orders::whereIn('order_status', ['pending', 'processing'])
+    //             ->where('payment_type', 'Prepaid')
+    //             ->whereHas('payment', function ($q) {
+    //                 $q->where('payment_status', 'pending');
+    //             })
+    //             ->where('created_at', '<=', now()->subMinutes(9))
+    //             ->get();
+
+    //         foreach ($cancelOrders as $order) {
+
+    //             // ✅ Cancel Order
+    //             $order->order_status = 'cancelled';
+    //             $order->save();
+
+    //             // ✅ Cancel Payment
+    //             if ($order->payment) {
+    //                 $order->payment->payment_status = 'failed';
+    //                 $order->payment->save();
+    //             }
+
+    //             // ✅ Cancel Shipping
+    //             if ($order->shipping) {
+    //                 $order->shipping->shipping_status = 'Cancelled';
+    //                 $order->shipping->save();
+    //             }
+
+    //             // ✅ Log
+    //             PaymentLog::create([
+    //                 'order_id' => $order->id,
+    //                 'payment_id' => $order->payment?->id,
+    //                 'status' => 'auto_cancelled',
+    //                 'request_payload' => null,
+    //                 'response_payload' => 'Auto cancelled after 9 minutes timeout',
+    //             ]);
+    //         }
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Auto order update executed successfully.',
+    //             'processing_updated' => $processingOrders->count(),
+    //             'cancelled_updated' => $cancelOrders->count()
+    //         ]);
+
+    //     } catch (\Exception $e) {
+
+    //         DB::rollBack();
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Auto update failed.',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
     public function cancelPayment(Request $request)
     {
