@@ -21,4 +21,9 @@ class Payment extends Model
         'user_id',
         'response_',
     ];
+
+    public function order()
+    {
+        return $this->belongsTo(\App\Models\Orders::class, 'order_id');
+    }
 }
