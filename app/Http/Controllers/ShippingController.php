@@ -163,36 +163,60 @@ class ShippingController extends Controller
         $email = env('SHIPROCKET_EMAIL');
         $password = env('SHIPROCKET_PASSWORD');
 
-        $ch = curl_init();
-
-        curl_setopt_array($ch, [
-            CURLOPT_URL => "https://apiv2.shiprocket.in/v1/external/auth/login",
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode([
-                "email" => $email,
-                "password" => $password,
-            ]),
-            CURLOPT_HTTPHEADER => [
-                "Content-Type: application/json"
-            ],
-            CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // Make sure this matches your setup
-            CURLOPT_TIMEOUT => 30,
-        ]);
-
-        $response = curl_exec($ch);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($error) {
-            \Log::error('Shiprocket login cURL error: ' . $error);
-            return null;
+        // 🔥 DEBUG – remove after testing
+        if (!$email || !$password) {
+            dd('ENV NOT WORKING', $email, $password);
         }
 
-        $result = json_decode($response, true);
+        $response = \Illuminate\Support\Facades\Http::timeout(20)
+            ->post('https://apiv2.shiprocket.in/v1/external/auth/login', [
+                'email' => $email,
+                'password' => $password,
+            ]);
 
-        return $result['token'] ?? null;
+        // 🔥 SHOW REAL ERROR IF LOGIN FAILS
+        if (!$response->successful()) {
+            dd('SHIPROCKET AUTH FAILED', $response->json());
+        }
+
+        return $response['token'];
     }
+
+    // private function getShiprocketToken()
+    // {
+    //     $email = env('SHIPROCKET_EMAIL');
+    //     $password = env('SHIPROCKET_PASSWORD');
+
+    //     $ch = curl_init();
+
+    //     curl_setopt_array($ch, [
+    //         CURLOPT_URL => "https://apiv2.shiprocket.in/v1/external/auth/login",
+    //         CURLOPT_RETURNTRANSFER => true,
+    //         CURLOPT_POST => true,
+    //         CURLOPT_POSTFIELDS => json_encode([
+    //             "email" => $email,
+    //             "password" => $password,
+    //         ]),
+    //         CURLOPT_HTTPHEADER => [
+    //             "Content-Type: application/json"
+    //         ],
+    //         CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // Make sure this matches your setup
+    //         CURLOPT_TIMEOUT => 30,
+    //     ]);
+
+    //     $response = curl_exec($ch);
+    //     $error = curl_error($ch);
+    //     curl_close($ch);
+
+    //     if ($error) {
+    //         \Log::error('Shiprocket login cURL error: ' . $error);
+    //         return null;
+    //     }
+
+    //     $result = json_decode($response, true);
+
+    //     return $result['token'] ?? null;
+    // }
 
     // Ship Rocket All Orders (Dupli)
     public function getShiprocketOrders(Request $request)

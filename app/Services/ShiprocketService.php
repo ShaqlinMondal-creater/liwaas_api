@@ -33,8 +33,6 @@ class ShiprocketService
 
         dd($response->json());
 
-
-
             if ($response->successful()) {
                 return $response->json()['token'];
             }
