@@ -126,7 +126,7 @@ class ShippingController extends Controller
                 "Content-Type: application/json",
                 "Authorization: Bearer $token"
             ],
-            CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // adjust if needed
+             // adjust if needed
             CURLOPT_TIMEOUT => 30,
         ]);
 
@@ -192,7 +192,7 @@ class ShippingController extends Controller
     //         CURLOPT_HTTPHEADER => [
     //             "Content-Type: application/json"
     //         ],
-    //         CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // Make sure this matches your setup
+    //          // Make sure this matches your setup
     //         CURLOPT_TIMEOUT => 30,
     //     ]);
 
@@ -268,7 +268,7 @@ class ShippingController extends Controller
                 "Authorization: Bearer $token",
                 "Content-Type: application/json"
             ],
-            CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // update if needed
+             // update if needed
             CURLOPT_TIMEOUT => 30,
         ]);
 
@@ -385,7 +385,7 @@ class ShippingController extends Controller
     //             "Authorization: Bearer $token",
     //             "Content-Type: application/json"
     //         ],
-    //         CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // Update to match your setup
+    //          // Update to match your setup
     //         CURLOPT_TIMEOUT => 30,
     //     ]);
 
@@ -438,7 +438,7 @@ class ShippingController extends Controller
                 "Authorization: Bearer $token",
                 "Content-Type: application/json",
             ],
-            CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // Update path if needed
+             // Update path if needed
             CURLOPT_TIMEOUT => 30,
         ]);
 
@@ -497,7 +497,7 @@ class ShippingController extends Controller
                 "Authorization: Bearer $token",
                 "Content-Type: application/json"
             ],
-            CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem",
+            
             CURLOPT_TIMEOUT => 30,
         ]);
 
