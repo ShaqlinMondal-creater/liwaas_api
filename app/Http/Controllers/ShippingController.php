@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Orders;
@@ -160,26 +160,18 @@ class ShippingController extends Controller
     // Ship Rocket token
     private function getShiprocketToken()
     {
-        $email = env('SHIPROCKET_EMAIL');
-        $password = env('SHIPROCKET_PASSWORD');
-
-        // 🔥 DEBUG – remove after testing
-        if (!$email || !$password) {
-            dd('ENV NOT WORKING', $email, $password);
-        }
-
         $response = \Illuminate\Support\Facades\Http::timeout(20)
             ->post('https://apiv2.shiprocket.in/v1/external/auth/login', [
-                'email' => $email,
-                'password' => $password,
+                'email' => env('SHIPROCKET_EMAIL'),
+                'password' => env('SHIPROCKET_PASSWORD'),
             ]);
 
-        // 🔥 SHOW REAL ERROR IF LOGIN FAILS
-        if (!$response->successful()) {
-            dd('SHIPROCKET AUTH FAILED', $response->json());
+        if ($response->successful()) {
+            return $response['token'];
         }
 
-        return $response['token'];
+        \Log::error('Shiprocket auth failed', $response->json());
+        return null;
     }
 
     // private function getShiprocketToken()
@@ -370,11 +362,15 @@ class ShippingController extends Controller
 
     private function allShiprocketOrders($token)
     {
-        $response = Http::withToken($token)
-        ->get("https://apiv2.shiprocket.in/v1/external/orders?per_page=100");
+        $response = \Illuminate\Support\Facades\Http::withToken($token)
+            ->get("https://apiv2.shiprocket.in/v1/external/orders?per_page=100");
 
-        dd($response->json()); // 👈 run once
-        // return $response['data'] ?? [];
+        if (!$response->successful()) {
+            \Log::error('Shiprocket order fetch failed', $response->json());
+            return [];
+        }
+
+        return $response['data'] ?? [];
     }
 
     // private function allShiprocketOrders($token)
