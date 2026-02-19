@@ -315,7 +315,7 @@ class ShippingController extends Controller
         $monthlyOrders = [];
         for ($i = 1; $i <= 12; $i++) {
             $monthName = \Carbon\Carbon::create()->month($i)->format('F');
-            $monthlyOrders[$monthName] = null;
+            $monthlyOrders[$monthName] = 0;
         }
 
         $statusSummary = [
@@ -334,9 +334,9 @@ class ShippingController extends Controller
 
             try {
                 $orderDate = \Carbon\Carbon::parse($order['created_at']);
-                if ($orderDate->year !== now()->year) {
-                    continue;
-                }
+                // if ($orderDate->year !== now()->year) {
+                //     continue;
+                // }
 
                 $monthName = $orderDate->format('F');
 
@@ -344,11 +344,13 @@ class ShippingController extends Controller
                 $monthlyOrders[$monthName] = ($monthlyOrders[$monthName] ?? 0) + 1;
 
                 // ✅ Clean up status
-                $status = strtolower(trim($order['status'] ?? 'new'));
-                if (isset($statusSummary[$status])) {
-                    $statusSummary[$status]++;
+                $status = strtolower($order['status'] ?? '');
+                if (str_contains($status, 'delivered')) {
+                    $statusSummary['delivered']++;
+                } elseif (str_contains($status, 'cancel')) {
+                    $statusSummary['cancelled']++;
                 } else {
-                    $statusSummary[$status] = 1;
+                    $statusSummary['new']++;
                 }
             } catch (\Exception $e) {
                 \Log::warning('Shiprocket order_date parse error', [
@@ -368,33 +370,42 @@ class ShippingController extends Controller
 
     private function allShiprocketOrders($token)
     {
-        $url = "https://apiv2.shiprocket.in/v1/external/orders?per_page=100";
+        $response = Http::withToken($token)
+        ->get("https://apiv2.shiprocket.in/v1/external/orders?per_page=100");
 
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => [
-                "Authorization: Bearer $token",
-                "Content-Type: application/json"
-            ],
-            CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // Update to match your setup
-            CURLOPT_TIMEOUT => 30,
-        ]);
-
-        $response = curl_exec($ch);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($error) {
-            \Log::error("Shiprocket cURL Error: $error");
-            return [];
-        }
-
-        $data = json_decode($response, true);
-
-        return $data['data'] ?? [];
+        dd($response->json()); // 👈 run once
+        // return $response['data'] ?? [];
     }
+
+    // private function allShiprocketOrders($token)
+    // {
+    //     $url = "https://apiv2.shiprocket.in/v1/external/orders?per_page=100";
+
+    //     $ch = curl_init();
+    //     curl_setopt_array($ch, [
+    //         CURLOPT_URL => $url,
+    //         CURLOPT_RETURNTRANSFER => true,
+    //         CURLOPT_HTTPHEADER => [
+    //             "Authorization: Bearer $token",
+    //             "Content-Type: application/json"
+    //         ],
+    //         CURLOPT_CAINFO => "C:/xampp/php/extras/ssl/cacert.pem", // Update to match your setup
+    //         CURLOPT_TIMEOUT => 30,
+    //     ]);
+
+    //     $response = curl_exec($ch);
+    //     $error = curl_error($ch);
+    //     curl_close($ch);
+
+    //     if ($error) {
+    //         \Log::error("Shiprocket cURL Error: $error");
+    //         return [];
+    //     }
+
+    //     $data = json_decode($response, true);
+
+    //     return $data['data'] ?? [];
+    // }
 
     // Cancel Both Orders and shipping
     public function cancelShiprocketOrder(Request $request)
