@@ -457,10 +457,34 @@ class OrderController extends Controller
                 ->translatedFormat('jS M Y, h.iA'),
         ];
 
+        $paymentAction = null;
+
+        if (  $order->payment_type === 'Prepaid' &&
+            optional($order->payment)->payment_status === 'pending'
+        ) {
+            $paymentAction = [
+                'razorpay_order_id' => optional($order->payment)->genarate_order_id,
+                'amount' => (int) ($order->grand_total * 100), // convert to paise
+                'currency' => 'INR',
+                'key' => config('services.razorpay.key'),
+
+                // optional but useful for Razorpay popup
+                'name' => config('app.name'),
+                'description' => 'Complete your payment',
+
+                'prefill' => [
+                    'name' => $order->user->name ?? '',
+                    'email' => $order->user->email ?? '',
+                    'contact' => $order->user->mobile ?? '',
+                ]
+            ];
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Order detail fetched successfully.',
-            'data' => $data
+            'data' => $data,
+            'payment_action' => $paymentAction
         ]);
     }
 
