@@ -456,7 +456,7 @@ class ShippingController extends Controller
         $decoded = json_decode($response, true);
 
         // ✅ Optionally mark as cancelled in local DB
-        $order->delivery_status = 'cancelled';
+        // $order->delivery_status = 'cancelled';
         $order->save();
 
         return response()->json([

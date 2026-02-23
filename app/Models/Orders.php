@@ -19,7 +19,6 @@ class Orders extends Model
         'grand_total',
         'payment_type',
         'payment_id',
-        'delivery_status',
         'order_status',
         'coupon_id',
         'coupon_discount',

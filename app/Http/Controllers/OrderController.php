@@ -134,7 +134,6 @@ class OrderController extends Controller
                 'grand_total' => $grandTotal,
                 'payment_type' => $request->payment_type,
                 'payment_id' => $payment->id,
-                'delivery_status' => 'pending',
                 'order_status' => 'pending', // ✅ NEW
                 'coupon_id' => $couponId,
                 'coupon_discount' => $discount,
@@ -275,7 +274,6 @@ class OrderController extends Controller
                 'shipping' => $order->shipping,
                 'payment_type' => $order->payment_type,
                 'payment_status' => $order->payment_status,
-                'delivery_status' => $order->delivery_status,
                 'order_status' => $order->order_status,
                 'grand_total' => $order->grand_total,
                 'items' => $order->items->map(function ($item) {
@@ -409,7 +407,6 @@ class OrderController extends Controller
             // ✅ PAYMENT DETAILS
             'payment_status' => optional($order->payment)->payment_status ?? null,
             'transaction_payment_id' => optional($order->payment)->transaction_payment_id ?? null,
-            'delivery_status' => $order->delivery_status,
             'order_status' => $order->order_status,
             'tax_price' => $order->tax_price,
             'coupon_discount' => $order->coupon_discount,
@@ -472,7 +469,6 @@ class OrderController extends Controller
     {
         $request->validate([
             'shipping' => 'nullable|string|in:Pending,Approved,Completed',
-            'delivery_status' => 'nullable|string|in:pending,delivered,arrived,shipped,Near You,cancel',
             'order_status' => 'nullable|string|in:pending,confirmed,completed,cancelled',
         ]);
 
@@ -490,10 +486,6 @@ class OrderController extends Controller
 
         if (!empty($request->order_status)) {
             $order->order_status = $request->order_status;
-        }
-        // ✅ 2. Update delivery_status in orders table
-        if (!empty($request->delivery_status)) {
-            $order->delivery_status = $request->delivery_status;
         }
 
         // ✅ 3. Generate invoice and save in t_invoice if shipping is not Pending and invoice not already created
@@ -575,7 +567,6 @@ class OrderController extends Controller
                 'grand_total' => $order->grand_total,
                 'payment_type' => $order->payment_type,
                 'payment_id' => $order->payment_id,
-                'delivery_status' => $order->delivery_status,
                 'coupon_id' => $order->coupon_id,
                 'coupon_discount' => $order->coupon_discount,
                 'other_text' => $order->other_text,
@@ -793,7 +784,6 @@ class OrderController extends Controller
                 'shipping' => $order->shipping,
                 'payment_type' => $order->payment_type,
                 'payment_status' => $order->payment_status,
-                'delivery_status' => $order->delivery_status,
                 'order_status' => $order->order_status,
                 'grand_total' => $order->grand_total,
                 'items' => $order->items->map(function ($item) {

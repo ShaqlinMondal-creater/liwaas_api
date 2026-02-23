@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id(); // Primary key
             $table->unsignedBigInteger('user_id');
 
-            $table->string('order_code', 9)->unique(); // Format: XXXX-YYYY
+            $table->string('order_code', 20)->unique(); // Format: XXXX-YYYY
             $table->unsignedBigInteger('invoice_id')->nullable();
             $table->unsignedBigInteger('shipping_id')->nullable();
 
@@ -23,11 +23,10 @@ return new class extends Migration
             $table->decimal('tax_price', 10, 2)->default(0);
             $table->decimal('grand_total', 10, 2); // after tax + shipping (+/- coupon)
 
-            $table->enum('payment_type', ['COD', 'Preppaid', 'Postpaid'])->default('COD');
+            $table->enum('payment_type', ['COD', 'Prepaid', 'Postpaid'])->default('COD');
             $table->unsignedBigInteger('payment_id')->nullable(); // updated from payment_details 
 
-            $table->enum('delivery_status', ['pending', 'arrived','delivered','cancel', 'shipped', 'Near You'])->default('pending');
-            $table->enum('order_status', ['pending', 'confirmed', 'completed', 'cancelled' ])->default('pending')->after('delivery_status');
+            $table->enum('order_status', ['pending', 'confirmed', 'completed', 'cancelled' ])->default('pending');
             $table->unsignedBigInteger('coupon_id')->nullable();
             $table->decimal('coupon_discount', 10, 2)->nullable();
             $table->text('other_text')->nullable(); 
