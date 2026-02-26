@@ -52,8 +52,14 @@ class ShippingController extends Controller
         'weight' => 'nullable|numeric',
     ]);
 
-    $order = Orders::with('shipping')->findOrFail($request->id);
+    // ✅ FETCH SINGLE ORDER (NOT COLLECTION)
+    $order = Orders::with([
+        'user',
+        'items.product',
+        'shipping.address'
+    ])->findOrFail($request->id);
 
+    // ✅ CHECK SHIPPING EXISTS
     if (!$order->shipping) {
         return response()->json([
             'success' => false,
@@ -65,12 +71,12 @@ class ShippingController extends Controller
     if ($request->input('ship-by') === 'shiprocket') {
 
         return $this->punchToShiprocketWithCurl(
-            $order,   // 👈 pass full order instead of only id
+            $order, // 👈 PASS FULL ORDER
             $request->only(['length', 'breadth', 'height', 'weight'])
         );
     }
 
-    // 🟢 OTHER COURIER (manual update)
+    // 🟢 OTHER COURIER → JUST UPDATE SHIPPING TABLE
     $order->shipping->update([
         'shipping_by' => $request->input('ship-by')
     ]);
