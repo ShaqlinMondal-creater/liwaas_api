@@ -180,7 +180,7 @@ class ShippingController extends Controller
 
         $decoded = json_decode($response, true);
 
-        if (!empty($decoded['status']) && $decoded['status'] == 1) {
+        if (!empty($decoded['status_code']) && $decoded['status_code'] == 1) {
 
             if (!empty($decoded['shipment_id'])) {
                 $order->shipping->update([
