@@ -59,7 +59,7 @@ use App\Http\Controllers\CouponController;
 
     Route::post('/make_user', [AuthController::class, 'makeUser']);
     Route::post('/coupons/validate-coupon', [CouponController::class, 'validateCoupon']); // validate/apply
-    
+
     // Cron Job Routes
     Route::post('/payments/checkPaymentCorn', [PaymentController::class, 'autoUpdatePendingOrders']); // Payment Verification
 
@@ -111,15 +111,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             // For Products
             Route::prefix('shiprocket')->group(function () {
-                Route::get('/orders', [ShippingController::class, 'fetchAllShiprocketOrders']);
+                Route::get('/orders', [ShippingController::class, 'fetchAllShiprocketOrders']); // track shiprocket all orders
                 Route::post('/order-cancel', [ShippingController::class, 'cancelShiprocketOrder']);
-                Route::get('/track', [ShippingController::class, 'trackShipment']);
-                Route::get('/stats', [ShippingController::class, 'getMonthlyShippingStats']);
+                Route::get('/track', [ShippingController::class, 'trackShipment']);  // track shiprocket orders
+                Route::get('/stats', [ShippingController::class, 'getMonthlyShippingStats']); // track shiprocket orders stats
             });
         // End Settings Data
 
-        Route::post('/shipping-by', [ShippingController::class, 'shipBy']); // For Select Shipping
-        Route::get('/shiprocket-orders', [ShippingController::class, 'getShiprocketOrders']); //For get all shipping order
+        Route::post('/shipping-by', [ShippingController::class, 'shipBy']); // For create and select Shipping
+        Route::get('/shiprocket-orders', [ShippingController::class, 'getShiprocketOrders']); //For get all shipping order from DB
         
 
         Route::post('/users', [AdminController::class, 'getAllUsers']); // now accepts body
