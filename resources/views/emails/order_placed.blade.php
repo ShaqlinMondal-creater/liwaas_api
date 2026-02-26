@@ -74,7 +74,10 @@
                           <strong>AID:</strong> {{ $item->aid }}<br>
                           <strong>UID:</strong> {{ $item->uid }}
                         </td>
-                        <td>Object</td>
+                        <td>
+                          Size: {{ $item->variation->size ?? '-' }}<br>
+                          Color: {{ $item->variation->color ?? '-' }}
+                      </td>
                         <td align="center">{{ $item->quantity }}</td>
                         <td align="center">₹ 0.00</td>
                         <td align="right">₹{{ number_format($item->total, 2) }}</td>

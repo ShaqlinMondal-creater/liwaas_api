@@ -390,6 +390,7 @@ class OrderController extends Controller
                 $order->load([
                     'user',
                     'items.product',
+                    'items.variation',
                     'shipping.address',
                     'payment'
                 ]);
