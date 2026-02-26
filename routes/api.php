@@ -59,6 +59,10 @@ use App\Http\Controllers\CouponController;
 
     Route::post('/make_user', [AuthController::class, 'makeUser']);
     Route::post('/coupons/validate-coupon', [CouponController::class, 'validateCoupon']); // validate/apply
+    
+    // Cron Job Routes
+    Route::post('/payments/checkPaymentCorn', [PaymentController::class, 'autoUpdatePendingOrders']); // Payment Verification
+
 
 Route::middleware(['auth:sanctum'])->group(function () {
 
@@ -230,6 +234,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     });
     
-    Route::post('/payments/checkPaymentCorn', [PaymentController::class, 'autoUpdatePendingOrders']); // Payment Verification
+    
     Route::post('/payments/cancelPayment', [PaymentController::class, 'cancelPayment']); // Payment Verification
 });
