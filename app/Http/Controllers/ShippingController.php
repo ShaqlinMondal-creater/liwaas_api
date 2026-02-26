@@ -41,54 +41,55 @@ class ShippingController extends Controller
     //         'message' => 'Shipping method updated to: ' . $request->input('ship-by')
     //     ]);
     // }
+
     public function shipBy(Request $request)
-{
-    $request->validate([
-        'id' => 'required|integer',
-        'ship-by' => 'required|in:shiprocket,bluedart,delhivery,not_selected',
-        'length' => 'nullable|numeric',
-        'breadth' => 'nullable|numeric',
-        'height' => 'nullable|numeric',
-        'weight' => 'nullable|numeric',
-    ]);
+    {
+        $request->validate([
+            'id' => 'required|integer',
+            'ship-by' => 'required|in:shiprocket,bluedart,delhivery,not_selected',
+            'length' => 'nullable|numeric',
+            'breadth' => 'nullable|numeric',
+            'height' => 'nullable|numeric',
+            'weight' => 'nullable|numeric',
+        ]);
 
-    // ✅ FETCH SINGLE ORDER (NOT COLLECTION)
-    $order = Orders::with([
-        'user',
-        'items.product',
-        'shipping.address'
-    ])->findOrFail($request->id);
+        // ✅ FETCH SINGLE ORDER (NOT COLLECTION)
+        $order = Orders::with([
+            'user',
+            'items.product',
+            'shipping.address'
+        ])->findOrFail($request->id);
 
-    // ✅ CHECK SHIPPING EXISTS
-    if (!$order->shipping) {
+        // ✅ CHECK SHIPPING EXISTS
+        if (!$order->shipping) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Shipping record not found for this order'
+            ], 404);
+        }
+
+        // 🚀 SHIPROCKET CASE
+        if ($request->input('ship-by') === 'shiprocket') {
+
+            return $this->punchToShiprocketWithCurl(
+                $order, // 👈 PASS FULL ORDER
+                $request->only(['length', 'breadth', 'height', 'weight'])
+            );
+        }
+
+        // 🟢 OTHER COURIER → JUST UPDATE SHIPPING TABLE
+        $order->shipping->update([
+            'shipping_by' => $request->input('ship-by')
+        ]);
+
         return response()->json([
-            'success' => false,
-            'message' => 'Shipping record not found for this order'
-        ], 404);
+            'success' => true,
+            'message' => 'Shipping method updated successfully'
+        ]);
     }
-
-    // 🚀 SHIPROCKET CASE
-    if ($request->input('ship-by') === 'shiprocket') {
-
-        return $this->punchToShiprocketWithCurl(
-            $order, // 👈 PASS FULL ORDER
-            $request->only(['length', 'breadth', 'height', 'weight'])
-        );
-    }
-
-    // 🟢 OTHER COURIER → JUST UPDATE SHIPPING TABLE
-    $order->shipping->update([
-        'shipping_by' => $request->input('ship-by')
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Shipping method updated successfully'
-    ]);
-}
 
     // Ship rocket Payload
-    private function punchToShiprocketWithCurl($orderId, $dimensions = [])
+    private function punchToShiprocketWithCurl($order, $dimensions = [])
     {
         $token = $this->getShiprocketToken();
 
@@ -99,15 +100,6 @@ class ShippingController extends Controller
             ], 500);
         }
 
-        // ✅ Get the Order
-        $order = \App\Models\Orders::with(['user', 'items.product', 'items.variation'])->find($orderId);
-        if (!$order) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Order not found.'
-            ], 404);
-        }
-
         // ✅ Get the User
         $fullName = $order->user->name ?? 'Unknown Name';
         $nameParts = explode(' ', $fullName, 2);
@@ -115,7 +107,7 @@ class ShippingController extends Controller
         $lastName = $nameParts[1] ?? '';
 
         // ✅ Get Shipping Address
-        $address = \App\Models\AddressModel::find($order->shipping_id);
+        $address = $order->shipping->address;
         if (!$address) {
             return response()->json([
                 'success' => false,
@@ -151,8 +143,8 @@ class ShippingController extends Controller
             "shipping_is_billing" => true,
             "order_items" => $items,
             "payment_method" => strtoupper($order->payment_type ?? 'COD'),
-            "sub_total" => ($order->grand_total ?? 0) - ($order->shipping_charge ?? 0),
-            "shipping_charges" => $order->shipping_charge ?? 0,
+            "sub_total" => ($order->grand_total ?? 0) - ($order->shipping->shipping_charge?? 0),
+            "shipping_charges" => $order->shipping->shipping_charge ?? 0,
             "length" => $dimensions['length'] ?? 10,
             "breadth" => $dimensions['breadth'] ?? 10,
             "height" => $dimensions['height'] ?? 10,
@@ -188,18 +180,27 @@ class ShippingController extends Controller
 
         $decoded = json_decode($response, true);
 
-        // ✅ Optionally: Save shipment_id into order
-        if (isset($decoded['shipment_id'])) {
-            $order->shipping_by = 'shiprocket';
-            $order->ship_delivery_id = $decoded['shipment_id'];
-            $order->save();
+        if (!empty($decoded['status']) && $decoded['status'] == 1) {
+
+            if (!empty($decoded['shipment_id'])) {
+                $order->shipping->update([
+                    'shipping_by' => 'shiprocket',
+                    'shipping_delivery_id' => $decoded['shipment_id'],
+                    'response_' => json_encode($decoded)
+                ]);
+            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Shiprocket order punched',
+                'shiprocket_response' => $decoded
+            ]);
         }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Shiprocket order punched (via cURL)',
+            'success' => false,
+            'message' => 'Shiprocket API failed',
             'shiprocket_response' => $decoded
-        ]);
+        ], 400);
     }
     
     // Ship Rocket token
@@ -219,49 +220,15 @@ class ShippingController extends Controller
         return null;
     }
 
-    // private function getShiprocketToken()
-    // {
-    //     $email = env('SHIPROCKET_EMAIL');
-    //     $password = env('SHIPROCKET_PASSWORD');
-
-    //     $ch = curl_init();
-
-    //     curl_setopt_array($ch, [
-    //         CURLOPT_URL => "https://apiv2.shiprocket.in/v1/external/auth/login",
-    //         CURLOPT_RETURNTRANSFER => true,
-    //         CURLOPT_POST => true,
-    //         CURLOPT_POSTFIELDS => json_encode([
-    //             "email" => $email,
-    //             "password" => $password,
-    //         ]),
-    //         CURLOPT_HTTPHEADER => [
-    //             "Content-Type: application/json"
-    //         ],
-    //          // Make sure this matches your setup
-    //         CURLOPT_TIMEOUT => 30,
-    //     ]);
-
-    //     $response = curl_exec($ch);
-    //     $error = curl_error($ch);
-    //     curl_close($ch);
-
-    //     if ($error) {
-    //         \Log::error('Shiprocket login cURL error: ' . $error);
-    //         return null;
-    //     }
-
-    //     $result = json_decode($response, true);
-
-    //     return $result['token'] ?? null;
-    // }
-
     // Ship Rocket All Orders (Dupli)
     public function getShiprocketOrders(Request $request)
     {
         $limit = $request->input('limit', 10);
 
-        $orders = Orders::with(['user', 'items.product'])
-            ->where('shipping_by', 'shiprocket')
+        $orders = Orders::with(['user', 'items.product', 'shipping'])
+            ->whereHas('shipping', function ($q) {
+                $q->where('shipping_by', 'shiprocket');
+            })
             ->latest()
             ->paginate($limit);
 
@@ -418,51 +385,12 @@ class ShippingController extends Controller
         return $response['data'] ?? [];
     }
 
-    // private function allShiprocketOrders($token)
-    // {
-    //     $url = "https://apiv2.shiprocket.in/v1/external/orders?per_page=100";
-
-    //     $ch = curl_init();
-    //     curl_setopt_array($ch, [
-    //         CURLOPT_URL => $url,
-    //         CURLOPT_RETURNTRANSFER => true,
-    //         CURLOPT_HTTPHEADER => [
-    //             "Authorization: Bearer $token",
-    //             "Content-Type: application/json"
-    //         ],
-    //          // Update to match your setup
-    //         CURLOPT_TIMEOUT => 30,
-    //     ]);
-
-    //     $response = curl_exec($ch);
-    //     $error = curl_error($ch);
-    //     curl_close($ch);
-
-    //     if ($error) {
-    //         \Log::error("Shiprocket cURL Error: $error");
-    //         return [];
-    //     }
-
-    //     $data = json_decode($response, true);
-
-    //     return $data['data'] ?? [];
-    // }
-
     // Cancel Both Orders and shipping
     public function cancelShiprocketOrder(Request $request)
     {
         $request->validate([
             'id' => 'required|integer',
         ]);
-
-        $order = \App\Models\Orders::find($request->id);
-
-        if (!$order || $order->shipping_by !== 'shiprocket' || !$order->shipping_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid Shiprocket order or not yet shipped via Shiprocket.'
-            ], 404);
-        }
 
         $token = $this->getShiprocketToken();
         if (!$token) {
@@ -472,7 +400,16 @@ class ShippingController extends Controller
             ], 500);
         }
 
-        $shipmentId = $order->shipping_id;
+        $order = Orders::with('shipping')->find($request->id);
+
+        if (!$order || !$order->shipping || $order->shipping->shipping_by !== 'shiprocket' || !$order->shipping->shipping_delivery_id ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid Shiprocket order or not yet shipped.'
+            ], 404);
+        }
+
+        $shipmentId = $order->shipping->shipping_delivery_id;
 
         $ch = curl_init();
         curl_setopt_array($ch, [
@@ -563,7 +500,9 @@ class ShippingController extends Controller
         if (!empty($decoded['tracking_data']['shipment_status'])) {
             $shipmentId = $decoded['tracking_data']['shipment_id'] ?? null;
             if ($shipmentId) {
-                $order = \App\Models\Orders::where('shipping_id', $shipmentId)->first();
+                $order = Orders::whereHas('shipping', function ($q) use ($shipmentId) {
+                    $q->where('shipping_delivery_id', $shipmentId);
+                })->first();
                 if ($order) {
                     $order->delivery_status = strtolower($decoded['tracking_data']['shipment_status']);
                     $order->save();
