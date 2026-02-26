@@ -38,6 +38,172 @@ class OrderController extends Controller
 {
 
     // Create Order
+    // public function createOrder(Request $request)
+    // {
+    //     $request->validate([
+    //         'shipping_address_id' => 'required|exists:addresses,id',
+    //         'payment_type' => 'required|in:COD,Prepaid',
+    //         'coupon_key' => 'nullable|string'
+    //     ]);
+
+    //     $user = auth()->user();
+    //     if (!$user) {
+    //         return response()->json(['error' => 'Unauthorized'], 401);
+    //     }
+
+    //     DB::beginTransaction();
+
+    //     try {
+    //         $userId = $user->id;
+
+    //         $cartItems = Cart::with(['variation', 'product'])
+    //             ->where('user_id', $userId)
+    //             ->get();
+
+    //         if ($cartItems->isEmpty()) {
+    //             return response()->json(['error' => 'Cart is empty'], 400);
+    //         }
+
+    //         $subTotal = 0;
+    //         foreach ($cartItems as $item) {
+    //             $variation = $item->variation;
+    //             if (!$variation) {
+    //                 return response()->json(['error' => "Invalid variation for item UID: {$item->uid}"], 400);
+    //             }
+
+    //             $totalPrice = $variation->sell_price * $item->quantity;
+    //             $subTotal += $totalPrice;
+    //         }
+
+    //         $tax = round($subTotal * 0.05, 2);
+    //         $shippingCharge = $subTotal > 300 ? 0 : 120;
+
+    //         $discount = 0;
+    //         $couponId = null;
+    //         if ($request->coupon_key) {
+    //             $coupon = Coupon::where('key_name', $request->coupon_key)
+    //                 ->where('status', 'active')
+    //                 ->first();
+
+    //             if ($coupon) {
+    //                 $discount = $coupon->value;
+    //                 $couponId = $coupon->id;
+    //             }
+    //         }
+
+    //         $grandTotal = round($subTotal + $shippingCharge - $discount, 2);
+
+    //         // 🔸 Create Shipping
+    //         $shipping = Shipping::create([
+    //             'shipping_status' => 'Pending',
+    //             'shipping_type' => 'Home',
+    //             'shipping_by' => 'not_select',
+    //             'address_id' => $request->shipping_address_id,
+    //             'shipping_charge' => $shippingCharge,
+    //         ]);
+
+    //         $razorpayOrderId = null;
+
+    //         // 🔸 If Prepaid, create Razorpay Order
+    //         if (strtolower($request->payment_type) === 'prepaid') {
+    //             $api = new Api(env('RAZORPAY_KEY'), env('RAZORPAY_SECRET'));
+    //             $razorpayOrder = $api->order->create([
+    //                 'receipt' => 'rcpt_' . Str::random(10),
+    //                 'amount' => $grandTotal * 100, // amount in paise
+    //                 'currency' => 'INR'
+    //             ]);
+    //             $razorpayOrderId = $razorpayOrder['id'];
+    //         }
+
+    //         // 🔸 Create Payment
+    //         $payment = Payment::create([
+    //             'payment_type' => $request->payment_type,
+    //             'payment_amount' => $grandTotal,
+    //             'payment_status' => 'pending',
+    //             'user_id' => $userId,
+    //             'genarate_order_id' => $razorpayOrderId,
+    //         ]);
+
+    //         // 🔸 Create Order
+    //         $order = Orders::create([
+    //             'user_id' => $userId,
+    //             'order_code' => $this->generateOrderCode(),
+    //             'invoice_id' => null,
+    //             'shipping_id' => $shipping->id,
+    //             'tax_price' => $tax,
+    //             'grand_total' => $grandTotal,
+    //             'payment_type' => $request->payment_type,
+    //             'payment_id' => $payment->id,
+    //             'order_status' => 'pending', // ✅ NEW
+    //             'coupon_id' => $couponId,
+    //             'coupon_discount' => $discount,
+    //         ]);
+
+    //         $payment->order_id = $order->id;
+    //         $payment->save();
+
+    //         // 🔸 Create Order Items
+    //         foreach ($cartItems as $item) {
+    //             $variation = $item->variation;
+    //             $total = $variation->sell_price * $item->quantity;
+    //             $itemTax = round($total * 0.05, 2);
+
+    //             OrderItems::create([
+    //                 'order_id' => $order->id,
+    //                 'user_id' => $userId,
+    //                 'product_id' => $item->products_id,
+    //                 'aid' => $item->aid,
+    //                 'uid' => $item->uid,
+    //                 'quantity' => $item->quantity,
+    //                 'total' => $total,
+    //                 'tax' => $itemTax,
+    //             ]);
+    //         }
+
+    //         // 🔸 Create Invoice
+    //         $invoice = Invoices::create([
+    //             'invoice_no' => 'INV-' . strtoupper(Str::random(6)),
+    //             'invoice_link' => null,
+    //             'invoice_qr' => null,
+    //         ]);
+
+    //         $order->invoice_id = $invoice->id;
+    //         $order->save();
+
+    //         // 🔸 Send Email
+    //         if ($user->email) {
+    //             $order->load('items');
+    //             Mail::to($user->email)->send(new \App\Mail\OrderPlacedMail($order));
+    //         }
+
+    //         // 🔸 Clear Cart
+    //         // Cart::where('user_id', $userId)->delete();
+
+    //         DB::commit();
+
+    //         $response = [
+    //             'message' => 'Order successfully created',
+    //             'order_code' => $order->order_code,
+    //             'order_id' => $order->id,
+    //             'amount' => $grandTotal,
+    //         ];
+
+    //         if ($razorpayOrderId) {
+    //             $response['razorpay_order_id'] = $razorpayOrderId;
+    //             $response['currency'] = 'INR';
+    //         }
+
+    //         return response()->json($response, 201);
+
+    //     } catch (\Exception $e) {
+    //         DB::rollback();
+    //         return response()->json([
+    //             'error' => 'Order creation failed',
+    //             'message' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function createOrder(Request $request)
     {
         $request->validate([
@@ -65,21 +231,25 @@ class OrderController extends Controller
             }
 
             $subTotal = 0;
+
             foreach ($cartItems as $item) {
                 $variation = $item->variation;
+
                 if (!$variation) {
-                    return response()->json(['error' => "Invalid variation for item UID: {$item->uid}"], 400);
+                    return response()->json([
+                        'error' => "Invalid variation for item UID: {$item->uid}"
+                    ], 400);
                 }
 
-                $totalPrice = $variation->sell_price * $item->quantity;
-                $subTotal += $totalPrice;
+                $lineTotal = $variation->sell_price * $item->quantity;
+                $subTotal += $lineTotal;
             }
 
-            $tax = round($subTotal * 0.05, 2);
-            $shippingCharge = $subTotal > 300 ? 0 : 120;
+            /* ---------------- COUPON ---------------- */
 
             $discount = 0;
             $couponId = null;
+
             if ($request->coupon_key) {
                 $coupon = Coupon::where('key_name', $request->coupon_key)
                     ->where('status', 'active')
@@ -91,7 +261,18 @@ class OrderController extends Controller
                 }
             }
 
-            $grandTotal = round($subTotal + $shippingCharge - $discount, 2);
+            /* -------- AMOUNT AFTER DISCOUNT (GST INCLUDED) -------- */
+            $amountAfterDiscount = max($subTotal - $discount, 0);
+
+            /* -------- EXTRACT GST FROM GST-INCLUSIVE PRICE -------- */
+            $taxableAmount = round($amountAfterDiscount / 1.05, 2);
+            $tax = round($amountAfterDiscount - $taxableAmount, 2);
+
+            /* ---------------- SHIPPING ---------------- */
+            $shippingCharge = $amountAfterDiscount > 300 ? 0 : 120;
+
+            /* ---------------- GRAND TOTAL ---------------- */
+            $grandTotal = round($amountAfterDiscount + $shippingCharge, 2);
 
             // 🔸 Create Shipping
             $shipping = Shipping::create([
@@ -109,7 +290,7 @@ class OrderController extends Controller
                 $api = new Api(env('RAZORPAY_KEY'), env('RAZORPAY_SECRET'));
                 $razorpayOrder = $api->order->create([
                     'receipt' => 'rcpt_' . Str::random(10),
-                    'amount' => $grandTotal * 100, // amount in paise
+                    'amount' => (int) round($grandTotal * 100), // amount in paise
                     'currency' => 'INR'
                 ]);
                 $razorpayOrderId = $razorpayOrder['id'];
@@ -142,21 +323,54 @@ class OrderController extends Controller
             $payment->order_id = $order->id;
             $payment->save();
 
-            // 🔸 Create Order Items
+            // 🔸 Create Order Items (GST inclusive + rounding safe)
+            $totalItemTax = 0;
+            $tempItems = [];
+
             foreach ($cartItems as $item) {
+
                 $variation = $item->variation;
-                $total = $variation->sell_price * $item->quantity;
-                $itemTax = round($total * 0.05, 2);
+                $lineTotal = $variation->sell_price * $item->quantity;
+
+                // Discount distribution
+                $proportion = $subTotal > 0 ? ($lineTotal / $subTotal) : 0;
+                $itemDiscount = round($discount * $proportion, 2);
+
+                $itemFinal = $lineTotal - $itemDiscount;
+
+                // Extract GST from GST-inclusive price
+                $itemTaxable = round($itemFinal / 1.05, 2);
+                $itemTax = round($itemFinal - $itemTaxable, 2);
+
+                $totalItemTax += $itemTax;
+
+                $tempItems[] = [
+                    'model' => $item,
+                    'lineTotal' => $lineTotal,
+                    'tax' => $itemTax
+                ];
+            }
+
+            /* 🔥 FIX ROUNDING DIFFERENCE */
+            $taxDifference = round($tax - $totalItemTax, 2);
+
+            if (!empty($tempItems)) {
+                $lastIndex = count($tempItems) - 1;
+                $tempItems[$lastIndex]['tax'] += $taxDifference;
+            }
+
+            /* 💾 SAVE ITEMS */
+            foreach ($tempItems as $data) {
 
                 OrderItems::create([
                     'order_id' => $order->id,
                     'user_id' => $userId,
-                    'product_id' => $item->products_id,
-                    'aid' => $item->aid,
-                    'uid' => $item->uid,
-                    'quantity' => $item->quantity,
-                    'total' => $total,
-                    'tax' => $itemTax,
+                    'product_id' => $data['model']->products_id,
+                    'aid' => $data['model']->aid,
+                    'uid' => $data['model']->uid,
+                    'quantity' => $data['model']->quantity,
+                    'total' => $data['lineTotal'],
+                    'tax' => $data['tax'],
                 ]);
             }
 
