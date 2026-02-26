@@ -6,8 +6,8 @@ api update :
 -> forget-password -> setup api ✅done
 -> setup messege notifications -> api setup
 
-For admin: create
-admin Dashboard count
+For admin: create 
+admin Dashboard count ✅done
 create user
 update user
 deactive account
@@ -20,3 +20,8 @@ Delete Messege notification
 
 
 Section products
+
+
+priority:
+1. order placed placed mail design like otp mail layout design
+2. order status update mail design like otp mail layout design

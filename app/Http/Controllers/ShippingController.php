@@ -18,29 +18,68 @@ use App\Services\ShiprocketService;
 class ShippingController extends Controller
 {
     // Ship By
+    // public function shipBy(Request $request)
+    // {
+    //     $request->validate([
+    //         'id' => 'required|integer',
+    //         'ship-by' => 'required|in:shiprocket,bluedart,delhivery,not_selected',
+    //         'length' => 'nullable|numeric',
+    //         'breadth' => 'nullable|numeric',
+    //         'height' => 'nullable|numeric',
+    //         'weight' => 'nullable|numeric',
+    //     ]);
+
+    //     if ($request->input('ship-by') === 'shiprocket') {
+    //         return $this->punchToShiprocketWithCurl(
+    //             $request->input('id'),
+    //             $request->only(['length', 'breadth', 'height', 'weight'])
+    //         );
+    //     }
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Shipping method updated to: ' . $request->input('ship-by')
+    //     ]);
+    // }
     public function shipBy(Request $request)
-    {
-        $request->validate([
-            'id' => 'required|integer',
-            'ship-by' => 'required|in:shiprocket,bluedart,delhivery,not_selected',
-            'length' => 'nullable|numeric',
-            'breadth' => 'nullable|numeric',
-            'height' => 'nullable|numeric',
-            'weight' => 'nullable|numeric',
-        ]);
+{
+    $request->validate([
+        'id' => 'required|integer',
+        'ship-by' => 'required|in:shiprocket,bluedart,delhivery,not_selected',
+        'length' => 'nullable|numeric',
+        'breadth' => 'nullable|numeric',
+        'height' => 'nullable|numeric',
+        'weight' => 'nullable|numeric',
+    ]);
 
-        if ($request->input('ship-by') === 'shiprocket') {
-            return $this->punchToShiprocketWithCurl(
-                $request->input('id'),
-                $request->only(['length', 'breadth', 'height', 'weight'])
-            );
-        }
+    $order = Orders::with('shipping')->findOrFail($request->id);
 
+    if (!$order->shipping) {
         return response()->json([
-            'success' => true,
-            'message' => 'Shipping method updated to: ' . $request->input('ship-by')
-        ]);
+            'success' => false,
+            'message' => 'Shipping record not found for this order'
+        ], 404);
     }
+
+    // 🚀 SHIPROCKET CASE
+    if ($request->input('ship-by') === 'shiprocket') {
+
+        return $this->punchToShiprocketWithCurl(
+            $order,   // 👈 pass full order instead of only id
+            $request->only(['length', 'breadth', 'height', 'weight'])
+        );
+    }
+
+    // 🟢 OTHER COURIER (manual update)
+    $order->shipping->update([
+        'shipping_by' => $request->input('ship-by')
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Shipping method updated successfully'
+    ]);
+}
 
     // Ship rocket Payload
     private function punchToShiprocketWithCurl($orderId, $dimensions = [])
