@@ -386,7 +386,13 @@ class OrderController extends Controller
 
             // 🔸 Send Email
             if ($user->email) {
-                $order->load('items');
+                // $order->load('items');
+                $order->load([
+                    'user',
+                    'items.product',
+                    'shipping.address',
+                    'payment'
+                ]);
                 Mail::to($user->email)->send(new \App\Mail\OrderPlacedMail($order));
             }
 
@@ -777,20 +783,6 @@ class OrderController extends Controller
         if ($order->user && !empty($order->user->email)) {
             Mail::to($order->user->email)->send(new OrderStatusUpdated($order));
         }
-
-        // return response()->json([
-        //     'message' => 'Order updated successfully',
-        //     'order' => $order,
-        //     'invoice' => $order->invoice ? [
-        //         'invoice_no'   => $order->invoice->invoice_no,
-        //         'invoice_link' => $order->invoice->invoice_link,
-        //         'invoice_qr'   => url('qr/' . $order->invoice->invoice_qr),
-        //         'date'         => $order->invoice->date,
-        //     ] : null,
-        //     'shipping_address' => $order->shipping && $order->shipping->address
-        //         ? $order->shipping->address
-        //         : null,
-        // ]);
 
         // Response Structure:
         return response()->json([

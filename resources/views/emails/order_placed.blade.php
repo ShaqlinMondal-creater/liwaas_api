@@ -33,8 +33,8 @@
                     <td valign="top" align="right">
                       <strong>ORDER:</strong> #{{ $order->order_code }}<br>
                       <strong>ORDER DATE:</strong> {{ \Carbon\Carbon::parse($order->created_at)->format('M d, Y, h:i A') }}<br>
-                      <strong>Shipping:</strong> {{ ucfirst($order->shipping_type) }}<br>
-                      <strong>Payment:</strong> {{ ucfirst($order->payment_status) }}
+                      <strong>Shipping:</strong> {{ ucfirst($order->shipping->shipping_type ?? '') }}<br>
+                      <strong>Payment:</strong> {{ ucfirst($order->payment->payment_status ?? '') }}
                     </td>
                   </tr>
                 </table>
@@ -45,7 +45,9 @@
             <tr>
               <td style="padding-top: 20px;">
                 <h3 style="margin-bottom: 5px;">Ship To:</h3>
-                {{ $order->shipping_address }}
+                {{ $order->shipping->address->address_line_1 ?? '' }}, <br>
+                {{ $order->shipping->address->city ?? '' }}, {{ $order->shipping->address->state ?? '' }}, <br>
+                {{ $order->shipping->address->pincode ?? '' }}, {{ $order->shipping->address->country ?? '' }}
               </td>
             </tr>
 
@@ -89,19 +91,19 @@
                 <table cellpadding="5" cellspacing="0" style="width: 300px; float: right;">
                   <tr>
                     <td style="border-bottom: 1px solid #eee;">Subtotal:</td>
-                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($order->grand_total - $order->tax_price, 2) }}</td>
+                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($order->grand_total - ($order->shipping->shipping_charge ?? 0), 2) }}</td>
                   </tr>
                   <tr>
-                    <td style="border-bottom: 1px solid #eee;">Tax (18%):</td>
+                    <td style="border-bottom: 1px solid #eee;">Tax (5%):</td>
                     <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($order->tax_price, 2) }}</td>
                   </tr>
                   <tr>
                     <td style="border-bottom: 1px solid #eee;">Shipping:</td>
-                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($order->shipping_charge, 2) }}</td>
+                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($order->shipping->shipping_charge ?? 0, 2) }}</td>
                   </tr>
                   <tr>
                     <td style="border-bottom: 1px solid #eee;">Discount:</td>
-                    <td style="border-bottom: 1px solid #eee;" align="right">₹0.00</td>
+                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($order->coupon_discount ?? 0, 2) }}</td>
                   </tr>
                   <tr>
                     <td style="font-weight: bold; font-size: 16px;">GRAND TOTAL:</td>
