@@ -13,7 +13,7 @@
             <!-- Top Logo & Welcome Message -->
             <tr>
               <td align="left">
-                  <img src="https://drive.google.com/uc?export=view&id=1QfJTo9ZKKEtXXanySOLrrpAS9YGUpmKH" alt="Liwaas Logo" height="50" style="margin-bottom: 10px;">
+                  <img src="{{ asset('storage/liwaas_logo.jpeg') }}" alt="Liwaas Logo" height="50" style="margin-bottom: 10px;">
                 <h2 style="margin: 0; color: #444;">Thank you for your order!</h2>
                 <p style="margin-top: 5px; color: #777;">We’re processing it and will notify you once it ships.</p>
               </td>
@@ -116,7 +116,7 @@
             <!-- Footer -->
             <tr>
               <td align="left" style="padding-top: 50px;">
-                  <img src="https://drive.google.com/uc?export=view&id=1QfJTo9ZKKEtXXanySOLrrpAS9YGUpmKH" alt="Liwaas Logo" height="50" style="margin-bottom: 10px;">
+                  <img src="{{ asset('storage/liwaas_logo.jpeg') }}" alt="Liwaas Logo" height="50" style="margin-bottom: 10px;">
                 <p style="font-size: 13px; color: #888;">
                   Thank you for shopping with <strong>Liwaas</strong>. We hope to see you again soon!
                 </p>
