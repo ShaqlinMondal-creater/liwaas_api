@@ -743,7 +743,8 @@ class OrderController extends Controller
             $this->ensureDirectoryExists('qr');
 
             $pdfName = Str::random(24) . '.pdf';
-            $pdfUrl = Storage::url('invoices/' . $pdfName);
+            // $pdfUrl = Storage::url('invoices/' . $pdfName);
+            $pdfUrl = url(Storage::url('invoices/' . $pdfName));
 
             // Generate QR code
             $qrImageName = $this->generateQRCode($pdfUrl);
