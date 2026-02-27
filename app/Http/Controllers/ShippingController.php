@@ -62,9 +62,34 @@ class ShippingController extends Controller
             ], 400);
         }
 
+        $data = $response->json();
+
+        /* ✅ FORMAT COURIERS */
+        $couriers = collect($data['data']['available_courier_companies'])
+            ->map(function ($c) {
+                return [
+                    'id'              => $c['courier_company_id'],
+                    'name'            => $c['courier_name'],
+                    'shipping_charge' => $c['freight_charge'],
+                    'cod_charge'      => $c['cod_charges'],
+                    'total_charge'    => $c['rate'],
+                    'delivery_days'   => $c['estimated_delivery_days'],
+                    'rating'          => $c['rating'],
+                    'type'            => $c['is_surface'] ? 'surface' : 'air',
+                ];
+            })
+            ->sortBy('total_charge')   // ⭐ cheapest first
+            ->take(3)
+            ->values();
+
+        /* ✅ FINAL CLEAN RESPONSE */
         return response()->json([
             'success' => true,
-            'data'    => $response->json()
+
+            'recommended_courier_id'
+                => $data['data']['recommended_courier_company_id'] ?? null,
+
+            'couriers' => $couriers
         ]);
     }
 
