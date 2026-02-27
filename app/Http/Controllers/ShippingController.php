@@ -17,6 +17,57 @@ use App\Services\ShiprocketService;
 
 class ShippingController extends Controller
 {
+    public function checkServiceability(Request $request)
+    {
+        $request->validate([
+            'pickup_pincode'   => 'required',
+            'delivery_pincode' => 'required',
+            'weight'           => 'required|numeric',
+            'cod'              => 'required|in:0,1',
+            'length'           => 'nullable|numeric',
+            'breadth'          => 'nullable|numeric',
+            'height'           => 'nullable|numeric',
+        ]);
+
+        $token = $this->getShiprocketToken();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Shiprocket auth failed'
+            ], 500);
+        }
+
+        // 📦 Build query
+        $query = [
+            'pickup_postcode'   => $request->pickup_pincode,
+            'delivery_postcode' => $request->delivery_pincode,
+            'weight'            => $request->weight,
+            'cod'               => $request->cod,
+        ];
+
+        if ($request->length)  $query['length']  = $request->length;
+        if ($request->breadth) $query['breadth'] = $request->breadth;
+        if ($request->height)  $query['height']  = $request->height;
+
+        // 🚀 API CALL
+        $response = Http::withToken($token)
+            ->get('https://apiv2.shiprocket.in/v1/external/courier/serviceability/', $query);
+
+        if (!$response->successful()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Shiprocket API failed',
+                'error'   => $response->json()
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data'    => $response->json()
+        ]);
+    }
+
     public function shipBy(Request $request)
     {
         $request->validate([
