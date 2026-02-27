@@ -17,31 +17,6 @@ use App\Services\ShiprocketService;
 
 class ShippingController extends Controller
 {
-    // Ship By
-    // public function shipBy(Request $request)
-    // {
-    //     $request->validate([
-    //         'id' => 'required|integer',
-    //         'ship-by' => 'required|in:shiprocket,bluedart,delhivery,not_selected',
-    //         'length' => 'nullable|numeric',
-    //         'breadth' => 'nullable|numeric',
-    //         'height' => 'nullable|numeric',
-    //         'weight' => 'nullable|numeric',
-    //     ]);
-
-    //     if ($request->input('ship-by') === 'shiprocket') {
-    //         return $this->punchToShiprocketWithCurl(
-    //             $request->input('id'),
-    //             $request->only(['length', 'breadth', 'height', 'weight'])
-    //         );
-    //     }
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Shipping method updated to: ' . $request->input('ship-by')
-    //     ]);
-    // }
-
     public function shipBy(Request $request)
     {
         $request->validate([
@@ -57,6 +32,7 @@ class ShippingController extends Controller
         $order = Orders::with([
             'user',
             'items.product',
+            'items.variation',
             'shipping.address'
         ])->findOrFail($request->id);
 
@@ -122,7 +98,8 @@ class ShippingController extends Controller
                 "name" => $item->product->name ?? 'Unknown Product',
                 "sku" => $item->uid, // SKU from uid
                 "units" => $item->quantity,
-                "selling_price" => $item->total,
+                // "selling_price" => $item->total,
+                "selling_price" => $item->variation->sell_price ?? 0, // Price from product table
             ];
         }
 
@@ -143,6 +120,7 @@ class ShippingController extends Controller
             "shipping_is_billing" => true,
             "order_items" => $items,
             "payment_method" => strtoupper($order->payment_type ?? 'COD'),
+            "total_discount" => $order->coupon_discount ?? 0,
             "sub_total" => ($order->grand_total ?? 0) - ($order->shipping->shipping_charge?? 0),
             "shipping_charges" => $order->shipping->shipping_charge ?? 0,
             "length" => $dimensions['length'] ?? 10,
