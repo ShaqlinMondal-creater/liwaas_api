@@ -64,8 +64,7 @@ class ShippingController extends Controller
 
         $data = $response->json();
 
-        /* ✅ FORMAT COURIERS */
-        $couriers = collect($data['data']['available_courier_companies'])
+        $allCouriers = collect($data['data']['available_courier_companies'])
             ->map(function ($c) {
                 return [
                     'id'              => $c['courier_company_id'],
@@ -73,23 +72,38 @@ class ShippingController extends Controller
                     'shipping_charge' => $c['freight_charge'],
                     'cod_charge'      => $c['cod_charges'],
                     'total_charge'    => $c['rate'],
-                    'delivery_days'   => $c['estimated_delivery_days'],
+                    'delivery_days'   => (int) $c['estimated_delivery_days'],
                     'rating'          => $c['rating'],
                     'type'            => $c['is_surface'] ? 'surface' : 'air',
                 ];
-            })
-            ->sortBy('total_charge')   // ⭐ cheapest first
+            });
+
+        /* ⭐ RECOMMENDED (by Shiprocket id match) */
+        $recommendedId = $data['data']['recommended_courier_company_id'] ?? null;
+
+        $recommended = $allCouriers
+            ->where('id', $recommendedId)
             ->take(3)
             ->values();
 
-        /* ✅ FINAL CLEAN RESPONSE */
+        /* ⭐ CHEAPEST */
+        $cheapest = $allCouriers
+            ->sortBy('total_charge')
+            ->take(3)
+            ->values();
+
+        /* ⭐ FASTEST */
+        $fastest = $allCouriers
+            ->sortBy('delivery_days')
+            ->take(3)
+            ->values();
+
+        /* ✅ FINAL RESPONSE */
         return response()->json([
             'success' => true,
-
-            'recommended_courier_id'
-                => $data['data']['recommended_courier_company_id'] ?? null,
-
-            'couriers' => $couriers
+            'recommended' => $recommended,
+            'cheapest'    => $cheapest,
+            'fastest'     => $fastest,
         ]);
     }
 
