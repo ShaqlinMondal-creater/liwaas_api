@@ -249,7 +249,7 @@
                         <strong>ORDER:</strong> #{{ $order->order_code }}<br>
                         <strong>ORDER DATE:</strong> {{ $order->created_at->format('M d, Y, h:i A') }}<br>
                         <strong>Shipping:</strong> {{ $order->shipping->shipping_type ?? 'Home' }}<br>
-                        <strong>Payment:</strong> {{ $order->payment_status ?? 'N/A' }}
+                        <strong>Payment:</strong> {{ $order->payment_type ?? 'N/A' }}
                     </div>
                 </td>
             </tr>
