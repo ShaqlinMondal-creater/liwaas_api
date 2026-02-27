@@ -18,7 +18,7 @@ style="background:#ffffff; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0
 <tr>
 <td align="center" style="background:linear-gradient(90deg,#1a1a1a,#deb64c,#1a1a1a); padding:20px;">
 
-<img src="{{ asset('storage/liwaas_logo.jpeg') }}" height="50" style="margin-bottom:10px;">
+<!-- <img src="{{ asset('storage/liwaas_logo.jpeg') }}" height="50" style="margin-bottom:10px;"> -->
 
 <h1 style="color:#fff; margin:0; font-size:22px;">
 Order Status Updated
@@ -113,7 +113,7 @@ font-size:13px;
 color:#fff;">
 
 Thanks,<br>
-{{ config('app.frontend_name') }}
+{{ config('app.frontend_name') }} Team
 
 </td>
 </tr>
