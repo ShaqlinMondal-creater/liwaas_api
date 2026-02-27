@@ -120,9 +120,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::post('/shipping-by', [ShippingController::class, 'shipBy']); // For create and select Shipping
         Route::get('/shiprocket-orders', [ShippingController::class, 'getShiprocketOrders']); //For get all shipping order from DB
-        
+
         Route::post('/shiprocket/create-order', [ShippingController::class, 'createShiprocketOrder']); // For create order in shiprocket
         Route::post('/shiprocket/serviceability', [ShippingController::class, 'checkServiceability']); // For check serviceability
+        Route::post('/shiprocket/assign-courier', [ShippingController::class, 'assignCourier']); // For assign courier to order in shiprocket
+
 
         Route::post('/users', [AdminController::class, 'getAllUsers']); // now accepts body
         Route::post('/getAllAddress', [AddressController::class, 'getAllAddress']); // get all address

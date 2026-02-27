@@ -137,6 +137,108 @@ class ShippingController extends Controller
         ]);
     }
 
+    // Assign Courier to Order
+    public function assignCourier(Request $request)
+    {
+        $request->validate([
+            'courier_id' => 'required|integer',
+            'order_id'   => 'nullable|integer',
+            'shipment_id'=> 'nullable|integer',
+            'awb_code'   => 'nullable|string',
+        ]);
+
+        if (!$request->order_id && !$request->shipment_id && !$request->awb_code) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pass order_id OR shipment_id OR awb_code'
+            ], 422);
+        }
+
+        $token = $this->getShiprocketToken();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Shiprocket auth failed'
+            ], 500);
+        }
+
+        /* ✅ GET SHIPMENT ID */
+        $shipmentId = null;
+        $shipping   = null;
+
+        if ($request->order_id) {
+
+            $order = Orders::with('shipping')->find($request->order_id);
+
+            if (!$order || !$order->shipping) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Shipping record not found'
+                ], 404);
+            }
+
+            $shipmentId = $order->shipping->shipping_delivery_id;
+            $shipping   = $order->shipping;
+        }
+
+        if ($request->shipment_id) {
+            $shipmentId = $request->shipment_id;
+
+            $shipping = \App\Models\Shipping::where(
+                'shipping_delivery_id',
+                $shipmentId
+            )->first();
+        }
+
+        /* 🚀 CALL SHIPROCKET */
+        $payload = [
+            'courier_id' => $request->courier_id
+        ];
+
+        if ($shipmentId) {
+            $payload['shipment_id'] = $shipmentId;
+        }
+
+        if ($request->awb_code) {
+            $payload['awb_code'] = $request->awb_code;
+        }
+
+        $response = Http::withToken($token)
+            ->post(
+                'https://apiv2.shiprocket.in/v1/external/courier/assign/awb',
+                $payload
+            );
+
+        $data = $response->json();
+
+        if (!$response->successful()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Courier assign failed',
+                'data'    => $data
+            ], 400);
+        }
+
+        /* ✅ UPDATE YOUR SHIPPING TABLE */
+        if ($shipping) {
+            $shipping->update([
+                'shipping_by' => 'shiprocket',
+                'response_'   => json_encode($data)
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Courier assigned successfully',
+            'data'    => [
+                'awb_code'     => $data['awb_code'] ?? null,
+                'courier_name' => $data['courier_name'] ?? null,
+                'shipment_id'  => $data['shipment_id'] ?? $shipmentId
+            ]
+        ]);
+    }
+
     // Create Shiprocket Order through Order ID
     public function shipBy(Request $request)
     {
