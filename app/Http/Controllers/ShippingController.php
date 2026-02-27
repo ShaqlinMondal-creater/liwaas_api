@@ -17,6 +17,7 @@ use App\Services\ShiprocketService;
 
 class ShippingController extends Controller
 {
+    // Check Serviceability
     public function checkServiceability(Request $request)
     {
         $request->validate([
@@ -107,6 +108,36 @@ class ShippingController extends Controller
         ]);
     }
 
+    // Create Shiprocket Order Full Payload
+    public function createShiprocketOrder(Request $request)
+    {
+        $token = $this->getShiprocketToken();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Shiprocket auth failed'
+            ], 500);
+        }
+
+        // 🚀 FULL PAYLOAD FROM FRONTEND
+        $payload = $request->all();
+
+        $response = Http::withToken($token)
+            ->post(
+                'https://apiv2.shiprocket.in/v1/external/orders/create/adhoc',
+                $payload
+            );
+
+        $data = $response->json();
+
+        return response()->json([
+            'success' => $response->successful(),
+            'data'    => $data
+        ]);
+    }
+
+    // Create Shiprocket Order through Order ID
     public function shipBy(Request $request)
     {
         $request->validate([
