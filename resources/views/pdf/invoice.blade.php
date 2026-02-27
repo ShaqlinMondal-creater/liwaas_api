@@ -232,8 +232,8 @@
                 <td style="width: 50%; vertical-align: top; padding-right: 10px;">
                     <div style="border: 0px solid #ccc; padding: 10px; line-height: 1.4;">
                         <strong>Billed To:</strong><br>
-                        <strong>{{ $order->shipping->address->name ?? 'Customer' }}</strong><br>
-                        <strong>Tel: {{ $order->shipping->address->mobile ?? '+91 xxxxx-xxxxx' }}</strong>,
+                        <strong>{{ $order->shipping->address->name ?? 'Customer' }}</strong>, 
+                        <strong>Tel: {{ $order->shipping->address->mobile ?? '+91 xxxxx-xxxxx' }}</strong>, <br>
                         {{ $order->shipping->address->email ?? 'example@gmail.com' }} <br>
 
                         <strong>Ship To:</strong><br>
