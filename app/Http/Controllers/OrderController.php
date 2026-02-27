@@ -375,14 +375,14 @@ class OrderController extends Controller
             }
 
             // 🔸 Create Invoice
-            $invoice = Invoices::create([
-                'invoice_no' => 'INV-' . strtoupper(Str::random(6)),
-                'invoice_link' => null,
-                'invoice_qr' => null,
-            ]);
+            // $invoice = Invoices::create([
+            //     'invoice_no' => 'INV-' . strtoupper(Str::random(6)),
+            //     'invoice_link' => null,
+            //     'invoice_qr' => null,
+            // ]);
 
-            $order->invoice_id = $invoice->id;
-            $order->save();
+            // $order->invoice_id = $invoice->id;
+            // $order->save();
 
             // 🔸 Send Email
             if ($user->email) {

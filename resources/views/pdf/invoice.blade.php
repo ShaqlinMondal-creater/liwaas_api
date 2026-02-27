@@ -344,7 +344,7 @@
             @php
                 $qrBase64 = null;
                 if (!empty($order->invoice->invoice_qr)) {
-                    $qrPath = public_path('qr/' . $order->invoice->invoice_qr);
+                    $qrPath = storage_path('app/public/qr/' . $order->invoice->invoice_qr);
                     if (file_exists($qrPath)) {
                         $qrBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($qrPath));
                     }
