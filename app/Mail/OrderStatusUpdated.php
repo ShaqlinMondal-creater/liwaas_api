@@ -27,37 +27,9 @@ class OrderStatusUpdated extends Mailable
     public function build()
     {
         return $this->subject('Your Liwaas Order Status Has Been Updated')
-                    ->view('emails.order_status_update')
-                    ->with(['order' => $this->order]);
+            ->view('emails.order_status_update')
+            ->with([
+                'order' => $this->order->load('user', 'shipping', 'invoice')
+            ]);
     }
-
-    /**
-     * Get the message envelope.
-     */
-    // public function envelope(): Envelope
-    // {
-    //     return new Envelope(
-    //         subject: 'Order Status Updated',
-    //     );
-    // }
-
-    // /**
-    //  * Get the message content definition.
-    //  */
-    // public function content(): Content
-    // {
-    //     return new Content(
-    //         view: 'view.name',
-    //     );
-    // }
-
-    // /**
-    //  * Get the attachments for the message.
-    //  *
-    //  * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-    //  */
-    // public function attachments(): array
-    // {
-    //     return [];
-    // }
 }
