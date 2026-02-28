@@ -126,15 +126,15 @@ class AdminController extends Controller
             'paid_orders'         => Payment::where('payment_status', 'success')->count(),
             'pending_payments'    => Payment::where('payment_status', 'pending')->count(),
             'cod_orders'          => Payment::where('payment_type', 'COD')->count(),
-            'pre-paid_orders'  => Payment::where('payment_type', '!=', 'COD')
-                                             ->where('payment_status', 'success')->count(),
-            'total_revenue'       => Payment::where('payment_status', 'success')->sum('payment_amount'),
+            'pre-paid_orders'           => Payment::where('payment_type', '!=', 'COD')->where('payment_status', 'success')->count(),
+            'total_revenue'             => Payment::where('payment_status', 'success')->sum('payment_amount'),
+            'total_upcomint_revenue'    => Payment::where('payment_status', 'pending')->sum('payment_amount'),
         ];
 
         /* ================= SHIPPING ================= */
         $shipping = [
             'total_shipments'     => Shipping::count(),
-            'pending_shipments'   => Shipping::where('shipping_status', 'pending')->count(),
+            'pending_shipments'   => Shipping::where('shipping_status', 'Pending')->count(),
             'approved_shipments'=> Shipping::where('shipping_status', 'Approved')->count(),
             'delivered_shipments' => Shipping::where('shipping_status', 'Completed')->count(),
         ];
