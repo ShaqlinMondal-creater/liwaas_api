@@ -99,7 +99,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 Route::post('/getsections', [SectionViewController::class, 'getSections']); 
                 Route::delete('/delete/{id}', [SectionViewController::class, 'deleteSections']);
                 Route::put('/update/{id}', [SectionViewController::class, 'updateSection']);
-
             });
 
             // Extras File
