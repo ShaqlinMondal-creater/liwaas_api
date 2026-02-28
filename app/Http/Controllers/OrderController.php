@@ -820,7 +820,7 @@ class OrderController extends Controller
         $limit = (int) $request->input('limit', 15);
         $offset = (int) $request->input('offset', 0);
 
-        $query = Orders::with(['user', 'items.variation', 'items.product', 'shipping.address', 'invoice'])
+        $query = Orders::with(['user', 'items.variation', 'items.product', 'shipping.address', 'invoice', 'payment'])
             ->when($orderCode, fn($q) => $q->where('order_code', 'like', "%$orderCode%"))
             ->when($orderId, fn($q) => $q->where('id', $orderId))
             ->when($userName, function ($q) use ($userName) {
@@ -849,7 +849,20 @@ class OrderController extends Controller
 
                 'shipping' => $order->shipping,
                 'payment_type' => $order->payment_type,
-                'payment_status' => $order->payment_status,
+                'payment_status' => $order->payment->payment_status ?? null,
+                'payment' => $order->payment ? [
+                    'id' => $order->payment->id,
+                    'generate_order_id' => $order->payment->genarate_order_id,
+                    'payment_type' => $order->payment->payment_type,
+                    'transaction_id' => $order->payment->transaction_payment_id,
+                    'amount' => $order->payment->payment_amount,
+                    'status' => $order->payment->payment_status,
+                    'response' => $order->payment->response_,
+                    'created_at' => optional($order->payment->created_at)->timezone('Asia/Kolkata')->translatedFormat('jS M Y, h:i A'),
+                ] : [
+                    'payment_type' => $order->payment_type, // fallback for COD
+                    'status' => 'pending',
+                ],
                 'order_status' => $order->order_status,
                 'grand_total' => $order->grand_total,
                 'items' => $order->items->map(function ($item) {
