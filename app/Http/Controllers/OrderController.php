@@ -33,6 +33,7 @@ use App\Mail\OrderPlacedMail;
 use App\Mail\OrderStatusUpdated;
 // use App\Services\ShiprocketService;
 use Illuminate\Support\Facades\Storage;
+use App\Helpers\ColorHelper;
 
 class OrderController extends Controller
 {
@@ -359,7 +360,7 @@ class OrderController extends Controller
                         ],
                         'variation' => $item->variation ? [
                             'uid' => $item->variation->uid,
-                            'color' => $item->variation->color,
+                            'color' => ColorHelper::get($item->variation->color),
                             'size' => $item->variation->size,
                             'sell_price' => $item->variation->sell_price,
                         ] : null,
@@ -493,7 +494,7 @@ class OrderController extends Controller
                     ],
                     'variation' => $item->variation ? [
                         'uid' => $item->variation->uid,
-                        'color' => $item->variation->color,
+                        'color' => ColorHelper::get($item->variation->color),
                         'size' => $item->variation->size,
                         'sell_price' => $item->variation->sell_price,
                     ] : null,
@@ -606,7 +607,8 @@ class OrderController extends Controller
             $variation = \App\Models\ProductVariations::where('uid', $item->uid)->first();
             if ($variation) {
                 $item->image_link = $this->getImageLinkForItem($item);
-                $item->color = $variation->color ?? null;
+                // $item->color = $variation->color ?? null;
+                $item->color = \App\Helpers\ColorHelper::get($variation->color ?? null);
                 $item->size = $variation->size ?? null;
             } else {
                 $item->image_link = null;
@@ -894,7 +896,7 @@ class OrderController extends Controller
                         ],
                         'variation' => $item->variation ? [
                             'uid' => $item->variation->uid,
-                            'color' => $item->variation->color,
+                            'color' => ColorHelper::get($item->variation->color),
                             'size' => $item->variation->size,
                             'sell_price' => $item->variation->sell_price,
                         ] : null,

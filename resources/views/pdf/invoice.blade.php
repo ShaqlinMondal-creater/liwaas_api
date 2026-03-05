@@ -303,7 +303,7 @@
                         </table>
                     </td>
                     <td style="text-align:center;">
-                        Color: <span style="display:inline-block;border-radius:50%;width:15px;height:15px;background-color:{{ $item->variation->color ?? '#ffffff' }};"></span>
+                        Color: <span style="display:inline-block;border-radius:50%;width:15px;height:15px;background-color:{{ $item->variation->color['code'] ?? '#ffffff' }};"></span>{{ $item->variation->color['name'] ?? '' }}
                         <br>
                         Size: {{ $item->variation->size ?? 'N/A' }}
                     </td>

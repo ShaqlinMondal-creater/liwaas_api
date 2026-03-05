@@ -76,7 +76,12 @@
                         </td>
                         <td>
                           Size: {{ $item->variation->size ?? '-' }}<br>
-                          Color: {{ $item->variation->color ?? '-' }}
+                          @php
+                            $color = \App\Helpers\ColorHelper::get($item->variation->color);
+                          @endphp
+                          <span style=" display:inline-block; width:12px; height:12px; border-radius:50%; background:{{ $color['code'] ?? '#ffffff' }}; border:1px solid #ccc; margin-right:4px;">
+                          </span>
+                          {{ $color['name'] ?? 'N/A' }}
                       </td>
                         <td align="center">{{ $item->quantity }}</td>
                         <td align="center">₹ 0.00</td>
