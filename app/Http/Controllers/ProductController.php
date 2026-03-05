@@ -518,7 +518,7 @@ class ProductController extends Controller
 
                     'variation' => [
                         'uid'           => $variation->uid,
-                        'color'         => $variation->color,
+                        'color'         => ColorHelper::get($variation->color),
                         'size'          => $this->formatSize($variation->size),
                         'regular_price'=> $variation->regular_price,
                         'sell_price'   => $variation->sell_price,
@@ -582,7 +582,7 @@ class ProductController extends Controller
                     ]);
 
                 $variation['size'] = $this->formatSize($variation['size']);
-
+                $variation['color'] = ColorHelper::get($variation['color']);
                 // ✅ Product Specs (NEW)
                 $variation['specs'] = ProductSpecModel::where('uid', $variation['uid'])
                     ->get(['id', 'spec_name', 'spec_value']);
@@ -646,7 +646,8 @@ class ProductController extends Controller
                         'url' => url($u->url),   // 🔥 FIX
                         'file_name' => $u->file_name,
                     ]);
-
+                $variation['size'] = $this->formatSize($variation['size']);
+                $variation['color'] = ColorHelper::get($variation['color']);
                 // ✅ Product Specs (NEW)
                 $variation['specs'] = ProductSpecModel::where('uid', $variation['uid'])
                     ->get(['id', 'spec_name', 'spec_value']);
@@ -721,6 +722,7 @@ class ProductController extends Controller
                         ]);
 
                     $v->size = $this->formatSize($v->size);
+                    $v->color = ColorHelper::get($v->color);
 
                     // ✅ Product Specs (NEW)
                     $v->specs = ProductSpecModel::where('uid', $v->uid)
