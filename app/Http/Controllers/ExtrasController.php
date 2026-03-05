@@ -28,7 +28,7 @@ class ExtrasController extends Controller
         $extra = Extra::create([
             'purpose_name' => $validated['purpose_name'],
             'file_name' => $fileName,
-            'file_path' => $path, // ✅ store full URL
+            'file_path' => asset($url), // ✅ store full URL
             'show_status' => $request->input('show_status', 0), // ✅ default to 0
             'comments' => $request->input('comments'),
             'highlights' => $request->input('highlights'),
