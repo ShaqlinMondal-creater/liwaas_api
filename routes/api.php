@@ -36,6 +36,8 @@ use App\Http\Controllers\CouponController;
         Route::post('/remove-from-cart', [Analytic_viewController::class, 'trackRemoveFromCart']);
     });
 
+    Route::post('/colors/getAll', [HelperController::class, 'getAllColors']); // Get all colors
+
     Route::prefix('products')->group(function () {
         Route::post('get-product-byslug/{slug}', [ProductController::class, 'getProductsBySlug']); // through slug product filter 
         Route::post('/allProducts', [ProductController::class, 'getAllProducts']); // All product showing
@@ -148,6 +150,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/delete-specs', [ProductController::class, 'deleteProductSpecs']);
         });
         
+        Route::prefix('colors')->group(function () {
+            Route::post('/add', [HelperController::class, 'addColor']);
+            Route::delete('/delete', [HelperController::class, 'deleteColor']);
+            Route::put('/edit', [HelperController::class, 'updateColor']);
+        });
+
         // For Brand
         Route::prefix('brands')->group(function () {
             Route::post('/add', [BrandController::class, 'addBrand']); // add brand
