@@ -10,6 +10,7 @@ use App\Models\ProductVariations;
 use App\Models\Upload;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use App\Helpers\ColorHelper;
 
 class CartController extends Controller
 {
@@ -189,7 +190,7 @@ class CartController extends Controller
                 'variation'    => [
                     'uid'    => $cart->uid,
                     'aid'    => $cart->aid,
-                    'color'  => optional($cart->variation)->color,
+                    'color' => ColorHelper::get(optional($cart->variation)->color),
                     'size'   => optional($cart->variation)->size,
                     'images' => $imageUrls
                 ]
@@ -323,7 +324,7 @@ class CartController extends Controller
                         'id' => $variation->id,
                         'uid' => $variation->uid,
                         'aid' => $variation->aid,
-                        'color' => $variation->color,
+                        'color' => ColorHelper::get($variation->color),
                         'size' => $variation->size,
                         'regular_price' => $variation->regular_price,
                         'sell_price' => $variation->sell_price,
