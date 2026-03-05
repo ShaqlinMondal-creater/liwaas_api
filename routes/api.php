@@ -36,7 +36,7 @@ use App\Http\Controllers\CouponController;
         Route::post('/remove-from-cart', [Analytic_viewController::class, 'trackRemoveFromCart']);
     });
 
-    Route::post('/colors/getAll', [HelperController::class, 'getAllColors']); // Get all colors
+    Route::get('/colors/getAll', [HelperController::class, 'getAllColors']); // Get all colors
 
     Route::prefix('products')->group(function () {
         Route::post('get-product-byslug/{slug}', [ProductController::class, 'getProductsBySlug']); // through slug product filter 
