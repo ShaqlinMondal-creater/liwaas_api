@@ -11,7 +11,7 @@ use App\Models\Upload;
 use App\Models\Category;
 use App\Models\SectionView;
 use Carbon\Carbon;
-
+use App\Helpers\ColorHelper;
 
 class SectionViewController extends Controller
 {
@@ -154,7 +154,7 @@ class SectionViewController extends Controller
                             'id' => $variation->id,
                             'uid' => $variation->uid,
                             'aid' => $variation->aid,
-                            'color' => $variation->color,
+                            'color' => ColorHelper::get($variation->color),
                             'size' => $variation->size,
                             'regular_price' => $variation->regular_price,
                             'sell_price' => $variation->sell_price,
@@ -321,7 +321,7 @@ class SectionViewController extends Controller
                         'id' => $variation->id,
                         'uid' => $variation->uid,
                         // 'aid' => $variation->aid,
-                        'color' => $variation->color,
+                        'color' => ColorHelper::get($variation->color),
                         'size' => $variation->size,
                         // 'regular_price' => $variation->regular_price,
                         // 'sell_price' => $variation->sell_price,
@@ -399,7 +399,7 @@ class SectionViewController extends Controller
                             'id' => $var->id,
                             'uid' => $var->uid,
                             // 'aid' => $var->aid,
-                            'color' => $var->color,
+                            'color' => ColorHelper::get($var->color),
                             'size' => $var->size,
                             // 'regular_price' => $var->regular_price,
                             // 'sell_price' => $var->sell_price,
@@ -453,7 +453,7 @@ class SectionViewController extends Controller
                 // ] : null,
                 'variation' => [
                     'id' => $variation->id,
-                    'color' => $variation->color,
+                    'color' => ColorHelper::get($variation->color),
                     'size' => $variation->size,
                 ],
                 'reviews' => $productReviews->map(function ($review) {
@@ -580,7 +580,7 @@ class SectionViewController extends Controller
                         // 'gst' => $variation->gst,
                         // 'stock' => $variation->stock,
                         // 'images_id' => $variation->images_id,
-                        'color' => $variation->color,
+                        'color' => ColorHelper::get($variation->color),
                         'size' => $variation->size,
                         'images' => $images, // ✅ Added image URLs based on images_id
                     ];

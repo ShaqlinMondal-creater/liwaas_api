@@ -8,6 +8,7 @@ use App\Models\ProductVariations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth; 
 use Illuminate\Support\Facades\DB;
+use App\Helpers\ColorHelper;
 
 class ProductReviewController extends Controller
 {
@@ -156,7 +157,7 @@ class ProductReviewController extends Controller
                 'uid'        => $review->uid,
                 'aid'        => $review->aid,
                 'variation'  => [
-                    'color' => $review->variation->color ?? null,
+                    'color' => ColorHelper::get(optional($review->variation)->color),
                     'size'  => $review->variation->size ?? null,
                 ],
                 'star'       => $review->total_star,

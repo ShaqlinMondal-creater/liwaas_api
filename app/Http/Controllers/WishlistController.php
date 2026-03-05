@@ -7,6 +7,7 @@ use App\Models\Wishlist;
 use App\Models\Product;
 use App\Models\ProductVariations;
 use App\Models\Upload;
+use App\Helpers\ColorHelper;
 
 class WishlistController extends Controller
 {
@@ -107,7 +108,7 @@ class WishlistController extends Controller
                     'id'           => $variation->id,
                     'uid'          => $variation->uid,
                     'aid'          => $variation->aid,
-                    'color'        => $variation->color,
+                    'color'        => ColorHelper::get($variation->color),
                     'size'         => $variation->size,
                     'regular_price'=> $variation->regular_price,
                     'sell_price'   => $variation->sell_price,
@@ -181,7 +182,7 @@ class WishlistController extends Controller
                 // 'variant_id' => $wishlist->variation->id ?? null,
                 'uid' => $wishlist->variation->uid ?? null,
                 'aid' => $wishlist->variation->aid ?? null,
-                'color' => $wishlist->variation->color ?? null,
+                'color' => ColorHelper::get(optional($wishlist->variation)->color),
                 'size' => $wishlist->variation->size ?? null,
                 'sell_price' => $wishlist->variation->sell_price ?? null,
                 'images_id' => $images
@@ -335,7 +336,7 @@ class WishlistController extends Controller
                 'variation' => $wishlist->variation ? [
                     'uid' => $wishlist->variation->uid,
                     'aid' => $wishlist->variation->aid,
-                    'color' => $wishlist->variation->color,
+                    'color' => ColorHelper::get($wishlist->variation->color),
                     'size' => $wishlist->variation->size,
                     'sell_price' => $wishlist->variation->sell_price,
                     'images' => $images
