@@ -14,6 +14,7 @@ use App\Models\Upload;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\ColorHelper;
 
 class ProductController extends Controller
 {
@@ -371,6 +372,7 @@ class ProductController extends Controller
                 // Resolve variation images
                 $arr['variations'] = collect($product->variations)->map(function ($variation) {
                     $variationArr = $variation->toArray();
+                    $variationArr['color'] = ColorHelper::get($variationArr['color']);
                     $variationArr['size'] = $this->formatSize($variationArr['size']);
 
                     $imageIds = array_filter(explode(',', $variation->images_id ?? ''));
