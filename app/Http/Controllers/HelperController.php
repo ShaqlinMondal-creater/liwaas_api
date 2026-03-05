@@ -70,20 +70,19 @@ class HelperController extends Controller
         // Attach hex code
         $colorsWithCode = $colors->map(function($color) use ($colorMap){
 
-    $key = strtolower(trim($color));
+            $key = strtolower(trim($color));
 
-    $code = '#e5e7eb';
+            $code = '#e5e7eb';
 
-    if($colorMap->has($key)){
-        $code = $colorMap[$key]['code'];
-    }
+            if($colorMap->has($key)){
+                $code = $colorMap[$key]['code'];
+            }
 
-    return [
-        'name' => $color,
-        'code' => $code
-    ];
-});
-
+            return [
+                'name' => $color,
+                'code' => $code
+            ];
+        });
 
         return response()->json([
             'success' => true,
