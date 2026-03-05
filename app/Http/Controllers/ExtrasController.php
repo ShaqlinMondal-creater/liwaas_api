@@ -85,7 +85,10 @@ class ExtrasController extends Controller
             ], 404);
         }
 
-        Storage::disk('public')->delete($extra->file_path);
+        // Convert URL to storage path
+        $path = str_replace(asset('storage') . '/', '', $extra->file_path);
+
+        Storage::disk('public')->delete($path);
 
         $extra->delete();
 
