@@ -40,7 +40,7 @@ class HelperController extends Controller
     //     ]);
     // }
 
-    public function getFilters()
+public function getFilters()
 {
     // Get all categories
     $categories = Category::select('id', 'name')->get();
@@ -53,18 +53,28 @@ class HelperController extends Controller
     // Unique colors from DB
     $dbColors = ProductVariations::whereNotNull('color')
         ->distinct()
-        ->pluck('color');
+        ->pluck('color')
+        ->toArray();
 
     // Load colors.json
-    $colorJson = Storage::get('data/colors.json');
-    $colorData = json_decode($colorJson, true);
+    $path = storage_path('app/data/colors.json');
+
+    $colorData = [];
+    if (file_exists($path)) {
+        $json = file_get_contents($path);
+        $decoded = json_decode($json, true);
+
+        if (isset($decoded['colors'])) {
+            $colorData = $decoded['colors'];
+        }
+    }
 
     // Match DB colors with JSON colors
-    $colors = collect($colorData['colors'])
+    $colors = collect($colorData)
         ->whereIn('name', $dbColors)
         ->values();
 
-    // Min/Max price
+    // Min / Max price
     $price = ProductVariations::select(
         DB::raw('MIN(sell_price) as min_price'),
         DB::raw('MAX(sell_price) as max_price')
@@ -81,6 +91,7 @@ class HelperController extends Controller
         ]
     ]);
 }
+
 
 
 }
