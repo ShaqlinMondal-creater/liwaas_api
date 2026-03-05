@@ -21,6 +21,17 @@ Delete Messege notification
 
 Section products
 
+Analytics:
+View Analytic -> 
+Fetch Analytic ->
+Update Analytic ->
+Delete Analytic ->
+
+Notification:
+Create Messege notification
+Fetch Messege notification 
+Update Messege notification 
+Delete Messege notification
 
 priority:
 1. order placed placed mail design like otp mail layout design

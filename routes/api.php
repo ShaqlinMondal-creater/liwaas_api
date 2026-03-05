@@ -29,6 +29,13 @@ use App\Http\Controllers\CouponController;
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
+    Route::prefix('analytics')->group(function () {
+        Route::post('/track-session', [Analytic_viewController::class, 'trackSession']);
+        Route::post('/product-view/{id}', [Analytic_viewController::class, 'trackProductView']);
+        Route::post('/add-to-cart', [Analytic_viewController::class, 'trackAddToCart']);
+        Route::post('/remove-from-cart', [Analytic_viewController::class, 'trackRemoveFromCart']);
+    });
+
     Route::prefix('products')->group(function () {
         Route::post('get-product-byslug/{slug}', [ProductController::class, 'getProductsBySlug']); // through slug product filter 
         Route::post('/allProducts', [ProductController::class, 'getAllProducts']); // All product showing
@@ -43,7 +50,6 @@ use App\Http\Controllers\CouponController;
 
     });
     
-
     Route::get('/filters', [HelperController::class, 'getFilters']); // Get all Filter for products
     Route::post('/allBrands', [BrandController::class, 'getAllBrands']); //All brand showing
     Route::post('/allCategories', [CategoryController::class, 'getAllCategories']); //All category showing
