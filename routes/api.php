@@ -50,7 +50,7 @@ use App\Http\Controllers\StockController;
             Route::post('/fetch', [StockController::class,'getSalesOrders']);
             Route::post('/fetch-detail', [StockController::class,'getSalesOrderDetail']);
             Route::delete('/delete', [StockController::class,'deleteSalesOrder']);
-
+            Route::delete('/pdf', [StockController::class,'generateSalesOrderPdf']);
 
             Route::post('/delete', [StockController::class,'deleteStock']);
             Route::post('/edit', [StockController::class,'editStock']);
