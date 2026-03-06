@@ -49,7 +49,7 @@ use App\Http\Controllers\StockController;
             Route::post('/create', [StockController::class, 'createSalesOrder']);
             Route::post('/fetch', [StockController::class,'getSalesOrders']);
             Route::post('/fetch-detail', [StockController::class,'getSalesOrderDetail']);
-            Route::post('/delete', [StockController::class,'deleteSalesOrder']);
+            Route::delete('/delete', [StockController::class,'deleteSalesOrder']);
 
 
             Route::post('/delete', [StockController::class,'deleteStock']);
