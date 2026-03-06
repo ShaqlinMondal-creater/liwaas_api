@@ -54,10 +54,10 @@ use App\Http\Controllers\StockController;
 
         });
         Route::prefix('clients')->group(function(){
-            Route::post('/create',[StocksClientController::class,'create']);
-            Route::post('/fetch',[StocksClientController::class,'fetch']);
-            Route::put('/update/{id}',[StocksClientController::class,'update']);
-            Route::delete('/delete/{id}',[StocksClientController::class,'delete']);
+            Route::post('/create',[StockController::class,'create']);
+            Route::post('/fetch',[StockController::class,'fetch']);
+            Route::put('/update/{id}',[StockController::class,'update']);
+            Route::delete('/delete/{id}',[StockController::class,'delete']);
 
         });
 
