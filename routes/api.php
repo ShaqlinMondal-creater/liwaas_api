@@ -42,6 +42,9 @@ use App\Http\Controllers\StockController;
     Route::prefix('stocks')->group(function () {
         Route::post('/add-stock', [StockController::class, 'addProductStock']);
         Route::post('/get-stock', [StockController::class,'getProductStocks']);
+        Route::post('/delete-stock', [StockController::class,'deleteStock']);
+        Route::post('/edit-stock', [StockController::class,'editStock']);
+
     });
 
     Route::get('/colors/getAll', [HelperController::class, 'getAllColors']); // Get all colors

@@ -42,45 +42,21 @@ class StockController extends Controller
         ]);
     }
 
-    // public function getProductStocks(Request $request)
-    // {
+    public function deleteStock(Request $request)
+    {
 
-    //     $query = StocksProduct::query();
+        $request->validate([
+            'ids' => 'required|array'
+        ]);
 
-    //     // search
-    //     if($request->search){
-    //         $query->where(function($q) use ($request){
-    //             $q->where('name','like','%'.$request->search.'%')
-    //             ->orWhere('uid','like','%'.$request->search.'%');
-    //         });
-    //     }
+        StocksProduct::whereIn('id', $request->ids)->delete();
 
-    //     // size filter
-    //     if($request->size){
-    //         $query->where('size',$request->size);
-    //     }
+        return response()->json([
+            'status' => true,
+            'message' => 'Stock deleted successfully'
+        ]);
 
-    //     // color filter
-    //     if($request->color){
-    //         $query->where('color',$request->color);
-    //     }
-
-    //     // status filter
-    //     if($request->status !== null){
-    //         $query->where('status',$request->status);
-    //     }
-
-    //     $products = $query
-    //         ->orderBy('id','desc')
-    //         ->paginate($request->limit ?? 10);
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Stocks fetched successfully',
-    //         'data' => $products
-    //     ]);
-
-    // }
+    }
 
     public function getProductStocks(Request $request)
     {
