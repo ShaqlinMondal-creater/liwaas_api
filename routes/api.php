@@ -19,6 +19,9 @@ use App\Http\Controllers\SectionViewController;
 use App\Http\Controllers\HelperController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\CouponController;
+use App\Http\Controllers\Analytic_viewController;
+use App\Http\Controllers\StockController;
+
 
     // Public routes
     Route::post('/register', [AuthController::class, 'register']);
