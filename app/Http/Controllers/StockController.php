@@ -22,7 +22,7 @@ class StockController extends Controller
 
         $last = StocksProduct::orderBy('uid','desc')->first();
 
-        $uid = $last ? $last->uid + 1 : time();
+        $uid = time();
 
         $product = StocksProduct::create([
             'uid' => $uid,
@@ -133,5 +133,5 @@ class StockController extends Controller
         ]);
     }
 
-    
+
 }
