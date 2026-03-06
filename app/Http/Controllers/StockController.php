@@ -58,6 +58,52 @@ class StockController extends Controller
 
     }
 
+    public function editStock(Request $request)
+    {
+
+        $request->validate([
+            'id' => 'required|exists:stocks_products,id'
+        ]);
+
+        $product = StocksProduct::find($request->id);
+
+        if ($request->has('name')) {
+            $product->name = $request->name;
+        }
+
+        if ($request->has('size')) {
+            $product->size = $request->size;
+        }
+
+        if ($request->has('color')) {
+            $product->color = $request->color;
+        }
+
+        if ($request->has('list_price')) {
+            $product->list_price = $request->list_price;
+        }
+
+        if ($request->has('sale_price')) {
+            $product->sale_price = $request->sale_price;
+        }
+
+        if ($request->has('stock')) {
+            $product->stock = $request->stock;
+        }
+
+        if ($request->has('status')) {
+            $product->status = $request->status;
+        }
+
+        $product->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Stock updated successfully',
+            'data' => $product
+        ]);
+    }
+
     public function getProductStocks(Request $request)
     {
 
