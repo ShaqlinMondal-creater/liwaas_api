@@ -45,6 +45,14 @@ use App\Http\Controllers\StockController;
         Route::post('/delete-stock', [StockController::class,'deleteStock']);
         Route::post('/edit-stock', [StockController::class,'editStock']);
 
+        Route::prefix('sales-order')->group(function () {
+            Route::post('/create', [StockController::class, 'createSalesOrder']);
+            Route::post('/fetch', [StockController::class,'getProductStocks']);
+            Route::post('/delete', [StockController::class,'deleteStock']);
+            Route::post('/edit', [StockController::class,'editStock']);
+
+        });
+
     });
 
     Route::get('/colors/getAll', [HelperController::class, 'getAllColors']); // Get all colors

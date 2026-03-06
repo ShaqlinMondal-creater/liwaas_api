@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\StocksProduct;
+use App\Models\StocksSalesOrder;
+use App\Models\StocksSalesOrderItem;
+use App\Models\StocksClient;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class StockController extends Controller
 {
@@ -41,7 +45,6 @@ class StockController extends Controller
             'data' => $product
         ]);
     }
-
     public function deleteStock(Request $request)
     {
 
@@ -57,7 +60,6 @@ class StockController extends Controller
         ]);
 
     }
-
     public function editStock(Request $request)
     {
 
@@ -103,7 +105,6 @@ class StockController extends Controller
             'data' => $product
         ]);
     }
-
     public function getProductStocks(Request $request)
     {
 
@@ -155,5 +156,94 @@ class StockController extends Controller
         ]);
     }
 
+
+    // sales order functions
+    public function createSalesOrder(Request $request)
+    {
+        $request->validate([
+            'client_id' => 'required|exists:stocks_clients,id',
+            'items' => 'required|array|min:1',
+            'items.*.uid' => 'required',
+            'items.*.qty' => 'required|integer|min:1',
+            'items.*.price' => 'required|numeric',
+            'items.*.tax' => 'nullable|numeric'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            $grand_total = 0;
+            $total_tax = 0;
+
+            // confirm client exists
+            $client = StocksClient::find($request->client_id);
+
+            // generate order number
+            $sales_order_no = 'SO' . time();
+
+            $order = StocksSalesOrder::create([
+                'sales_order_no' => $sales_order_no,
+                'client_id' => $client->id,
+                'grand_total' => 0,
+                'total_tax' => 0
+            ]);
+
+            foreach ($request->items as $item) {
+
+                $sub_total = $item['qty'] * $item['price'];
+                $sub_total_tax = $item['tax'] ?? 0;
+
+                $grand_total += $sub_total;
+                $total_tax += $sub_total_tax;
+
+                StocksSalesOrderItem::create([
+                    'sales_order_id' => $order->id,
+                    'uid' => $item['uid'],
+                    'qty' => $item['qty'],
+                    'price' => $item['price'],
+                    'tax' => $item['tax'] ?? 0,
+                    'sub_total' => $sub_total,
+                    'sub_total_tax' => $sub_total_tax
+                ]);
+
+                // reduce stock
+                StocksProduct::where('uid', $item['uid'])
+                    ->decrement('stock', $item['qty']);
+            }
+
+            $order->update([
+                'grand_total' => $grand_total,
+                'total_tax' => $total_tax
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Sales order created successfully',
+                'data' => [
+                    'sales_order_id' => $order->id,
+                    'sales_order_no' => $order->sales_order_no,
+                    'client' => [
+                        'id' => $client->id,
+                        'name' => $client->name,
+                        'mobile' => $client->mobile
+                    ],
+                    'grand_total' => $grand_total,
+                    'total_tax' => $total_tax
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollback();
+
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
 
 }
