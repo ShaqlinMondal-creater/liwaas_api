@@ -42,43 +42,84 @@ class StockController extends Controller
         ]);
     }
 
+    // public function getProductStocks(Request $request)
+    // {
+
+    //     $query = StocksProduct::query();
+
+    //     // search
+    //     if($request->search){
+    //         $query->where(function($q) use ($request){
+    //             $q->where('name','like','%'.$request->search.'%')
+    //             ->orWhere('uid','like','%'.$request->search.'%');
+    //         });
+    //     }
+
+    //     // size filter
+    //     if($request->size){
+    //         $query->where('size',$request->size);
+    //     }
+
+    //     // color filter
+    //     if($request->color){
+    //         $query->where('color',$request->color);
+    //     }
+
+    //     // status filter
+    //     if($request->status !== null){
+    //         $query->where('status',$request->status);
+    //     }
+
+    //     $products = $query
+    //         ->orderBy('id','desc')
+    //         ->paginate($request->limit ?? 10);
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Stocks fetched successfully',
+    //         'data' => $products
+    //     ]);
+
+    // }
+
     public function getProductStocks(Request $request)
     {
 
         $query = StocksProduct::query();
 
-        // search
-        if($request->search){
-            $query->where(function($q) use ($request){
-                $q->where('name','like','%'.$request->search.'%')
-                ->orWhere('uid','like','%'.$request->search.'%');
+        // search by name or uid
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                ->orWhere('uid', 'like', '%' . $request->search . '%');
             });
         }
 
-        // size filter
-        if($request->size){
-            $query->where('size',$request->size);
+        // filter by size
+        if ($request->filled('size')) {
+            $query->where('size', $request->size);
         }
 
-        // color filter
-        if($request->color){
-            $query->where('color',$request->color);
+        // filter by color
+        if ($request->filled('color')) {
+            $query->where('color', $request->color);
         }
 
-        // status filter
-        if($request->status !== null){
-            $query->where('status',$request->status);
+        // filter by status
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
         }
+
+        $limit = $request->limit ?? 10;
 
         $products = $query
-            ->orderBy('id','desc')
-            ->paginate($request->limit ?? 10);
+            ->orderBy('id', 'desc')
+            ->paginate($limit);
 
         return response()->json([
             'status' => true,
             'message' => 'Stocks fetched successfully',
             'data' => $products
         ]);
-
     }
 }
