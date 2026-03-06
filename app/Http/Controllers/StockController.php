@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Mpdf\Mpdf;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use App\Models\StocksProduct;
 use App\Models\StocksSalesOrder;
@@ -377,17 +377,28 @@ class StockController extends Controller
             ]);
         }
 
-        // reusable body function
+        // prevent duplicate pdf
+        $existing = StocksUpload::where('type','order')
+            ->where('number',$order->sales_order_no)
+            ->first();
+
+        if($existing){
+            return response()->json([
+                'status'=>true,
+                'message'=>'Sales order pdf already exists',
+                'file_url'=>$existing->file_url
+            ]);
+        }
+
+        // generate html
         $html = $this->salesOrderPdfBody($order);
 
-        $mpdf = new \Mpdf\Mpdf();
-
-        $mpdf->WriteHTML($html);
+        $pdf = Pdf::loadHTML($html)->setPaper('a4');
 
         $fileName = 'sales_order_'.$order->sales_order_no.'.pdf';
         $filePath = 'sales_orders/'.$fileName;
 
-        \Storage::disk('public')->put($filePath,$mpdf->Output('', 'S'));
+        \Storage::disk('public')->put($filePath,$pdf->output());
 
         $url = asset('storage/'.$filePath);
 
@@ -411,24 +422,24 @@ class StockController extends Controller
         <style>
 
         body{
-        font-family: sans-serif;
-        font-size:12px;
+            font-family: sans-serif;
+            font-size:12px;
         }
 
         table{
-        width:100%;
-        border-collapse:collapse;
-        margin-top:15px;
+            width:100%;
+            border-collapse:collapse;
+            margin-top:15px;
         }
 
         th,td{
-        border:1px solid #ddd;
-        padding:6px;
-        text-align:left;
+            border:1px solid #ddd;
+            padding:6px;
+            text-align:left;
         }
 
         .header{
-        margin-bottom:20px;
+            margin-bottom:20px;
         }
 
         </style>
@@ -439,11 +450,11 @@ class StockController extends Controller
 
         <p><strong>Order No:</strong> '.$order->sales_order_no.'</p>
 
-        <p><strong>Client:</strong> '.$order->client->name.'</p>
+        <p><strong>Client:</strong> '.($order->client->name ?? '-').'</p>
 
-        <p><strong>Mobile:</strong> '.$order->client->mobile.'</p>
+        <p><strong>Mobile:</strong> '.($order->client->mobile ?? '-').'</p>
 
-        <p><strong>Date:</strong> '.$order->created_at.'</p>
+        <p><strong>Date:</strong> '.$order->created_at->format('d M Y').'</p>
 
         </div>
 
@@ -467,18 +478,18 @@ class StockController extends Controller
 
         foreach($order->items as $item){
 
-        $html .= '
+            $html .= '
 
-        <tr>
-        <td>'.$item->product->name.'</td>
-        <td>'.$item->product->size.'</td>
-        <td>'.$item->product->color.'</td>
-        <td>'.$item->qty.'</td>
-        <td>'.$item->price.'</td>
-        <td>'.$item->sub_total.'</td>
-        </tr>
+            <tr>
+            <td>'.($item->product->name ?? '-').'</td>
+            <td>'.($item->product->size ?? '-').'</td>
+            <td>'.($item->product->color ?? '-').'</td>
+            <td>'.$item->qty.'</td>
+            <td>'.number_format($item->price,2).'</td>
+            <td>'.number_format($item->sub_total,2).'</td>
+            </tr>
 
-        ';
+            ';
 
         }
 
@@ -488,7 +499,7 @@ class StockController extends Controller
 
         </table>
 
-        <h3 style="margin-top:20px;">Grand Total : '.$order->grand_total.'</h3>
+        <h3 style="margin-top:20px;">Grand Total : '.number_format($order->grand_total,2).'</h3>
 
         ';
 
