@@ -8,6 +8,8 @@ use App\Models\StocksProduct;
 use App\Models\StocksSalesOrder;
 use App\Models\StocksSalesOrderItem;
 use App\Models\StocksClient;
+use App\Models\StocksUpload;
+
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
