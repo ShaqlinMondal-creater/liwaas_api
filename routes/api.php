@@ -48,6 +48,8 @@ use App\Http\Controllers\StockController;
         Route::prefix('sales-order')->group(function () {
             Route::post('/create', [StockController::class, 'createSalesOrder']);
             Route::post('/fetch', [StockController::class,'getSalesOrders']);
+            Route::post('/fetch-detail', [StockController::class,'getSalesOrderDetail']);
+
             Route::post('/delete', [StockController::class,'deleteStock']);
             Route::post('/edit', [StockController::class,'editStock']);
 

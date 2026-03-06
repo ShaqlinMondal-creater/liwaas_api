@@ -291,4 +291,23 @@ class StockController extends Controller
         ]);
     }
 
+    public function getSalesOrderDetail(Request $request)
+    {
+
+        $request->validate([
+            'id' => 'required|exists:stocks_sales_orders,id'
+        ]);
+
+        $order = StocksSalesOrder::with([
+            'client',
+            'items.product'
+        ])->find($request->id);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Sales order detail fetched successfully',
+            'data' => $order
+        ]);
+
+    }
 }

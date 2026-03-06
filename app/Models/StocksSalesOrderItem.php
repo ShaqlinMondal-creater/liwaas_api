@@ -17,4 +17,9 @@ class StocksSalesOrderItem extends Model
         'sub_total',
         'sub_total_tax'
     ];
+
+    public function product()
+    {
+        return $this->belongsTo(StocksProduct::class,'uid','uid');
+    }
 }
