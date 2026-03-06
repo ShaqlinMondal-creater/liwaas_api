@@ -310,4 +310,52 @@ class StockController extends Controller
         ]);
 
     }
+
+    public function deleteSalesOrder(Request $request)
+    {
+
+        $request->validate([
+            'id' => 'required|exists:stocks_sales_orders,id'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            $order = StocksSalesOrder::find($request->id);
+
+            $items = StocksSalesOrderItem::where('sales_order_id',$order->id)->get();
+
+            // restore stock
+            foreach($items as $item){
+
+                StocksProduct::where('uid',$item->uid)
+                    ->increment('stock',$item->qty);
+
+            }
+
+            // delete items
+            StocksSalesOrderItem::where('sales_order_id',$order->id)->delete();
+
+            // delete order
+            $order->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Sales order deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollback();
+
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+
+    }
 }
