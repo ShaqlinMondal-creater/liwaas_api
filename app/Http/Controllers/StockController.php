@@ -417,289 +417,289 @@ class StockController extends Controller
             'file_url'=>$url
         ]);
     }
-private function salesOrderPdfBody($order)
-{
-
-$logoPath = public_path('logos/liwaas_logo_Black.jpg');
-$logoType = pathinfo($logoPath, PATHINFO_EXTENSION);
-$logoData = file_get_contents($logoPath);
-$logoBase64 = 'data:image/'.$logoType.';base64,'.base64_encode($logoData);
-
-$bgPath = public_path('logos/flower-removebg-preview.png');
-$bgType = pathinfo($bgPath, PATHINFO_EXTENSION);
-$bgData = file_get_contents($bgPath);
-$bgBase64 = 'data:image/'.$bgType.';base64,'.base64_encode($bgData);
-
-
-$html = '
-
-<style>
-
-body{
-font-family: DejaVu Sans, sans-serif;
-font-size:11px;
-color:#333;
-position:relative;
-}
-
-.bg-image{
-position:absolute;
-top:35%;
-left:20%;
-width:400px;
-opacity:0.08;
-z-index:-1;
-}
-
-.header{
-width:100%;
-margin-bottom:20px;
-}
-
-.header-left{
-float:left;
-}
-
-.header-right{
-float:right;
-text-align:right;
-}
-
-.logo{
-height:70px;
-}
-
-.clear{
-clear:both;
-}
+    private function salesOrderPdfBody($order)
+    {
+
+        $logoPath = public_path('logos/liwaas_logo_Black.jpg');
+        $logoType = pathinfo($logoPath, PATHINFO_EXTENSION);
+        $logoData = file_get_contents($logoPath);
+        $logoBase64 = 'data:image/'.$logoType.';base64,'.base64_encode($logoData);
+
+        $bgPath = public_path('logos/flower-removebg-preview.png');
+        $bgType = pathinfo($bgPath, PATHINFO_EXTENSION);
+        $bgData = file_get_contents($bgPath);
+        $bgBase64 = 'data:image/'.$bgType.';base64,'.base64_encode($bgData);
+
+
+        $html = '
+
+        <style>
+
+            body{
+            font-family: DejaVu Sans, sans-serif;
+            font-size:11px;
+            color:#333;
+            position:relative;
+            }
+
+            .bg-image{
+            position:absolute;
+            top:35%;
+            left:20%;
+            width:400px;
+            opacity:0.08;
+            z-index:-1;
+            }
+
+            .header{
+            width:100%;
+            margin-bottom:20px;
+            }
+
+            .header-left{
+            float:left;
+            }
+
+            .header-right{
+            float:right;
+            text-align:right;
+            }
+
+            .logo{
+            height:70px;
+            }
+
+            .clear{
+            clear:both;
+            }
 
-.title{
-font-size:24px;
-font-weight:bold;
-color:#c79b37;
-margin-bottom:10px;
-}
+            .title{
+            font-size:24px;
+            font-weight:bold;
+            color:#c79b37;
+            margin-bottom:10px;
+            }
 
-.info{
-margin-top:10px;
-line-height:1.6;
-}
+            .info{
+            margin-top:10px;
+            line-height:1.6;
+            }
 
-.bill{
-margin-top:20px;
-}
+            .bill{
+            margin-top:20px;
+            }
 
-table{
-width:100%;
-border-collapse:collapse;
-margin-top:15px;
-}
+            table{
+            width:100%;
+            border-collapse:collapse;
+            margin-top:15px;
+            }
 
-th,td{
-border:1px solid #666;
-padding:6px;
-font-size:11px;
-}
+            th,td{
+            border:1px solid #666;
+            padding:6px;
+            font-size:11px;
+            }
 
-th{
-background:#f5f5f5;
-text-align:center;
-}
+            th{
+            background:#f5f5f5;
+            text-align:center;
+            }
 
-.center{
-text-align:center;
-}
+            .center{
+            text-align:center;
+            }
 
-.right{
-text-align:right;
-}
+            .right{
+            text-align:right;
+            }
 
-.total-table td{
-font-weight:bold;
-}
+            .total-table td{
+            font-weight:bold;
+            }
 
-.footer{
-margin-top:50px;
-font-size:10px;
-}
+            .footer{
+            margin-top:50px;
+            font-size:10px;
+            }
 
-.terms{
-float:left;
-width:70%;
-}
+            .terms{
+            float:left;
+            width:70%;
+            }
 
-.signature{
-float:right;
-width:25%;
-text-align:right;
-}
+            .signature{
+            float:right;
+            width:25%;
+            text-align:right;
+            }
 
-.signature-line{
-margin-top:40px;
-border-top:1px solid #333;
-width:150px;
-float:right;
-}
+            .signature-line{
+            margin-top:40px;
+            border-top:1px solid #333;
+            width:150px;
+            float:right;
+            }
 
-</style>
+        </style>
 
 
-<img src="'.$bgBase64.'" class="bg-image">
+        <img src="'.$bgBase64.'" class="bg-image">
 
-<div class="header">
+        <div class="header">
 
-<div class="header-left">
+        <div class="header-left">
 
-<div class="title">SALES ORDER</div>
+        <div class="title">SALES ORDER</div>
 
-<div class="info">
-<strong>Invoice :</strong> '.$order->sales_order_no.'<br>
-<strong>Date :</strong> '.$order->created_at->format('d M Y').'<br>
-</div>
+        <div class="info">
+        <strong>Order No :</strong> '.$order->sales_order_no.'<br>
+        <strong>Date :</strong> '.$order->created_at->format('d M Y').'<br>
+        </div>
 
-</div>
+        </div>
 
-<div class="header-right">
+        <div class="header-right">
 
-<img src="'.$logoBase64.'" class="logo"><br>
+        <img src="'.$logoBase64.'" class="logo"><br>
 
-Memari, Burdwan<br>
-West Bengal<br>
-India, 713146
+        Memari, Burdwan<br>
+        West Bengal<br>
+        India, 713146
 
-</div>
+        </div>
 
-<div class="clear"></div>
+        <div class="clear"></div>
 
-</div>
+        </div>
 
 
 
-<div class="bill">
+        <div class="bill">
 
-<strong>Bill To:</strong><br>
+        <strong>Bill To:</strong><br>
 
-Retail Name : '.($order->client->name ?? '-').'<br>
-Address : '.($order->client->address ?? '-').'
+        Retail Name : '.($order->client->name ?? '-').'<br>
+        Address : '.($order->client->address ?? '-').'
 
-</div>
+        </div>
 
 
 
-<table>
+        <table>
 
-<thead>
-<tr>
-<th width="8%">SN</th>
-<th width="42%">ITEM DETAILS</th>
-<th width="10%">QTY</th>
-<th width="20%">PRICE</th>
-<th width="20%">SUBTOTAL</th>
-</tr>
-</thead>
+        <thead>
+        <tr>
+        <th width="8%">SN</th>
+        <th width="42%">ITEM DETAILS</th>
+        <th width="10%">QTY</th>
+        <th width="20%">PRICE</th>
+        <th width="20%">SUBTOTAL</th>
+        </tr>
+        </thead>
 
-<tbody>
-';
+        <tbody>
+        ';
 
-$i=1;
-$rows = 8; // fixed rows like template
-$count = count($order->items);
+        $i=1;
+        $rows = 8; // fixed rows like template
+        $count = count($order->items);
 
-foreach($order->items as $item){
+        foreach($order->items as $item){
 
-$html .= '
+            $html .= '
 
-<tr>
-<td class="center">'.$i++.'</td>
-<td>'.($item->product->name ?? '-').' ('.$item->product->size.' / '.$item->product->color.')</td>
-<td class="center">'.$item->qty.'</td>
-<td class="right">'.number_format($item->price,2).'</td>
-<td class="right">'.number_format($item->sub_total,2).'</td>
-</tr>
+            <tr>
+            <td class="center">'.$i++.'</td>
+            <td>'.($item->product->name ?? '-').' ('.$item->product->size.' / '.$item->product->color.')</td>
+            <td class="center">'.$item->qty.'</td>
+            <td class="right">'.number_format($item->price,2).'</td>
+            <td class="right">'.number_format($item->sub_total,2).'</td>
+            </tr>
 
-';
+            ';
 
-}
+        }
 
-// empty rows to match layout
-for($x=$count;$x<$rows;$x++){
+        // empty rows to match layout
+        for($x=$count;$x<$rows;$x++){
 
-$html .= '
+            $html .= '
 
-<tr>
-<td>&nbsp;</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
+            <tr>
+            <td>&nbsp;</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            </tr>
 
-';
+            ';
 
-}
+        }
 
-$html .= '
+        $html .= '
 
-</tbody>
+        </tbody>
 
-</table>
+        </table>
 
 
 
-<table class="total-table">
+        <table class="total-table">
 
-<tr>
-<td width="70%" class="right">TAX</td>
-<td width="30%" class="right">'.number_format($order->total_tax,2).'</td>
-</tr>
+        <tr>
+        <td width="70%" class="right">TAX</td>
+        <td width="30%" class="right">'.number_format($order->total_tax,2).'</td>
+        </tr>
 
-<tr>
-<td class="right">GRAND TOTAL</td>
-<td class="right">'.number_format($order->grand_total,2).'</td>
-</tr>
+        <tr>
+        <td class="right">GRAND TOTAL</td>
+        <td class="right">'.number_format($order->grand_total,2).'</td>
+        </tr>
 
-<tr>
-<td class="right">ADVANCE</td>
-<td class="right">0.00</td>
-</tr>
+        <tr>
+        <td class="right">ADVANCE</td>
+        <td class="right">0.00</td>
+        </tr>
 
-<tr>
-<td class="right">DUE</td>
-<td class="right">'.number_format($order->grand_total,2).'</td>
-</tr>
+        <tr>
+        <td class="right">DUE</td>
+        <td class="right">'.number_format($order->grand_total,2).'</td>
+        </tr>
 
-</table>
+        </table>
 
 
 
-<div class="footer">
+        <div class="footer">
 
-<div class="terms">
+        <div class="terms">
 
-<strong>TERM & CONDITION</strong><br>
+        <strong>TERM & CONDITION</strong><br>
 
-Advance payment is non-refundable after order confirmation.
-Balance payment must be cleared at the time of delivery.
+        Advance payment is non-refundable after order confirmation.
+        Balance payment must be cleared at the time of delivery.
 
-</div>
+        </div>
 
 
-<div class="signature">
+        <div class="signature">
 
-<div class="signature-line"></div>
-SIGNATURE
+        <div class="signature-line"></div>
+        SIGNATURE
 
-</div>
+        </div>
 
 
-<div style="clear:both"></div>
+        <div style="clear:both"></div>
 
-</div>
+        </div>
 
-';
+        ';
 
-return $html;
+        return $html;
 
-}
+    }
 
 }
