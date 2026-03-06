@@ -418,95 +418,187 @@ class StockController extends Controller
         ]);
     }
     private function salesOrderPdfBody($order)
-    {
+{
 
-        $html = '
-        <style>
+    $html = '
 
-        body{
-            font-family: sans-serif;
-            font-size:12px;
-        }
+    <style>
 
-        table{
-            width:100%;
-            border-collapse:collapse;
-            margin-top:15px;
-        }
+    body{
+        font-family: DejaVu Sans, sans-serif;
+        font-size:12px;
+        color:#333;
+    }
 
-        th,td{
-            border:1px solid #ddd;
-            padding:6px;
-            text-align:left;
-        }
+    .header{
+        width:100%;
+        margin-bottom:20px;
+    }
 
-        .header{
-            margin-bottom:20px;
-        }
+    .header-left{
+        float:left;
+    }
 
-        </style>
+    .header-right{
+        float:right;
+        text-align:right;
+    }
 
-        <div class="header">
+    .clear{
+        clear:both;
+    }
 
-        <h2>Sales Order</h2>
+    h1{
+        font-size:26px;
+        color:#b8953b;
+        margin:0;
+    }
 
-        <p><strong>Order No:</strong> '.$order->sales_order_no.'</p>
+    .logo{
+        font-size:28px;
+        font-weight:bold;
+    }
 
-        <p><strong>Client:</strong> '.($order->client->name ?? '-').'</p>
+    .info{
+        margin-top:15px;
+    }
 
-        <p><strong>Mobile:</strong> '.($order->client->mobile ?? '-').'</p>
+    table{
+        width:100%;
+        border-collapse:collapse;
+        margin-top:20px;
+    }
 
-        <p><strong>Date:</strong> '.$order->created_at->format('d M Y').'</p>
+    th{
+        background:#f3f3f3;
+        font-weight:bold;
+    }
 
-        </div>
+    th,td{
+        border:1px solid #999;
+        padding:8px;
+        text-align:left;
+    }
 
-        <table>
+    .total-table{
+        margin-top:20px;
+    }
 
-        <thead>
+    .footer{
+        margin-top:40px;
+        font-size:10px;
+    }
 
-        <tr>
-        <th>Product</th>
-        <th>Size</th>
-        <th>Color</th>
-        <th>Qty</th>
-        <th>Price</th>
-        <th>Total</th>
-        </tr>
+    .signature{
+        margin-top:40px;
+        text-align:right;
+    }
 
-        </thead>
+    </style>
 
-        <tbody>
-        ';
 
-        foreach($order->items as $item){
+    <div class="header">
 
-            $html .= '
+    <div class="header-left">
+    <h1>SALES ORDER</h1>
 
-            <tr>
-            <td>'.($item->product->name ?? '-').'</td>
-            <td>'.($item->product->size ?? '-').'</td>
-            <td>'.($item->product->color ?? '-').'</td>
-            <td>'.$item->qty.'</td>
-            <td>'.number_format($item->price,2).'</td>
-            <td>'.number_format($item->sub_total,2).'</td>
-            </tr>
+    <div class="info">
+    <strong>Invoice :</strong> '.$order->sales_order_no.'<br>
+    <strong>Date :</strong> '.$order->created_at->format('d M Y').'<br>
+    </div>
+    </div>
 
-            ';
+    <div class="header-right">
+    <div class="logo">Liwaas</div>
+    Memari, Burdwan<br>
+    West Bengal<br>
+    India - 713146
+    </div>
 
-        }
+    <div class="clear"></div>
 
-        $html .= '
+    </div>
 
-        </tbody>
 
-        </table>
 
-        <h3 style="margin-top:20px;">Grand Total : '.number_format($order->grand_total,2).'</h3>
+    <strong>Bill To :</strong><br>
+    '.$order->client->name.'<br>
+    '.$order->client->address.'<br>
+    '.$order->client->mobile.'
 
-        ';
 
-        return $html;
+    <table>
+
+    <thead>
+    <tr>
+    <th width="5%">SN</th>
+    <th width="45%">ITEM DETAILS</th>
+    <th width="10%">QTY</th>
+    <th width="20%">PRICE</th>
+    <th width="20%">SUBTOTAL</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    ';
+
+    $i=1;
+
+    foreach($order->items as $item){
+
+    $html .= '
+
+    <tr>
+    <td>'.$i++.'</td>
+    <td>'.($item->product->name ?? '-').' ('.$item->product->size.' / '.$item->product->color.')</td>
+    <td>'.$item->qty.'</td>
+    <td>'.number_format($item->price,2).'</td>
+    <td>'.number_format($item->sub_total,2).'</td>
+    </tr>
+
+    ';
 
     }
+
+    $html .= '
+
+    </tbody>
+
+    </table>
+
+
+    <table class="total-table">
+
+    <tr>
+    <td width="70%" align="right"><strong>TAX</strong></td>
+    <td width="30%">'.number_format($order->total_tax,2).'</td>
+    </tr>
+
+    <tr>
+    <td align="right"><strong>GRAND TOTAL</strong></td>
+    <td>'.number_format($order->grand_total,2).'</td>
+    </tr>
+
+    </table>
+
+
+    <div class="footer">
+
+    <strong>Term & Condition</strong><br>
+    Advance payment is non-refundable after order confirmation. Balance payment must be cleared at the time of delivery.
+
+    </div>
+
+
+    <div class="signature">
+    _____________________<br>
+    SIGNATURE
+    </div>
+
+    ';
+
+    return $html;
+
+}
 
 }
