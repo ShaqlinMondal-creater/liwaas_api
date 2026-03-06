@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Mpdf\Mpdf;
 use Illuminate\Http\Request;
 use App\Models\StocksProduct;
 use App\Models\StocksSalesOrder;
@@ -290,7 +291,6 @@ class StockController extends Controller
             'data' => $orders
         ]);
     }
-
     public function getSalesOrderDetail(Request $request)
     {
 
@@ -310,7 +310,6 @@ class StockController extends Controller
         ]);
 
     }
-
     public function deleteSalesOrder(Request $request)
     {
 
@@ -358,4 +357,143 @@ class StockController extends Controller
         }
 
     }
+
+    public function generateSalesOrderPdf(Request $request)
+    {
+
+        $request->validate([
+            'id' => 'required|exists:stocks_sales_orders,id'
+        ]);
+
+        $order = StocksSalesOrder::with([
+            'client',
+            'items.product'
+        ])->find($request->id);
+
+        if(!$order){
+            return response()->json([
+                'status'=>false,
+                'message'=>'Sales order not found'
+            ]);
+        }
+
+        // reusable body function
+        $html = $this->salesOrderPdfBody($order);
+
+        $mpdf = new \Mpdf\Mpdf();
+
+        $mpdf->WriteHTML($html);
+
+        $fileName = 'sales_order_'.$order->sales_order_no.'.pdf';
+        $filePath = 'sales_orders/'.$fileName;
+
+        \Storage::disk('public')->put($filePath,$mpdf->Output('', 'S'));
+
+        $url = asset('storage/'.$filePath);
+
+        StocksUpload::create([
+            'type'=>'order',
+            'number'=>$order->sales_order_no,
+            'file_name'=>$fileName,
+            'file_url'=>$url
+        ]);
+
+        return response()->json([
+            'status'=>true,
+            'message'=>'Sales order pdf generated successfully',
+            'file_url'=>$url
+        ]);
+    }
+    private function salesOrderPdfBody($order)
+    {
+
+        $html = '
+        <style>
+
+        body{
+        font-family: sans-serif;
+        font-size:12px;
+        }
+
+        table{
+        width:100%;
+        border-collapse:collapse;
+        margin-top:15px;
+        }
+
+        th,td{
+        border:1px solid #ddd;
+        padding:6px;
+        text-align:left;
+        }
+
+        .header{
+        margin-bottom:20px;
+        }
+
+        </style>
+
+        <div class="header">
+
+        <h2>Sales Order</h2>
+
+        <p><strong>Order No:</strong> '.$order->sales_order_no.'</p>
+
+        <p><strong>Client:</strong> '.$order->client->name.'</p>
+
+        <p><strong>Mobile:</strong> '.$order->client->mobile.'</p>
+
+        <p><strong>Date:</strong> '.$order->created_at.'</p>
+
+        </div>
+
+        <table>
+
+        <thead>
+
+        <tr>
+        <th>Product</th>
+        <th>Size</th>
+        <th>Color</th>
+        <th>Qty</th>
+        <th>Price</th>
+        <th>Total</th>
+        </tr>
+
+        </thead>
+
+        <tbody>
+        ';
+
+        foreach($order->items as $item){
+
+        $html .= '
+
+        <tr>
+        <td>'.$item->product->name.'</td>
+        <td>'.$item->product->size.'</td>
+        <td>'.$item->product->color.'</td>
+        <td>'.$item->qty.'</td>
+        <td>'.$item->price.'</td>
+        <td>'.$item->sub_total.'</td>
+        </tr>
+
+        ';
+
+        }
+
+        $html .= '
+
+        </tbody>
+
+        </table>
+
+        <h3 style="margin-top:20px;">Grand Total : '.$order->grand_total.'</h3>
+
+        ';
+
+        return $html;
+
+    }
+
 }
