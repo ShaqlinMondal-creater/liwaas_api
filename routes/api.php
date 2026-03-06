@@ -36,6 +36,11 @@ use App\Http\Controllers\CouponController;
         Route::post('/remove-from-cart', [Analytic_viewController::class, 'trackRemoveFromCart']);
     });
 
+    Route::prefix('stocks')->group(function () {
+        Route::post('/add-stock', [StockController::class, 'addProductStock']);
+        Route::post('/get-stock', [StockController::class,'addProductStock']);
+    });
+
     Route::get('/colors/getAll', [HelperController::class, 'getAllColors']); // Get all colors
 
     Route::prefix('products')->group(function () {
