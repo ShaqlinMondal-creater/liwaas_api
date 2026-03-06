@@ -702,4 +702,87 @@ class StockController extends Controller
 
     }
 
+
+    // Client functions
+    // CREATE CLIENT
+    public function create(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'owner_name' => 'nullable|string|max:255',
+            'mobile' => 'nullable|string|max:20',
+            'address' => 'nullable|string',
+            'email' => 'nullable|email',
+        ]);
+
+        $client = StocksClient::create($data);
+
+        return response()->json([
+            "success" => true,
+            "message" => "Client created successfully",
+            "data" => $client
+        ]);
+    }
+
+    // GET ALL CLIENTS
+    public function fetch(Request $request)
+    {
+        $query = StocksClient::query();
+
+        if ($request->filled('search')) {
+            $query->where('name','like','%'.$request->search.'%')
+                  ->orWhere('mobile','like','%'.$request->search.'%');
+        }
+
+        $clients = $query->orderBy('id','desc')->get();
+
+        return response()->json([
+            "success" => true,
+            "total" => $clients->count(),
+            "data" => $clients
+        ]);
+    }
+
+    // UPDATE CLIENT
+    public function update(Request $request,$id)
+    {
+        $client = StocksClient::find($id);
+
+        if(!$client){
+            return response()->json([
+                "success"=>false,
+                "message"=>"Client not found"
+            ],404);
+        }
+
+        $client->update($request->only([
+            'name','owner_name','mobile','address','email','status'
+        ]));
+
+        return response()->json([
+            "success"=>true,
+            "message"=>"Client updated successfully",
+            "data"=>$client
+        ]);
+    }
+
+    // DELETE CLIENT
+    public function delete($id)
+    {
+        $client = StocksClient::find($id);
+
+        if(!$client){
+            return response()->json([
+                "success"=>false,
+                "message"=>"Client not found"
+            ],404);
+        }
+
+        $client->delete();
+
+        return response()->json([
+            "success"=>true,
+            "message"=>"Client deleted successfully"
+        ]);
+    }
 }

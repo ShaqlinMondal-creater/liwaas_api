@@ -52,8 +52,12 @@ use App\Http\Controllers\StockController;
             Route::delete('/delete', [StockController::class,'deleteSalesOrder']);
             Route::post('/pdf', [StockController::class,'generateSalesOrderPdf']);
 
-            Route::post('/delete', [StockController::class,'deleteStock']);
-            Route::post('/edit', [StockController::class,'editStock']);
+        });
+        Route::prefix('clients')->group(function(){
+            Route::post('/create',[StocksClientController::class,'create']);
+            Route::post('/fetch',[StocksClientController::class,'fetch']);
+            Route::put('/update/{id}',[StocksClientController::class,'update']);
+            Route::delete('/delete/{id}',[StocksClientController::class,'delete']);
 
         });
 
