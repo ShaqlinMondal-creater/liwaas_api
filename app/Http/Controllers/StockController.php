@@ -85,41 +85,53 @@ class StockController extends Controller
     public function getProductStocks(Request $request)
     {
 
+        $limit = $request->limit ?? 10;
+        $offset = $request->offset ?? 0;
+
         $query = StocksProduct::query();
 
-        // search by name or uid
+        // search
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                ->orWhere('uid', 'like', '%' . $request->search . '%');
+                $q->where('name','like','%'.$request->search.'%')
+                ->orWhere('uid','like','%'.$request->search.'%');
             });
         }
 
-        // filter by size
+        // size filter
         if ($request->filled('size')) {
             $query->where('size', $request->size);
         }
 
-        // filter by color
+        // color filter
         if ($request->filled('color')) {
             $query->where('color', $request->color);
         }
 
-        // filter by status
+        // status filter
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
 
-        $limit = $request->limit ?? 10;
+        // total count
+        $total = $query->count();
 
+        // fetch records
         $products = $query
-            ->orderBy('id', 'desc')
-            ->paginate($limit);
+            ->orderBy('id','desc')
+            ->offset($offset)
+            ->limit($limit)
+            ->get();
 
         return response()->json([
             'status' => true,
             'message' => 'Stocks fetched successfully',
+            'total' => $total,
+            'limit' => (int)$limit,
+            'offset' => (int)$offset,
             'data' => $products
         ]);
     }
+
+    
 }
