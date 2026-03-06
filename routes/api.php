@@ -56,7 +56,7 @@ use App\Http\Controllers\StockController;
         Route::prefix('clients')->group(function(){
             Route::post('/create',[StockController::class,'create']);
             Route::post('/fetch',[StockController::class,'fetch']);
-            Route::put('/update/{id}',[StockController::class,'update']);
+            Route::post('/update/{id}',[StockController::class,'update']);
             Route::delete('/delete/{id}',[StockController::class,'delete']);
 
         });
