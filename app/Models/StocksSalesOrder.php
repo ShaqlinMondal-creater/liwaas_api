@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\StocksClient;
+use App\Models\StocksSalesOrderItem;
 
 class StocksSalesOrder extends Model
 {
@@ -14,6 +16,11 @@ class StocksSalesOrder extends Model
         'grand_total',
         'total_tax'
     ];
+
+    public function client()
+    {
+        return $this->belongsTo(StocksClient::class,'client_id');
+    }
 
     public function items()
     {

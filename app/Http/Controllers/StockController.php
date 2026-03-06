@@ -246,4 +246,49 @@ class StockController extends Controller
         }
     }
 
+    public function getSalesOrders(Request $request)
+    {
+
+        $limit = $request->limit ?? 10;
+        $offset = $request->offset ?? 0;
+
+        $query = StocksSalesOrder::with('client');
+
+        // search
+        if ($request->filled('search')) {
+
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+
+                $q->where('sales_order_no','like','%'.$search.'%')
+                ->orWhereHas('client', function($c) use ($search){
+                    $c->where('name','like','%'.$search.'%')
+                        ->orWhere('mobile','like','%'.$search.'%');
+                });
+
+            });
+
+        }
+
+        // total count
+        $total = $query->count();
+
+        // fetch orders
+        $orders = $query
+            ->orderBy('id','desc')
+            ->offset($offset)
+            ->limit($limit)
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Sales orders fetched successfully',
+            'total' => $total,
+            'limit' => (int)$limit,
+            'offset' => (int)$offset,
+            'data' => $orders
+        ]);
+    }
+
 }
