@@ -360,706 +360,6 @@ class StockController extends Controller
 
     }
 
-    public function generateSalesOrderPdf(Request $request)
-    {
-
-        $request->validate([
-            'id' => 'required|exists:stocks_sales_orders,id'
-        ]);
-
-        $order = StocksSalesOrder::with([
-            'client',
-            'items.product'
-        ])->find($request->id);
-
-        if(!$order){
-            return response()->json([
-                'status'=>false,
-                'message'=>'Sales order not found'
-            ]);
-        }
-
-        // check existing pdf
-        $existing = StocksUpload::where('type','order')
-            ->where('number',$order->sales_order_no)
-            ->first();
-
-        if($existing){
-
-            $oldPath = 'sales_orders/'.$existing->file_name;
-
-            if(\Storage::disk('public')->exists($oldPath)){
-                \Storage::disk('public')->delete($oldPath);
-            }
-
-            $existing->delete();
-        }
-
-        $html = $this->salesOrderPdfBody($order);
-
-        $pdf = Pdf::loadHTML($html)->setPaper('a4','landscape');
-
-        $fileName = 'sales_order_'.$order->sales_order_no.'.pdf';
-        $filePath = 'sales_orders/'.$fileName;
-
-        \Storage::disk('public')->put($filePath,$pdf->output());
-
-        $url = asset('storage/'.$filePath);
-
-        StocksUpload::create([
-            'type'=>'order',
-            'number'=>$order->sales_order_no,
-            'file_name'=>$fileName,
-            'file_url'=>$url
-        ]);
-
-        return response()->json([
-            'status'=>true,
-            'message'=>'Sales order pdf generated successfully',
-            'file_url'=>$url
-        ]);
-    }
-    private function salesOrderPdfBody($order)
-    {
-
-        $html = '
-
-        <style>
-        body{
-        font-family: DejaVu Sans, sans-serif;
-        font-size:11px;
-        }
-
-        .copy{
-        width:100%;
-        margin-bottom:40px;
-        }
-
-        .separator{
-        border-top:2px dashed #999;
-        margin:30px 0;
-        }
-
-        </style>
-
-        <div class="copy">
-
-        '.$this->salesOrderSingleLayout($order).'
-
-        </div>
-
-        <div class="separator"></div>
-
-        <div class="copy">
-
-        '.$this->salesOrderSingleLayout($order).'
-
-        </div>
-
-        ';
-
-        return $html;
-
-    }
-    private function salesOrderSingleLayout($order)
-    {
-
-        $logoPath = public_path('logos/liwaas_logo_Black.jpg');
-        $logoType = pathinfo($logoPath, PATHINFO_EXTENSION);
-        $logoData = file_get_contents($logoPath);
-        $logoBase64 = 'data:image/'.$logoType.';base64,'.base64_encode($logoData);
-
-        $bgPath = public_path('logos/flower-removebg-preview.png');
-        $bgType = pathinfo($bgPath, PATHINFO_EXTENSION);
-        $bgData = file_get_contents($bgPath);
-        $bgBase64 = 'data:image/'.$bgType.';base64,'.base64_encode($bgData);
-
-        $html = '
-
-        <style>
-
-        .bg-image{
-        position:absolute;
-        left:35%;
-        top:45%;
-        width:300px;
-        opacity:0.08;
-        }
-
-        .header{
-        width:100%;
-        }
-
-        .header-left{
-        float:left;
-        }
-
-        .header-right{
-        float:right;
-        text-align:right;
-        }
-
-        .logo{
-        height:70px;
-        }
-
-        .clear{
-        clear:both;
-        }
-
-        .title{
-        font-size:22px;
-        color:#c79b37;
-        font-weight:bold;
-        }
-
-        table{
-        width:100%;
-        border-collapse:collapse;
-        margin-top:15px;
-        }
-
-        th,td{
-        border:1px solid #666;
-        padding:6px;
-        font-size:11px;
-        }
-
-        th{
-        background:#f5f5f5;
-        text-align:center;
-        }
-
-        .right{
-        text-align:right;
-        }
-
-        .center{
-        text-align:center;
-        }
-
-        .footer{
-        margin-top:40px;
-        font-size:10px;
-        }
-
-        .terms{
-        float:left;
-        width:70%;
-        }
-
-        .signature{
-        float:right;
-        width:25%;
-        text-align:right;
-        }
-
-        .signature-line{
-        border-top:1px solid #000;
-        margin-top:40px;
-        width:150px;
-        float:right;
-        }
-
-        </style>
-
-        <img src="'.$bgBase64.'" class="bg-image">
-
-        <div class="header">
-
-        <div class="header-left">
-
-        <div class="title">SALES ORDER</div>
-
-        <strong>Invoice :</strong> '.$order->sales_order_no.'<br>
-        <strong>Date :</strong> '.$order->created_at->format('d M Y').'<br>
-
-        </div>
-
-        <div class="header-right">
-
-        <img src="'.$logoBase64.'" class="logo"><br>
-
-        Memari, Burdwan<br>
-        West Bengal<br>
-        India, 713146
-
-        </div>
-
-        <div class="clear"></div>
-
-        </div>
-
-
-        <strong>Bill To:</strong><br>
-
-        Retail Name : '.($order->client->name ?? '-').'<br>
-        Address : '.($order->client->address ?? '-').'<br>
-
-
-        <table>
-
-        <thead>
-        <tr>
-        <th width="8%">SN</th>
-        <th width="42%">ITEM DETAILS</th>
-        <th width="10%">QTY</th>
-        <th width="20%">PRICE</th>
-        <th width="20%">SUBTOTAL</th>
-        </tr>
-        </thead>
-
-        <tbody>
-        ';
-
-        $i=1;
-        $rows = 8;
-        $count = count($order->items);
-
-        foreach($order->items as $item){
-
-        $html .= '
-
-        <tr>
-        <td class="center">'.$i++.'</td>
-        <td>'.
-            ($item->product ? $item->product->name : '-') .
-            ' (' .
-            ($item->product ? $item->product->size : '-') .
-            ' / ' .
-            ($item->product ? $item->product->color : '-') .
-            ')
-        </td>
-        <td class="center">'.$item->qty.'</td>
-        <td class="right">'.number_format($item->price,2).'</td>
-        <td class="right">'.number_format($item->sub_total,2).'</td>
-        </tr>
-
-        ';
-
-        }
-
-        for($x=$count;$x<$rows;$x++){
-
-        $html .= '
-
-        <tr>
-        <td>&nbsp;</td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
-        </tr>
-
-        ';
-
-        }
-
-        $html .= '
-
-        </tbody>
-
-        </table>
-
-
-
-        <table>
-
-        <tr>
-        <td width="70%" class="right"><strong>TAX</strong></td>
-        <td width="30%" class="right">'.number_format($order->total_tax,2).'</td>
-        </tr>
-
-        <tr>
-        <td class="right"><strong>GRAND TOTAL</strong></td>
-        <td class="right">'.number_format($order->grand_total,2).'</td>
-        </tr>
-
-        <tr>
-        <td class="right"><strong>ADVANCE</strong></td>
-        <td class="right">0.00</td>
-        </tr>
-
-        <tr>
-        <td class="right"><strong>DUE</strong></td>
-        <td class="right">'.number_format($order->grand_total,2).'</td>
-        </tr>
-
-        </table>
-
-
-
-        <div class="footer">
-
-        <div class="terms">
-
-        <strong>TERM & CONDITION</strong><br>
-
-        Advance payment is non-refundable after order confirmation.
-        Balance payment must be cleared at the time of delivery.
-
-        </div>
-
-
-        <div class="signature">
-
-        <div class="signature-line"></div>
-        SIGNATURE
-
-        </div>
-
-        <div style="clear:both"></div>
-
-        </div>
-
-        ';
-
-        return $html;
-
-    }
-
-    // public function generateSalesOrderPdf(Request $request)
-    // {
-
-    //     $request->validate([
-    //         'id' => 'required|exists:stocks_sales_orders,id'
-    //     ]);
-
-    //     $order = StocksSalesOrder::with([
-    //         'client',
-    //         'items.product'
-    //     ])->find($request->id);
-
-    //     if(!$order){
-    //         return response()->json([
-    //             'status'=>false,
-    //             'message'=>'Sales order not found'
-    //         ]);
-    //     }
-
-    //     // prevent duplicate pdf
-    //     $existing = StocksUpload::where('type','order')
-    //         ->where('number',$order->sales_order_no)
-    //         ->first();
-
-    //     if($existing){
-    //         return response()->json([
-    //             'status'=>true,
-    //             'message'=>'Sales order pdf already exists',
-    //             'file_url'=>$existing->file_url
-    //         ]);
-    //     }
-
-    //     // generate html
-    //     $html = $this->salesOrderPdfBody($order);
-
-    //     $pdf = Pdf::loadHTML($html)->setPaper('a4');
-
-    //     $fileName = 'sales_order_'.$order->sales_order_no.'.pdf';
-    //     $filePath = 'sales_orders/'.$fileName;
-
-    //     \Storage::disk('public')->put($filePath,$pdf->output());
-
-    //     $url = asset('storage/'.$filePath);
-
-    //     StocksUpload::create([
-    //         'type'=>'order',
-    //         'number'=>$order->sales_order_no,
-    //         'file_name'=>$fileName,
-    //         'file_url'=>$url
-    //     ]);
-
-    //     return response()->json([
-    //         'status'=>true,
-    //         'message'=>'Sales order pdf generated successfully',
-    //         'file_url'=>$url
-    //     ]);
-    // }
-    // private function salesOrderPdfBody($order)
-    // {
-
-    //     $logoPath = public_path('logos/liwaas_logo_Black.jpg');
-    //     $logoType = pathinfo($logoPath, PATHINFO_EXTENSION);
-    //     $logoData = file_get_contents($logoPath);
-    //     $logoBase64 = 'data:image/'.$logoType.';base64,'.base64_encode($logoData);
-
-    //     $bgPath = public_path('logos/flower-removebg-preview.png');
-    //     $bgType = pathinfo($bgPath, PATHINFO_EXTENSION);
-    //     $bgData = file_get_contents($bgPath);
-    //     $bgBase64 = 'data:image/'.$bgType.';base64,'.base64_encode($bgData);
-
-
-    //     $html = '
-
-    //     <style>
-
-    //         body{
-    //         font-family: DejaVu Sans, sans-serif;
-    //         font-size:11px;
-    //         color:#333;
-    //         position:relative;
-    //         }
-
-    //         .bg-image{
-    //         position:absolute;
-    //         top:35%;
-    //         left:20%;
-    //         width:400px;
-    //         opacity:0.08;
-    //         z-index:-1;
-    //         }
-
-    //         .header{
-    //         width:100%;
-    //         margin-bottom:20px;
-    //         }
-
-    //         .header-left{
-    //         float:left;
-    //         }
-
-    //         .header-right{
-    //         float:right;
-    //         text-align:right;
-    //         }
-
-    //         .logo{
-    //         height:70px;
-    //         }
-
-    //         .clear{
-    //         clear:both;
-    //         }
-
-    //         .title{
-    //         font-size:24px;
-    //         font-weight:bold;
-    //         color:#c79b37;
-    //         margin-bottom:10px;
-    //         }
-
-    //         .info{
-    //         margin-top:10px;
-    //         line-height:1.6;
-    //         }
-
-    //         .bill{
-    //         margin-top:20px;
-    //         }
-
-    //         table{
-    //         width:100%;
-    //         border-collapse:collapse;
-    //         margin-top:15px;
-    //         }
-
-    //         th,td{
-    //         border:1px solid #666;
-    //         padding:6px;
-    //         font-size:11px;
-    //         }
-
-    //         th{
-    //         background:#f5f5f5;
-    //         text-align:center;
-    //         }
-
-    //         .center{
-    //         text-align:center;
-    //         }
-
-    //         .right{
-    //         text-align:right;
-    //         }
-
-    //         .total-table td{
-    //         font-weight:bold;
-    //         }
-
-    //         .footer{
-    //         margin-top:50px;
-    //         font-size:10px;
-    //         }
-
-    //         .terms{
-    //         float:left;
-    //         width:70%;
-    //         }
-
-    //         .signature{
-    //         float:right;
-    //         width:25%;
-    //         text-align:right;
-    //         }
-
-    //         .signature-line{
-    //         margin-top:40px;
-    //         border-top:1px solid #333;
-    //         width:150px;
-    //         float:right;
-    //         }
-
-    //     </style>
-
-
-    //     <img src="'.$bgBase64.'" class="bg-image">
-
-    //     <div class="header">
-
-    //     <div class="header-left">
-
-    //     <div class="title">SALES ORDER</div>
-
-    //     <div class="info">
-    //     <strong>Order No :</strong> '.$order->sales_order_no.'<br>
-    //     <strong>Date :</strong> '.$order->created_at->format('d M Y').'<br>
-    //     </div>
-
-    //     </div>
-
-    //     <div class="header-right">
-
-    //     <img src="'.$logoBase64.'" class="logo"><br>
-
-    //     Memari, Burdwan<br>
-    //     West Bengal<br>
-    //     India, 713146
-
-    //     </div>
-
-    //     <div class="clear"></div>
-
-    //     </div>
-
-
-
-    //     <div class="bill">
-
-    //     <strong>Bill To:</strong><br>
-
-    //     Retail Name : '.($order->client->name ?? '-').'<br>
-    //     Address : '.($order->client->address ?? '-').'
-
-    //     </div>
-
-
-
-    //     <table>
-
-    //     <thead>
-    //     <tr>
-    //     <th width="8%">SN</th>
-    //     <th width="42%">ITEM DETAILS</th>
-    //     <th width="10%">QTY</th>
-    //     <th width="20%">PRICE</th>
-    //     <th width="20%">SUBTOTAL</th>
-    //     </tr>
-    //     </thead>
-
-    //     <tbody>
-    //     ';
-
-    //     $i=1;
-    //     $rows = 8; // fixed rows like template
-    //     $count = count($order->items);
-
-    //     foreach($order->items as $item){
-
-    //         $html .= '
-
-    //         <tr>
-    //         <td class="center">'.$i++.'</td>
-    //         <td>'.($item->product->name ?? '-').' ('.$item->product->size.' / '.$item->product->color.')</td>
-    //         <td class="center">'.$item->qty.'</td>
-    //         <td class="right">'.number_format($item->price,2).'</td>
-    //         <td class="right">'.number_format($item->sub_total,2).'</td>
-    //         </tr>
-
-    //         ';
-
-    //     }
-
-    //     // empty rows to match layout
-    //     for($x=$count;$x<$rows;$x++){
-
-    //         $html .= '
-
-    //         <tr>
-    //         <td>&nbsp;</td>
-    //         <td></td>
-    //         <td></td>
-    //         <td></td>
-    //         <td></td>
-    //         </tr>
-
-    //         ';
-
-    //     }
-
-    //     $html .= '
-
-    //     </tbody>
-
-    //     </table>
-
-
-
-    //     <table class="total-table">
-
-    //     <tr>
-    //     <td width="70%" class="right">TAX</td>
-    //     <td width="30%" class="right">'.number_format($order->total_tax,2).'</td>
-    //     </tr>
-
-    //     <tr>
-    //     <td class="right">GRAND TOTAL</td>
-    //     <td class="right">'.number_format($order->grand_total,2).'</td>
-    //     </tr>
-
-    //     <tr>
-    //     <td class="right">ADVANCE</td>
-    //     <td class="right">0.00</td>
-    //     </tr>
-
-    //     <tr>
-    //     <td class="right">DUE</td>
-    //     <td class="right">'.number_format($order->grand_total,2).'</td>
-    //     </tr>
-
-    //     </table>
-
-
-
-    //     <div class="footer">
-
-    //     <div class="terms">
-
-    //     <strong>TERM & CONDITION</strong><br>
-
-    //     Advance payment is non-refundable after order confirmation.
-    //     Balance payment must be cleared at the time of delivery.
-
-    //     </div>
-
-
-    //     <div class="signature">
-
-    //     <div class="signature-line"></div>
-    //     SIGNATURE
-
-    //     </div>
-
-
-    //     <div style="clear:both"></div>
-
-    //     </div>
-
-    //     ';
-
-    //     return $html;
-
-    // }
-
 
     // Client functions
     // CREATE CLIENT
@@ -1142,5 +442,386 @@ class StockController extends Controller
             "success"=>true,
             "message"=>"Client deleted successfully"
         ]);
+    }
+
+    public function generateSalesOrderPdf(Request $request)
+    {
+
+        $request->validate([
+            'id' => 'required|exists:stocks_sales_orders,id'
+        ]);
+
+        $order = StocksSalesOrder::with([
+            'client',
+            'items.product'
+        ])->find($request->id);
+
+        if(!$order){
+            return response()->json([
+                'status'=>false,
+                'message'=>'Sales order not found'
+            ]);
+        }
+
+        // prevent duplicate pdf
+        $existing = StocksUpload::where('type','order')
+            ->where('number',$order->sales_order_no)
+            ->first();
+
+        if($existing){
+
+            // delete previous file
+            $oldPath = 'sales_orders/'.$existing->file_name;
+
+            if(\Storage::disk('public')->exists($oldPath)){
+                \Storage::disk('public')->delete($oldPath);
+            }
+
+            // delete DB record
+            $existing->delete();
+        }
+
+        // generate html
+        // $html = $this->salesOrderPdfBody($order);
+        $html = '
+
+<style>
+
+.page-table{
+width:100%;
+border-collapse:collapse;
+}
+
+.page-table td{
+width:50%;
+vertical-align:top;
+padding:10px;
+}
+
+</style>
+
+<table class="page-table">
+
+<tr>
+
+<td>
+'.$this->salesOrderPdfBody($order).'
+</td>
+
+<td>
+'.$this->salesOrderPdfBody($order).'
+</td>
+
+</tr>
+
+</table>
+
+';
+
+        $pdf = Pdf::loadHTML($html)->setPaper('a4','landscape');
+
+        $fileName = 'sales_order_'.$order->sales_order_no.'.pdf';
+        $filePath = 'sales_orders/'.$fileName;
+
+        \Storage::disk('public')->put($filePath,$pdf->output());
+
+        $url = asset('storage/'.$filePath);
+
+        StocksUpload::create([
+            'type'=>'order',
+            'number'=>$order->sales_order_no,
+            'file_name'=>$fileName,
+            'file_url'=>$url
+        ]);
+
+        return response()->json([
+            'status'=>true,
+            'message'=>'Sales order pdf generated successfully',
+            'file_url'=>$url
+        ]);
+    }
+    private function salesOrderPdfBody($order)
+    {
+
+        $logoPath = public_path('logos/liwaas_logo_Black.jpg');
+        $logoType = pathinfo($logoPath, PATHINFO_EXTENSION);
+        $logoData = file_get_contents($logoPath);
+        $logoBase64 = 'data:image/'.$logoType.';base64,'.base64_encode($logoData);
+
+        $bgPath = public_path('logos/flower-removebg-preview.png');
+        $bgType = pathinfo($bgPath, PATHINFO_EXTENSION);
+        $bgData = file_get_contents($bgPath);
+        $bgBase64 = 'data:image/'.$bgType.';base64,'.base64_encode($bgData);
+
+
+        $html = '
+
+        <style>
+
+            body{
+            font-family: DejaVu Sans, sans-serif;
+            font-size:11px;
+            color:#333;
+            position:relative;
+            }
+
+            .bg-image{
+            position:absolute;
+            top:35%;
+            left:20%;
+            width:400px;
+            opacity:0.08;
+            z-index:-1;
+            }
+
+            .header{
+            width:100%;
+            margin-bottom:20px;
+            }
+
+            .header-left{
+            float:left;
+            }
+
+            .header-right{
+            float:right;
+            text-align:right;
+            }
+
+            .logo{
+            height:70px;
+            }
+
+            .clear{
+            clear:both;
+            }
+
+            .title{
+            font-size:24px;
+            font-weight:bold;
+            color:#c79b37;
+            margin-bottom:10px;
+            }
+
+            .info{
+            margin-top:10px;
+            line-height:1.6;
+            }
+
+            .bill{
+            margin-top:20px;
+            }
+
+            table{
+            width:100%;
+            border-collapse:collapse;
+            margin-top:15px;
+            }
+
+            th,td{
+            border:1px solid #666;
+            padding:6px;
+            font-size:11px;
+            }
+
+            th{
+            background:#f5f5f5;
+            text-align:center;
+            }
+
+            .center{
+            text-align:center;
+            }
+
+            .right{
+            text-align:right;
+            }
+
+            .total-table td{
+            font-weight:bold;
+            }
+
+            .footer{
+            margin-top:50px;
+            font-size:10px;
+            }
+
+            .terms{
+            float:left;
+            width:70%;
+            }
+
+            .signature{
+            float:right;
+            width:25%;
+            text-align:right;
+            }
+
+            .signature-line{
+            margin-top:40px;
+            border-top:1px solid #333;
+            width:150px;
+            float:right;
+            }
+
+        </style>
+
+
+        <img src="'.$bgBase64.'" class="bg-image">
+
+        <div class="header">
+
+        <div class="header-left">
+
+        <div class="title">SALES ORDER</div>
+
+        <div class="info">
+        <strong>Order No :</strong> '.$order->sales_order_no.'<br>
+        <strong>Date :</strong> '.$order->created_at->format('d M Y').'<br>
+        </div>
+
+        </div>
+
+        <div class="header-right">
+
+        <img src="'.$logoBase64.'" class="logo"><br>
+
+        Memari, Burdwan<br>
+        West Bengal<br>
+        India, 713146
+
+        </div>
+
+        <div class="clear"></div>
+
+        </div>
+
+
+
+        <div class="bill">
+
+        <strong>Bill To:</strong><br>
+
+        Retail Name : '.($order->client->name ?? '-').'<br>
+        Address : '.($order->client->address ?? '-').'
+
+        </div>
+
+
+
+        <table>
+
+        <thead>
+        <tr>
+        <th width="8%">SN</th>
+        <th width="42%">ITEM DETAILS</th>
+        <th width="10%">QTY</th>
+        <th width="20%">PRICE</th>
+        <th width="20%">SUBTOTAL</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        ';
+
+        $i=1;
+        $rows = 8; // fixed rows like template
+        $count = count($order->items);
+
+        foreach($order->items as $item){
+
+            $html .= '
+
+            <tr>
+            <td class="center">'.$i++.'</td>
+            <td>'.($item->product->name ?? '-').' ('.$item->product->size.' / '.$item->product->color.')</td>
+            <td class="center">'.$item->qty.'</td>
+            <td class="right">'.number_format($item->price,2).'</td>
+            <td class="right">'.number_format($item->sub_total,2).'</td>
+            </tr>
+
+            ';
+
+        }
+
+        // empty rows to match layout
+        for($x=$count;$x<$rows;$x++){
+
+            $html .= '
+
+            <tr>
+            <td>&nbsp;</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            </tr>
+
+            ';
+
+        }
+
+        $html .= '
+
+        </tbody>
+
+        </table>
+
+
+
+        <table class="total-table">
+
+        <tr>
+        <td width="70%" class="right">TAX</td>
+        <td width="30%" class="right">'.number_format($order->total_tax,2).'</td>
+        </tr>
+
+        <tr>
+        <td class="right">GRAND TOTAL</td>
+        <td class="right">'.number_format($order->grand_total,2).'</td>
+        </tr>
+
+        <tr>
+        <td class="right">ADVANCE</td>
+        <td class="right">0.00</td>
+        </tr>
+
+        <tr>
+        <td class="right">DUE</td>
+        <td class="right">'.number_format($order->grand_total,2).'</td>
+        </tr>
+
+        </table>
+
+
+
+        <div class="footer">
+
+        <div class="terms">
+
+        <strong>TERM & CONDITION</strong><br>
+
+        Advance payment is non-refundable after order confirmation.
+        Balance payment must be cleared at the time of delivery.
+
+        </div>
+
+
+        <div class="signature">
+
+        <div class="signature-line"></div>
+        SIGNATURE
+
+        </div>
+
+
+        <div style="clear:both"></div>
+
+        </div>
+
+        ';
+
+        return $html;
+
     }
 }
