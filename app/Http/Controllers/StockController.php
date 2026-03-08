@@ -780,12 +780,12 @@ class StockController extends Controller
 
                 <tr>
                     <td class="right">ADVANCE</td>
-                    <td class="right">___________</td>
+                    <td class="right">00</td>
                 </tr>
 
                 <tr>
                     <td class="right">DUE</td>
-                    <td class="right">___________</td>
+                    <td class="right">00</td>
                 </tr>
 
             </table>
