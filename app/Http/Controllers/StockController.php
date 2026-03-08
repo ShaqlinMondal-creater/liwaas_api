@@ -715,6 +715,8 @@ class StockController extends Controller
                 <strong>Bill To:</strong><br>
 
                 Retail Name : '.($order->client->name ?? '-').'<br>
+                Owner : '.($order->client->owner_name ?? '-').'<br>
+                Mobile : '.($order->client->mobile ?? '-').'<br>
                 Address : '.($order->client->address ?? '-').'
 
             </div>
@@ -806,6 +808,10 @@ class StockController extends Controller
                     <strong>TERM & CONDITION</strong><br>
                     Advance payment is non-refundable after order confirmation.
                     Balance payment must be cleared at the time of delivery.
+                    <br>
+                    <p> style="color:#c79b37; font-weight:bold;">
+                        Contact Us : business.liwaas@gmail.com / +91 8348381252
+                    </p>
                 </div>
 
                 <div class="signature">
