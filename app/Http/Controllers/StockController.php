@@ -255,7 +255,12 @@ class StockController extends Controller
         $limit = $request->limit ?? 10;
         $offset = $request->offset ?? 0;
 
-        $query = StocksSalesOrder::with('client');
+        $query = StocksSalesOrder::with([
+            'client',
+            'upload' => function($q){
+                $q->where('type','order');
+            }
+        ]);
 
         // search
         if ($request->filled('search')) {
@@ -290,7 +295,16 @@ class StockController extends Controller
             'total' => $total,
             'limit' => (int)$limit,
             'offset' => (int)$offset,
-            'data' => $orders
+            'data' => $orders->map(function($order){
+                return [
+                    'id' => $order->id,
+                    'sales_order_no' => $order->sales_order_no,
+                    'client' => $order->client,
+                    'grand_total' => $order->grand_total,
+                    'total_tax' => $order->total_tax,
+                    'pdf' => $order->upload ? $order->upload->file_url : null
+                ];
+            })
         ]);
     }
     public function getSalesOrderDetail(Request $request)
@@ -302,13 +316,17 @@ class StockController extends Controller
 
         $order = StocksSalesOrder::with([
             'client',
-            'items.product'
+            'items.product',
+            'upload'
         ])->find($request->id);
 
         return response()->json([
             'status' => true,
             'message' => 'Sales order detail fetched successfully',
-            'data' => $order
+            'data' => [
+                'order' => $order,
+                'pdf' => $order->upload ? $order->upload->file_url : null
+            ]
         ]);
 
     }
@@ -358,90 +376,6 @@ class StockController extends Controller
             ]);
         }
 
-    }
-
-
-    // Client functions
-    // CREATE CLIENT
-    public function create(Request $request)
-    {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'owner_name' => 'nullable|string|max:255',
-            'mobile' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'email' => 'nullable|email',
-        ]);
-
-        $client = StocksClient::create($data);
-
-        return response()->json([
-            "success" => true,
-            "message" => "Client created successfully",
-            "data" => $client
-        ]);
-    }
-
-    // GET ALL CLIENTS
-    public function fetch(Request $request)
-    {
-        $query = StocksClient::query();
-
-        if ($request->filled('search')) {
-            $query->where('name','like','%'.$request->search.'%')
-                  ->orWhere('mobile','like','%'.$request->search.'%');
-        }
-
-        $clients = $query->orderBy('id','desc')->get();
-
-        return response()->json([
-            "success" => true,
-            "total" => $clients->count(),
-            "data" => $clients
-        ]);
-    }
-
-    // UPDATE CLIENT
-    public function update(Request $request,$id)
-    {
-        $client = StocksClient::find($id);
-
-        if(!$client){
-            return response()->json([
-                "success"=>false,
-                "message"=>"Client not found"
-            ],404);
-        }
-
-        $client->update($request->only([
-            'name','owner_name','mobile','address','email','status'
-        ]));
-
-        return response()->json([
-            "success"=>true,
-            "message"=>"Client updated successfully",
-            "data"=>$client
-        ]);
-    }
-
-    // DELETE CLIENT
-    public function delete($id)
-    {
-        $client = StocksClient::find($id);
-
-        if(!$client){
-            return response()->json([
-                "success"=>false,
-                "message"=>"Client not found"
-            ],404);
-        }
-
-        $client->delete();
-
-        return response()->json([
-            "success"=>true,
-            "message"=>"Client deleted successfully"
-        ]);
     }
 
     public function generateSalesOrderPdf(Request $request)
@@ -828,4 +762,88 @@ class StockController extends Controller
         return $html;
 
     }
+
+    // Client functions
+    // CREATE CLIENT
+    public function create(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'owner_name' => 'nullable|string|max:255',
+            'mobile' => 'nullable|string|max:20',
+            'address' => 'nullable|string',
+            'email' => 'nullable|email',
+        ]);
+
+        $client = StocksClient::create($data);
+
+        return response()->json([
+            "success" => true,
+            "message" => "Client created successfully",
+            "data" => $client
+        ]);
+    }
+
+    // GET ALL CLIENTS
+    public function fetch(Request $request)
+    {
+        $query = StocksClient::query();
+
+        if ($request->filled('search')) {
+            $query->where('name','like','%'.$request->search.'%')
+                  ->orWhere('mobile','like','%'.$request->search.'%');
+        }
+
+        $clients = $query->orderBy('id','desc')->get();
+
+        return response()->json([
+            "success" => true,
+            "total" => $clients->count(),
+            "data" => $clients
+        ]);
+    }
+
+    // UPDATE CLIENT
+    public function update(Request $request,$id)
+    {
+        $client = StocksClient::find($id);
+
+        if(!$client){
+            return response()->json([
+                "success"=>false,
+                "message"=>"Client not found"
+            ],404);
+        }
+
+        $client->update($request->only([
+            'name','owner_name','mobile','address','email','status'
+        ]));
+
+        return response()->json([
+            "success"=>true,
+            "message"=>"Client updated successfully",
+            "data"=>$client
+        ]);
+    }
+
+    // DELETE CLIENT
+    public function delete($id)
+    {
+        $client = StocksClient::find($id);
+
+        if(!$client){
+            return response()->json([
+                "success"=>false,
+                "message"=>"Client not found"
+            ],404);
+        }
+
+        $client->delete();
+
+        return response()->json([
+            "success"=>true,
+            "message"=>"Client deleted successfully"
+        ]);
+    }
+
 }

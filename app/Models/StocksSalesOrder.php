@@ -26,4 +26,10 @@ class StocksSalesOrder extends Model
     {
         return $this->hasMany(StocksSalesOrderItem::class,'sales_order_id');
     }
+
+    public function upload()
+    {
+        return $this->hasOne(StocksUpload::class,'number','sales_order_no')
+                    ->where('type','order');
+    }
 }
