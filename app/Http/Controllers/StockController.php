@@ -491,14 +491,20 @@ class StockController extends Controller
             font-family: DejaVu Sans, sans-serif;
             font-size:9px;
             color:#333;
+            margin:10px;
             }
 
             /* WATERMARK */
+            .invoice{
+            position:relative;
+            }
+
             .bg-image{
             position:absolute;
-            top:45%;
-            left:30%;
-            width:220px;
+            top:50%;
+            left:50%;
+            transform:translate(-50%,-50%);
+            width:200px;
             opacity:0.05;
             z-index:-1;
             }
@@ -522,7 +528,8 @@ class StockController extends Controller
             table{
             width:100%;
             border-collapse:collapse;
-            margin-top:8px;
+            margin-top:8px;            
+            page-break-inside:auto;
             }
 
             th,td{
@@ -613,10 +620,6 @@ class StockController extends Controller
             tr{
             page-break-inside:avoid;
             }
-
-            table{
-            page-break-inside:auto;
-            }
             </style>
 
             <table class="page-table">
@@ -679,7 +682,7 @@ class StockController extends Controller
 
 
         $html = '
-
+        <div class="invoice">
         <img src="'.$bgBase64.'" class="bg-image">
 
         <div class="header">
@@ -745,18 +748,18 @@ class StockController extends Controller
 
             $html .= '
             <tr>
-            <td class="center">'.$i++.'</td>
-            <td>'.
-            ($product->name ?? '-') .
-            ' ('.
-            ($product->size ?? '-') .
-            ' / '.
-            ($product->color ?? '-') .
-            ')
-            </td>
-            <td class="center">'.$item->qty.'</td>
-            <td class="right">'.number_format($item->price,2).'</td>
-            <td class="right">'.number_format($item->sub_total,2).'</td>
+                <td class="center">'.$i++.'</td>
+                <td>'.
+                    ($product->name ?? '-') .
+                    ' ('.
+                    ($product->size ?? '-') .
+                    ' / '.
+                    ($product->color ?? '-') .
+                    ')
+                </td>
+                <td class="center">'.$item->qty.'</td>
+                <td class="right">'.number_format($item->price,2).'</td>
+                <td class="right">'.number_format($item->sub_total,2).'</td>
             </tr>
             ';
 
@@ -819,7 +822,7 @@ class StockController extends Controller
         <div style="clear:both"></div>
 
         </div>
-
+        </div>
         ';
 
         return $html;
