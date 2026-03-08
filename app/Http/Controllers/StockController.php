@@ -194,9 +194,21 @@ class StockController extends Controller
 
             foreach ($request->items as $item) {
 
-                $sub_total = $item['qty'] * $item['price'];
-                $sub_total_tax = $item['tax'] ?? 0;
+                $price = $item['price'];
+                $qty = $item['qty'];
+                $tax_percent = $item['tax'] ?? 5;
 
+                // tax included price calculation
+                $taxable_price = $price / (1 + ($tax_percent / 100));
+                $tax_amount = $price - $taxable_price;
+
+                // subtotal
+                $sub_total = $price * $qty;
+
+                // tax for quantity
+                $sub_total_tax = $tax_amount * $qty;
+
+                // accumulate totals
                 $grand_total += $sub_total;
                 $total_tax += $sub_total_tax;
 
@@ -205,7 +217,7 @@ class StockController extends Controller
                     'uid' => $item['uid'],
                     'qty' => $item['qty'],
                     'price' => $item['price'],
-                    'tax' => $item['tax'] ?? 0,
+                    'tax' => $tax_percent,
                     'sub_total' => $sub_total,
                     'sub_total_tax' => $sub_total_tax
                 ]);
@@ -215,9 +227,19 @@ class StockController extends Controller
                     ->decrement('stock', $item['qty']);
             }
 
+            $grand_total = round($grand_total,2);
+            $total_tax = round($total_tax,2);
+
+            // round to nearest integer
+            $rounded_total = round($grand_total);
+
+            // calculate round amount (+ or -)
+            $round_amount = round($rounded_total - $grand_total,2);
+
             $order->update([
-                'grand_total' => $grand_total,
-                'total_tax' => $total_tax
+                'grand_total' => $rounded_total,
+                'total_tax' => $total_tax,
+                'round_amount' => $round_amount
             ]);
 
             DB::commit();
@@ -234,7 +256,8 @@ class StockController extends Controller
                         'mobile' => $client->mobile
                     ],
                     'grand_total' => $grand_total,
-                    'total_tax' => $total_tax
+                    'total_tax' => $total_tax,
+                    'round_amount' => $round_amount,
                 ]
             ]);
 
@@ -395,6 +418,7 @@ class StockController extends Controller
         ]);
 
     }
+    
     public function deleteSalesOrder(Request $request)
     {
 

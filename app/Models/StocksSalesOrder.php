@@ -14,7 +14,8 @@ class StocksSalesOrder extends Model
         'sales_order_no',
         'client_id',
         'grand_total',
-        'total_tax'
+        'total_tax',
+        'round_amount',
     ];
 
     public function client()
