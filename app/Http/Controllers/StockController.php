@@ -484,160 +484,158 @@ class StockController extends Controller
         // generate html
         // $html = $this->salesOrderPdfBody($order);
         $html = '
-
             <style>
+                body {
+                    font-family: DejaVu Sans, sans-serif;
+                    font-size: 9px;
+                    color: #333;
+                    margin: 10px;
+                }
 
-            body{
-            font-family: DejaVu Sans, sans-serif;
-            font-size:9px;
-            color:#333;
-            margin:10px;
-            }
+                /* WATERMARK */
+                .invoice {
+                    position: relative;
+                }
 
-            /* WATERMARK */
-            .invoice{
-            position:relative;
-            }
+                .bg-image {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 200px;
+                    opacity: 0.05;
+                    z-index: -1;
+                }
 
-            .bg-image{
-            position:absolute;
-            top:50%;
-            left:50%;
-            transform:translate(-50%,-50%);
-            width:200px;
-            opacity:0.05;
-            z-index:-1;
-            }
+                /* PAGE LAYOUT */
+                .page-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    border: none;
+                    page-break-inside: avoid;
+                }
 
-            /* PAGE LAYOUT */
-            .page-table{
-            width:100%;
-            border-collapse:collapse;
-            border:none;
-            page-break-inside:avoid;
-            }
+                .page-table td {
+                    width: 50%;
+                    vertical-align: top;
+                    padding: 5px;
+                    border: none;
+                }
 
-            .page-table td{
-            width:50%;
-            vertical-align:top;
-            padding:5px;
-            border:none;
-            }
+                /* TABLE STYLE */
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 8px;
+                    page-break-inside: auto;
+                }
 
-            /* TABLE STYLE */
-            table{
-            width:100%;
-            border-collapse:collapse;
-            margin-top:8px;            
-            page-break-inside:auto;
-            }
+                th,
+                td {
+                    border: 1px solid #666;
+                    padding: 3px 4px;
+                    font-size: 9px;
+                }
 
-            th,td{
-            border:1px solid #666;
-            padding:3px 4px;
-            font-size:9px;
-            }
+                th {
+                    background: #f5f5f5;
+                    text-align: center;
+                }
 
-            th{
-            background:#f5f5f5;
-            text-align:center;
-            }
+                /* ALIGNMENTS */
+                .center {
+                    text-align: center;
+                }
 
-            /* ALIGNMENTS */
-            .center{
-            text-align:center;
-            }
+                .right {
+                    text-align: right;
+                }
 
-            .right{
-            text-align:right;
-            }
+                /* HEADER */
+                .header-left {
+                    float: left;
+                }
 
-            /* HEADER */
-            .header-left{
-            float:left;
-            }
+                .header-right {
+                    float: right;
+                    text-align: right;
+                }
 
-            .header-right{
-            float:right;
-            text-align:right;
-            }
+                .clear {
+                    clear: both;
+                }
 
-            .clear{
-            clear:both;
-            }
+                /* TITLE */
+                .title {
+                    font-size: 16px;
+                    font-weight: bold;
+                    color: #c79b37;
+                    margin-bottom: 5px;
+                }
 
-            /* TITLE */
-            .title{
-            font-size:16px;
-            font-weight:bold;
-            color:#c79b37;
-            margin-bottom:5px;
-            }
+                /* LOGO */
+                .logo {
+                    height: 45px;
+                }
 
-            /* LOGO */
-            .logo{
-            height:45px;
-            }
+                /* INFO TEXT */
+                .info {
+                    margin-top: 5px;
+                    line-height: 1.4;
+                    font-size: 9px;
+                }
 
-            /* INFO TEXT */
-            .info{
-            margin-top:5px;
-            line-height:1.4;
-            font-size:9px;
-            }
+                /* FOOTER */
+                .footer {
+                    margin-top: 20px;
+                    font-size: 8px;
+                }
 
-            /* FOOTER */
-            .footer{
-            margin-top:20px;
-            font-size:8px;
-            }
+                /* TERMS */
+                .terms {
+                    float: left;
+                    width: 70%;
+                }
 
-            /* TERMS */
-            .terms{
-            float:left;
-            width:70%;
-            }
+                /* SIGNATURE */
+                .signature {
+                    float: right;
+                    width: 25%;
+                    text-align: right;
+                }
 
-            /* SIGNATURE */
-            .signature{
-            float:right;
-            width:25%;
-            text-align:right;
-            }
+                .signature-line {
+                    margin-top: 25px;
+                    border-top: 1px solid #333;
+                    width: 120px;
+                    float: right;
+                }
 
-            .signature-line{
-            margin-top:25px;
-            border-top:1px solid #333;
-            width:120px;
-            float:right;
-            }
+                /* CUT LINE BETWEEN INVOICES */
+                .page-table td:first-child {
+                    border-right: 1px dashed #999;
+                }
 
-            /* CUT LINE BETWEEN INVOICES */
-            .page-table td:first-child{
-            border-right:1px dashed #999;
-            }
-
-            tr{
-            page-break-inside:avoid;
-            }
+                tr {
+                    page-break-inside: avoid;
+                }
             </style>
 
             <table class="page-table">
 
-            <tr>
+                <tr>
 
-            <td>
-            '.$this->salesOrderPdfBody($order).'
-            </td>
+                    <td>
+                        '.$this->salesOrderPdfBody($order).'
+                    </td>
 
-            <td>
-            '.$this->salesOrderPdfBody($order).'
-            </td>
+                    <td>
+                        '.$this->salesOrderPdfBody($order).'
+                    </td>
 
-            </tr>
+                </tr>
 
             </table>
-
         ';
 
         $pdf = Pdf::loadHTML($html)
@@ -683,61 +681,56 @@ class StockController extends Controller
 
         $html = '
         <div class="invoice">
-        <img src="'.$bgBase64.'" class="bg-image">
+            <img src="'.$bgBase64.'" class="bg-image">
 
-        <div class="header">
+            <div class="header">
 
-        <div class="header-left">
+                <div class="header-left">
 
-        <div class="title">SALES ORDER</div>
+                    <div class="title">SALES ORDER</div>
 
-        <div class="info">
-        <strong>Order No :</strong> '.$order->sales_order_no.'<br>
-        <strong>Date :</strong> '.$order->created_at->format('d M Y').'<br>
-        </div>
+                    <div class="info">
+                        <strong>Order No :</strong> '.$order->sales_order_no.'<br>
+                        <strong>Date :</strong> '.$order->created_at->format('d M Y').'<br>
+                    </div>
 
-        </div>
+                </div>
 
-        <div class="header-right">
+                <div class="header-right">
 
-        <img src="'.$logoBase64.'" class="logo"><br>
+                    <img src="'.$logoBase64.'" class="logo"><br>
 
-        Memari, Burdwan<br>
-        West Bengal<br>
-        India, 713146
+                    Memari, Burdwan<br>
+                    West Bengal<br>
+                    India, 713146
 
-        </div>
+                </div>
 
-        <div class="clear"></div>
+                <div class="clear"></div>
 
-        </div>
+            </div>
 
+            <div class="bill">
 
+                <strong>Bill To:</strong><br>
 
-        <div class="bill">
+                Retail Name : '.($order->client->name ?? '-').'<br>
+                Address : '.($order->client->address ?? '-').'
 
-        <strong>Bill To:</strong><br>
+            </div>
 
-        Retail Name : '.($order->client->name ?? '-').'<br>
-        Address : '.($order->client->address ?? '-').'
+            <table>
+                <thead>
+                    <tr>
+                        <th width="8%">SN</th>
+                        <th width="42%">ITEM DETAILS</th>
+                        <th width="10%">QTY</th>
+                        <th width="20%">PRICE</th>
+                        <th width="20%">SUBTOTAL</th>
+                    </tr>
+                </thead>
 
-        </div>
-
-
-
-        <table>
-
-        <thead>
-        <tr>
-        <th width="8%">SN</th>
-        <th width="42%">ITEM DETAILS</th>
-        <th width="10%">QTY</th>
-        <th width="20%">PRICE</th>
-        <th width="20%">SUBTOTAL</th>
-        </tr>
-        </thead>
-
-        <tbody>
+                <tbody>
         ';
 
         $i = 1;
@@ -760,6 +753,8 @@ class StockController extends Controller
                 <td class="center">'.$item->qty.'</td>
                 <td class="right">'.number_format($item->price,2).'</td>
                 <td class="right">'.number_format($item->sub_total,2).'</td>
+                <td class="center"></td>
+                <td class="center"></td>
             </tr>
             ';
 
@@ -767,61 +762,49 @@ class StockController extends Controller
 
         $html .= '
 
-        </tbody>
+                    </tbody>
 
-        </table>
+            </table>
 
+            <table class="total-table" style="margin-top:10px; border-top:1px solid #666;">
 
+                <tr>
+                    <td width="70%" class="right">TAX</td>
+                    <td width="30%" class="right">'.number_format($order->total_tax,2).'</td>
+                </tr>
 
-        <table class="total-table">
+                <tr>
+                    <td class="right">GRAND TOTAL</td>
+                    <td class="right">'.number_format($order->grand_total,2).'</td>
+                </tr>
 
-        <tr>
-        <td width="70%" class="right">TAX</td>
-        <td width="30%" class="right">'.number_format($order->total_tax,2).'</td>
-        </tr>
+                <tr>
+                    <td class="right">ADVANCE</td>
+                    <td class="right">___________</td>
+                </tr>
 
-        <tr>
-        <td class="right">GRAND TOTAL</td>
-        <td class="right">'.number_format($order->grand_total,2).'</td>
-        </tr>
+                <tr>
+                    <td class="right">DUE</td>
+                    <td class="right">___________</td>
+                </tr>
 
-        <tr>
-        <td class="right">ADVANCE</td>
-        <td class="right">0.00</td>
-        </tr>
+            </table>
 
-        <tr>
-        <td class="right">DUE</td>
-        <td class="right">'.number_format($order->grand_total,2).'</td>
-        </tr>
+            <div class="footer" style="margin-top:10px; border-top:1px solid #666;">
+                <div class="terms">
+                    <strong>TERM & CONDITION</strong><br>
+                    Advance payment is non-refundable after order confirmation.
+                    Balance payment must be cleared at the time of delivery.
+                </div>
 
-        </table>
-
-
-
-        <div class="footer">
-
-        <div class="terms">
-
-        <strong>TERM & CONDITION</strong><br>
-
-        Advance payment is non-refundable after order confirmation.
-        Balance payment must be cleared at the time of delivery.
-
-        </div>
+                <div class="signature">
+                    <div class="signature-line"></div>
+                    SIGNATURE
+                </div>
 
 
-        <div class="signature">
-
-        <div class="signature-line"></div>
-        SIGNATURE
-
-        </div>
-
-
-        <div style="clear:both"></div>
-
-        </div>
+                <div style="clear:both"></div>
+            </div>
         </div>
         ';
 
