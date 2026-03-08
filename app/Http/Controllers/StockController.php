@@ -507,6 +507,7 @@ class StockController extends Controller
             .page-table{
             width:100%;
             border-collapse:collapse;
+            border:none;
             page-break-inside:avoid;
             }
 
@@ -514,6 +515,7 @@ class StockController extends Controller
             width:50%;
             vertical-align:top;
             padding:5px;
+            border:none;
             }
 
             /* TABLE STYLE */
