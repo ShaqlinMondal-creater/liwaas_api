@@ -759,9 +759,6 @@ class StockController extends Controller
             <tr>
             <td>&nbsp;</td>
             <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
             </tr>
 
             ';
