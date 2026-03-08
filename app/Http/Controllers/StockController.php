@@ -809,8 +809,8 @@ class StockController extends Controller
                     Advance payment is non-refundable after order confirmation.
                     Balance payment must be cleared at the time of delivery.
                     <br>
-                    <p> style="color:#c79b37; font-weight:bold;">
-                        Contact Us : business.liwaas@gmail.com / +91 8348381252
+                    <p style="color:#c79b37; font-weight:bold;">
+                        Feel Free to Reach Us : business.liwaas@gmail.com / +91 8348381252
                     </p>
                 </div>
 
