@@ -724,11 +724,9 @@ class StockController extends Controller
         <tbody>
         ';
 
-        $i=1;
-        $rows = 8; // fixed rows like template
-        $count = count($order->items);
+        $i = 1;
 
-        foreach($order->items as $item){
+            foreach($order->items as $item){
 
             $product = $item->product;
 
@@ -750,22 +748,6 @@ class StockController extends Controller
             ';
 
             }
-
-        // empty rows to match layout
-        $rows = $count + 2;
-
-        for($x=$count;$x<$rows;$x++){
-
-        $html .= '
-        <tr>
-        <td>&nbsp;</td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td></td>
-        </tr>
-        ';
-        }
 
         $html .= '
 
