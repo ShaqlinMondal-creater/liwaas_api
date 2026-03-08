@@ -622,7 +622,14 @@ class StockController extends Controller
 
         <tr>
         <td class="center">'.$i++.'</td>
-        <td>'.($item->product->name ?? '-').' ('.$item->product->size.' / '.$item->product->color.')</td>
+        <td>'.
+            ($item->product ? $item->product->name : '-') .
+            ' (' .
+            ($item->product ? $item->product->size : '-') .
+            ' / ' .
+            ($item->product ? $item->product->color : '-') .
+            ')
+        </td>
         <td class="center">'.$item->qty.'</td>
         <td class="right">'.number_format($item->price,2).'</td>
         <td class="right">'.number_format($item->sub_total,2).'</td>
