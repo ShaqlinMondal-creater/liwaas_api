@@ -299,7 +299,17 @@ class StockController extends Controller
                 return [
                     'id' => $order->id,
                     'sales_order_no' => $order->sales_order_no,
-                    'client' => $order->client,
+                    'date' => $order->updated_at 
+                        ? $order->updated_at->format('d M Y') 
+                        : null,
+                    'client' => [
+                        'id' => $order->client->id ?? null,
+                        'name' => $order->client->name ?? null,
+                        'owner_name' => $order->client->owner_name ?? null,
+                        'mobile' => $order->client->mobile ?? null,
+                        'address' => $order->client->address ?? null,
+                        'email' => $order->client->email ?? null
+                    ],
                     'grand_total' => $order->grand_total,
                     'total_tax' => $order->total_tax,
                     'pdf' => $order->upload ? $order->upload->file_url : null
@@ -320,13 +330,68 @@ class StockController extends Controller
             'upload'
         ])->find($request->id);
 
+        $items = $order->items->map(function ($item) {
+
+            return [
+                'id' => $item->id,
+                'uid' => $item->uid,
+                'qty' => $item->qty,
+                'price' => $item->price,
+                'tax' => $item->tax,
+                'sub_total' => $item->sub_total,
+                'sub_total_tax' => $item->sub_total_tax,
+
+                'product' => [
+                    // 'id' => $item->product->id ?? null,
+                    'uid' => $item->product->uid ?? null,
+                    'name' => $item->product->name ?? null,
+                    'size' => $item->product->size ?? null,
+                    'color' => $item->product->color ?? null,
+                    'list_price' => $item->product->list_price ?? null,
+                    'sale_price' => $item->product->sale_price ?? null,
+                    'stock' => $item->product->stock ?? null,
+                    // 'status' => $item->product->status ?? null
+                ]
+
+            ];
+
+        });
+
         return response()->json([
             'status' => true,
             'message' => 'Sales order detail fetched successfully',
+
             'data' => [
-                'order' => $order,
-                'pdf' => $order->upload ? $order->upload->file_url : null
+
+                'id' => $order->id,
+                'sales_order_no' => $order->sales_order_no,
+
+                'date' => $order->updated_at
+                    ? $order->updated_at->format('d M Y')
+                    : null,
+
+                'client' => [
+                    'id' => $order->client->id ?? null,
+                    'name' => $order->client->name ?? null,
+                    'owner_name' => $order->client->owner_name ?? null,
+                    'mobile' => $order->client->mobile ?? null,
+                    'address' => $order->client->address ?? null,
+                    'email' => $order->client->email ?? null,
+                    // 'status' => $order->client->status ?? null
+                ],
+
+                'grand_total' => $order->grand_total,
+                'total_tax' => $order->total_tax,
+
+                'items' => $items,
+
+                'pdf' => $order->upload ? [
+                    'file_name' => $order->upload->file_name,
+                    'url' => $order->upload->file_url
+                ] : null
+
             ]
+
         ]);
 
     }
