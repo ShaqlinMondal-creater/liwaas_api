@@ -739,7 +739,7 @@ class StockController extends Controller
 
                 $product = $item->product;
                 $html .= '
-                    <tr style="border:1px #999;">
+                    <tr style="border:1px solid #999;">
                         <td class="center">'.$i++.'</td>
                         <td>'.
                             ($product->name ?? '-') .
@@ -777,7 +777,7 @@ class StockController extends Controller
 
             </table>
 
-            <table class="total-table" style="margin-top:10px; border-top:1px solid #666;">
+            <table class="total-table" style="margin-top:10px; border-top:1px solid #666; border-bottom:1px solid #666;">
 
                 <tr>
                     <td width="70%" class="right">TAX</td>
@@ -801,7 +801,7 @@ class StockController extends Controller
 
             </table>
 
-            <div class="footer" style="margin-top:30px; border-top:1px solid #666;">
+            <div class="footer" style="margin-top:30px;">
                 <div class="terms">
                     <strong>TERM & CONDITION</strong><br>
                     Advance payment is non-refundable after order confirmation.
