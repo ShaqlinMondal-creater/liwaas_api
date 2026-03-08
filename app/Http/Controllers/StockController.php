@@ -485,38 +485,38 @@ class StockController extends Controller
         // $html = $this->salesOrderPdfBody($order);
         $html = '
 
-<style>
+        <style>
 
-.page-table{
-width:100%;
-border-collapse:collapse;
-}
+        .page-table{
+        width:100%;
+        border-collapse:collapse;
+        }
 
-.page-table td{
-width:50%;
-vertical-align:top;
-padding:10px;
-}
+        .page-table td{
+        width:50%;
+        vertical-align:top;
+        padding:10px;
+        }
 
-</style>
+        </style>
 
-<table class="page-table">
+        <table class="page-table">
 
-<tr>
+        <tr>
 
-<td>
-'.$this->salesOrderPdfBody($order).'
-</td>
+        <td>
+        '.$this->salesOrderPdfBody($order).'
+        </td>
 
-<td>
-'.$this->salesOrderPdfBody($order).'
-</td>
+        <td>
+        '.$this->salesOrderPdfBody($order).'
+        </td>
 
-</tr>
+        </tr>
 
-</table>
+        </table>
 
-';
+        ';
 
         $pdf = Pdf::loadHTML($html)->setPaper('a4','landscape');
 
@@ -730,19 +730,26 @@ padding:10px;
 
         foreach($order->items as $item){
 
-            $html .= '
+            $product = $item->product;
 
+            $html .= '
             <tr>
             <td class="center">'.$i++.'</td>
-            <td>'.($item->product->name ?? '-').' ('.$item->product->size.' / '.$item->product->color.')</td>
+            <td>'.
+            ($product->name ?? '-') .
+            ' ('.
+            ($product->size ?? '-') .
+            ' / '.
+            ($product->color ?? '-') .
+            ')
+            </td>
             <td class="center">'.$item->qty.'</td>
             <td class="right">'.number_format($item->price,2).'</td>
             <td class="right">'.number_format($item->sub_total,2).'</td>
             </tr>
-
             ';
 
-        }
+            }
 
         // empty rows to match layout
         for($x=$count;$x<$rows;$x++){
