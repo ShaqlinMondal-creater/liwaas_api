@@ -485,40 +485,162 @@ class StockController extends Controller
         // $html = $this->salesOrderPdfBody($order);
         $html = '
 
-        <style>
+            <style>
 
-        .page-table{
-        width:100%;
-        border-collapse:collapse;
-        }
+            body{
+            font-family: DejaVu Sans, sans-serif;
+            font-size:9px;
+            color:#333;
+            }
 
-        .page-table td{
-        width:50%;
-        vertical-align:top;
-        padding:10px;
-        }
+            /* WATERMARK */
+            .bg-image{
+            position:absolute;
+            top:45%;
+            left:30%;
+            width:220px;
+            opacity:0.05;
+            z-index:-1;
+            }
 
-        </style>
+            /* PAGE LAYOUT */
+            .page-table{
+            width:100%;
+            border-collapse:collapse;
+            page-break-inside:avoid;
+            }
 
-        <table class="page-table">
+            .page-table td{
+            width:50%;
+            vertical-align:top;
+            padding:5px;
+            }
 
-        <tr>
+            /* TABLE STYLE */
+            table{
+            width:100%;
+            border-collapse:collapse;
+            margin-top:8px;
+            }
 
-        <td>
-        '.$this->salesOrderPdfBody($order).'
-        </td>
+            th,td{
+            border:1px solid #666;
+            padding:3px 4px;
+            font-size:9px;
+            }
 
-        <td>
-        '.$this->salesOrderPdfBody($order).'
-        </td>
+            th{
+            background:#f5f5f5;
+            text-align:center;
+            }
 
-        </tr>
+            /* ALIGNMENTS */
+            .center{
+            text-align:center;
+            }
 
-        </table>
+            .right{
+            text-align:right;
+            }
+
+            /* HEADER */
+            .header-left{
+            float:left;
+            }
+
+            .header-right{
+            float:right;
+            text-align:right;
+            }
+
+            .clear{
+            clear:both;
+            }
+
+            /* TITLE */
+            .title{
+            font-size:16px;
+            font-weight:bold;
+            color:#c79b37;
+            margin-bottom:5px;
+            }
+
+            /* LOGO */
+            .logo{
+            height:45px;
+            }
+
+            /* INFO TEXT */
+            .info{
+            margin-top:5px;
+            line-height:1.4;
+            font-size:9px;
+            }
+
+            /* FOOTER */
+            .footer{
+            margin-top:20px;
+            font-size:8px;
+            }
+
+            /* TERMS */
+            .terms{
+            float:left;
+            width:70%;
+            }
+
+            /* SIGNATURE */
+            .signature{
+            float:right;
+            width:25%;
+            text-align:right;
+            }
+
+            .signature-line{
+            margin-top:25px;
+            border-top:1px solid #333;
+            width:120px;
+            float:right;
+            }
+
+            /* CUT LINE BETWEEN INVOICES */
+            .page-table td:first-child{
+            border-right:1px dashed #999;
+            }
+
+            tr{
+            page-break-inside:avoid;
+            }
+
+            table{
+            page-break-inside:auto;
+            }
+            </style>
+
+            <table class="page-table">
+
+            <tr>
+
+            <td>
+            '.$this->salesOrderPdfBody($order).'
+            </td>
+
+            <td>
+            '.$this->salesOrderPdfBody($order).'
+            </td>
+
+            </tr>
+
+            </table>
 
         ';
 
-        $pdf = Pdf::loadHTML($html)->setPaper('a4','landscape');
+        $pdf = Pdf::loadHTML($html)
+        ->setPaper('a4','landscape')
+        ->setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true
+        ]);
 
         $fileName = 'sales_order_'.$order->sales_order_no.'.pdf';
         $filePath = 'sales_orders/'.$fileName;
@@ -555,117 +677,6 @@ class StockController extends Controller
 
 
         $html = '
-
-        <style>
-
-            body{
-            font-family: DejaVu Sans, sans-serif;
-            font-size:11px;
-            color:#333;
-            position:relative;
-            }
-
-            .bg-image{
-            position:absolute;
-            top:35%;
-            left:20%;
-            width:400px;
-            opacity:0.08;
-            z-index:-1;
-            }
-
-            .header{
-            width:100%;
-            margin-bottom:20px;
-            }
-
-            .header-left{
-            float:left;
-            }
-
-            .header-right{
-            float:right;
-            text-align:right;
-            }
-
-            .logo{
-            height:70px;
-            }
-
-            .clear{
-            clear:both;
-            }
-
-            .title{
-            font-size:24px;
-            font-weight:bold;
-            color:#c79b37;
-            margin-bottom:10px;
-            }
-
-            .info{
-            margin-top:10px;
-            line-height:1.6;
-            }
-
-            .bill{
-            margin-top:20px;
-            }
-
-            table{
-            width:100%;
-            border-collapse:collapse;
-            margin-top:15px;
-            }
-
-            th,td{
-            border:1px solid #666;
-            padding:6px;
-            font-size:11px;
-            }
-
-            th{
-            background:#f5f5f5;
-            text-align:center;
-            }
-
-            .center{
-            text-align:center;
-            }
-
-            .right{
-            text-align:right;
-            }
-
-            .total-table td{
-            font-weight:bold;
-            }
-
-            .footer{
-            margin-top:50px;
-            font-size:10px;
-            }
-
-            .terms{
-            float:left;
-            width:70%;
-            }
-
-            .signature{
-            float:right;
-            width:25%;
-            text-align:right;
-            }
-
-            .signature-line{
-            margin-top:40px;
-            border-top:1px solid #333;
-            width:150px;
-            float:right;
-            }
-
-        </style>
-
 
         <img src="'.$bgBase64.'" class="bg-image">
 
