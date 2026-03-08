@@ -737,28 +737,39 @@ class StockController extends Controller
 
             foreach($order->items as $item){
 
-            $product = $item->product;
-
-            $html .= '
-            <tr>
-                <td class="center">'.$i++.'</td>
-                <td>'.
-                    ($product->name ?? '-') .
-                    ' ('.
-                    ($product->size ?? '-') .
-                    ' / '.
-                    ($product->color ?? '-') .
-                    ')
-                </td>
-                <td class="center">'.$item->qty.'</td>
-                <td class="right">'.number_format($item->price,2).'</td>
-                <td class="right">'.number_format($item->sub_total,2).'</td>
-                <td class="center"></td>
-                <td class="center"></td>
-            </tr>
-            ';
-
+                $product = $item->product;
+                $html .= '
+                    <tr>
+                        <td class="center">'.$i++.'</td>
+                        <td>'.
+                            ($product->name ?? '-') .
+                            ' ('.
+                            ($product->size ?? '-') .
+                            ' / '.
+                            ($product->color ?? '-') .
+                            ')
+                        </td>
+                        <td class="center">'.$item->qty.'</td>
+                        <td class="right">'.number_format($item->price,2).'</td>
+                        <td class="right">'.number_format($item->sub_total,2).'</td>
+                    </tr>
+                    ';
             }
+            $itemCount = count($order->items);
+
+                if($itemCount < 5){
+                    for($x = 0; $x < 2; $x++){
+                        $html .= '
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        ';
+                    }
+                }
 
         $html .= '
 
