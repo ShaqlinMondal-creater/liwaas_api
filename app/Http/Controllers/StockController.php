@@ -752,17 +752,19 @@ class StockController extends Controller
             }
 
         // empty rows to match layout
+        $rows = $count + 2;
+
         for($x=$count;$x<$rows;$x++){
 
-            $html .= '
-
-            <tr>
-            <td>&nbsp;</td>
-            <td></td>
-            </tr>
-
-            ';
-
+        $html .= '
+        <tr>
+        <td>&nbsp;</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        </tr>
+        ';
         }
 
         $html .= '
