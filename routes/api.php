@@ -51,7 +51,7 @@ use App\Http\Controllers\StockController;
             Route::post('/fetch-detail', [StockController::class,'getSalesOrderDetail']);
             Route::delete('/delete', [StockController::class,'deleteSalesOrder']);
             Route::post('/pdf', [StockController::class,'generateSalesOrderPdf']);
-
+            Route::post('/analytics', [StockController::class,'analyticsDashboard']);
         });
         Route::prefix('clients')->group(function(){
             Route::post('/create',[StockController::class,'create']);
