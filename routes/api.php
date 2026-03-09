@@ -39,28 +39,28 @@ use App\Http\Controllers\StockController;
         Route::post('/remove-from-cart', [Analytic_viewController::class, 'trackRemoveFromCart']);
     });
 
-    Route::prefix('stocks')->group(function () {
-        Route::post('/add-stock', [StockController::class, 'addProductStock']);
-        Route::post('/get-stock', [StockController::class,'getProductStocks']);
-        Route::post('/delete-stock', [StockController::class,'deleteStock']);
-        Route::post('/edit-stock', [StockController::class,'editStock']);
+    // Route::prefix('stocks')->group(function () {
+    //     Route::post('/add-stock', [StockController::class, 'addProductStock']);
+    //     Route::post('/get-stock', [StockController::class,'getProductStocks']);
+    //     Route::post('/delete-stock', [StockController::class,'deleteStock']);
+    //     Route::post('/edit-stock', [StockController::class,'editStock']);
 
-        Route::prefix('sales-order')->group(function () {
-            Route::post('/create', [StockController::class, 'createSalesOrder']);
-            Route::post('/fetch', [StockController::class,'getSalesOrders']);
-            Route::post('/fetch-detail', [StockController::class,'getSalesOrderDetail']);
-            Route::delete('/delete', [StockController::class,'deleteSalesOrder']);
-            Route::post('/pdf', [StockController::class,'generateSalesOrderPdf']);
-            Route::post('/analytics', [StockController::class,'analyticsDashboard']);
-        });
-        Route::prefix('clients')->group(function(){
-            Route::post('/create',[StockController::class,'create']);
-            Route::post('/fetch',[StockController::class,'fetch']);
-            Route::post('/update/{id}',[StockController::class,'update']);
-            Route::delete('/delete/{id}',[StockController::class,'delete']);
-        });
+    //     Route::prefix('sales-order')->group(function () {
+    //         Route::post('/create', [StockController::class, 'createSalesOrder']);
+    //         Route::post('/fetch', [StockController::class,'getSalesOrders']);
+    //         Route::post('/fetch-detail', [StockController::class,'getSalesOrderDetail']);
+    //         Route::delete('/delete', [StockController::class,'deleteSalesOrder']);
+    //         Route::post('/pdf', [StockController::class,'generateSalesOrderPdf']);
+    //         Route::post('/analytics', [StockController::class,'analyticsDashboard']);
+    //     });
+    //     Route::prefix('clients')->group(function(){
+    //         Route::post('/create',[StockController::class,'create']);
+    //         Route::post('/fetch',[StockController::class,'fetch']);
+    //         Route::post('/update/{id}',[StockController::class,'update']);
+    //         Route::delete('/delete/{id}',[StockController::class,'delete']);
+    //     });
 
-    });
+    // });
 
     Route::get('/colors/getAll', [HelperController::class, 'getAllColors']); // Get all colors
 
@@ -108,6 +108,28 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/truncate-table', [AdminController::class, 'truncateTable']); // Truncate Table
         Route::delete('delete/{id}', [ProductReviewController::class, 'deleteReview']); // Delete review by id
         
+        Route::prefix('stocks')->group(function () {
+            Route::post('/add-stock', [StockController::class, 'addProductStock']);
+            Route::post('/get-stock', [StockController::class,'getProductStocks']);
+            Route::post('/delete-stock', [StockController::class,'deleteStock']);
+            Route::post('/edit-stock', [StockController::class,'editStock']);
+
+            Route::prefix('sales-order')->group(function () {
+                Route::post('/create', [StockController::class, 'createSalesOrder']);
+                Route::post('/fetch', [StockController::class,'getSalesOrders']);
+                Route::post('/fetch-detail', [StockController::class,'getSalesOrderDetail']);
+                Route::delete('/delete', [StockController::class,'deleteSalesOrder']);
+                Route::post('/pdf', [StockController::class,'generateSalesOrderPdf']);
+                Route::post('/analytics', [StockController::class,'analyticsDashboard']);
+            });
+            Route::prefix('clients')->group(function(){
+                Route::post('/create',[StockController::class,'create']);
+                Route::post('/fetch',[StockController::class,'fetch']);
+                Route::post('/update/{id}',[StockController::class,'update']);
+                Route::delete('/delete/{id}',[StockController::class,'delete']);
+            });
+
+        });
 
         Route::get('/reviews', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
         
