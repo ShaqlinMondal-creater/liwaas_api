@@ -15,6 +15,126 @@ use Illuminate\Support\Facades\DB;
 
 class StockController extends Controller
 {
+    // public function analyticsDashboard()
+    // {
+
+    //     // monthly targets
+    //     $targets = [
+    //         3 => 100,
+    //         4 => 150,
+    //         5 => 250,
+    //         6 => 300,
+    //         7 => 400,
+    //         8 => 350,
+    //         9 => 300,
+    //         10 => 200,
+    //         11 => 200,
+    //         12 => 150
+    //     ];
+
+    //     $year = 2026;
+
+    //     // TOTAL DATA
+    //     $total_sales = StocksSalesOrder::sum('grand_total');
+    //     $total_orders = StocksSalesOrder::count();
+    //     $total_tax = StocksSalesOrder::sum('total_tax');
+    //     $total_products = StocksProduct::count();
+    //     $low_stock_products = StocksProduct::where('stock','<',10)->count();
+
+    //     // CURRENT MONTH
+    //     $month = date('n');
+
+    //     $monthly_orders = StocksSalesOrder::whereYear('created_at',$year)
+    //         ->whereMonth('created_at',$month)
+    //         ->count();
+
+    //     $target = $targets[$month] ?? 0;
+
+    //     $remaining = max($target - $monthly_orders,0);
+
+    //     $progress = $target > 0
+    //         ? round(($monthly_orders/$target)*100,2)
+    //         : 0;
+
+    //     // MONTH WISE DATA
+    //     $monthNames = [
+    //         3=>"march",4=>"april",5=>"may",6=>"june",7=>"july",
+    //         8=>"august",9=>"september",10=>"october",11=>"november",12=>"december"
+    //     ];
+
+    //     $monthWise = [];
+
+    //     foreach($monthNames as $m=>$name){
+
+    //         $orders = StocksSalesOrder::whereYear('created_at',$year)
+    //             ->whereMonth('created_at',$m)
+    //             ->count();
+
+    //         $revenue = StocksSalesOrder::whereYear('created_at',$year)
+    //             ->whereMonth('created_at',$m)
+    //             ->sum('grand_total');
+
+    //         $monthWise[] = [
+    //             $name => [
+    //                 "target" => $targets[$m] ?? 0,
+    //                 "orders" => $orders,
+    //                 "revenue" => $revenue
+    //             ]
+    //         ];
+    //     }
+
+    //     // TOP SELLING PRODUCTS
+    //     $topProducts = StocksSalesOrderItem::select(
+    //         'stocks_products.name as product_name',
+    //         DB::raw('SUM(qty) as units_sold'),
+    //         DB::raw('SUM(sub_total) as revenue')
+    //     )
+    //     ->join('stocks_products','stocks_products.uid','=','stocks_sales_order_items.uid')
+    //     ->groupBy('stocks_products.name')
+    //     ->orderByDesc('units_sold')
+    //     ->limit(3)
+    //     ->get();
+
+    //     // SALES BY CLIENT
+    //     $clientSales = StocksSalesOrder::select(
+    //         'stocks_clients.name as client_name',
+    //         DB::raw('SUM(grand_total) as total_sales'),
+    //         DB::raw('COUNT(*) as orders')
+    //     )
+    //     ->join('stocks_clients','stocks_clients.id','=','stocks_sales_orders.client_id')
+    //     ->groupBy('stocks_clients.name')
+    //     ->orderByDesc('total_sales')
+    //     ->limit(3)
+    //     ->get();
+
+    //     return response()->json([
+    //         "status"=>true,
+    //         "message"=>"Analytics fetched successfully",
+    //         "data"=>[
+    //             "total_data"=>[
+    //                 "total_sales"=>$total_sales,
+    //                 "total_orders"=>$total_orders,
+    //                 "total_tax"=>$total_tax,
+    //                 "total_products"=>$total_products,
+    //                 "low_stock_products"=>$low_stock_products
+    //             ],
+
+    //             "this_month_data"=>[
+    //                 "monthly_target"=>$target,
+    //                 "monthly_orders"=>$monthly_orders,
+    //                 "target_remaining"=>$remaining,
+    //                 "target_progress_percent"=>$progress
+    //             ],
+
+    //             "month_wise_data"=>$monthWise,
+
+    //             "top_selling_products"=>$topProducts,
+
+    //             "sales_by_clients"=>$clientSales
+    //         ]
+    //     ]);
+    // }
+
     public function analyticsDashboard()
     {
 
@@ -37,16 +157,27 @@ class StockController extends Controller
         // TOTAL DATA
         $total_sales = StocksSalesOrder::sum('grand_total');
         $total_orders = StocksSalesOrder::count();
+        $total_items_sold = StocksSalesOrderItem::sum('qty'); // NEW
         $total_tax = StocksSalesOrder::sum('total_tax');
         $total_products = StocksProduct::count();
-        $low_stock_products = StocksProduct::where('stock','<',10)->count();
+        $low_stock_products = StocksProduct::where('stock','<',5)->count(); // updated to 5
 
         // CURRENT MONTH
         $month = date('n');
 
         $monthly_orders = StocksSalesOrder::whereYear('created_at',$year)
-            ->whereMonth('created_at',$month)
-            ->count();
+                ->whereMonth('created_at',$month)
+                ->count();
+
+            $monthly_items_sold = StocksSalesOrderItem::join(
+            'stocks_sales_orders',
+            'stocks_sales_orders.id',
+            '=',
+            'stocks_sales_order_items.sales_order_id'
+        )
+        ->whereYear('stocks_sales_orders.created_at',$year)
+        ->whereMonth('stocks_sales_orders.created_at',$month)
+        ->sum('qty');
 
         $target = $targets[$month] ?? 0;
 
@@ -69,7 +200,15 @@ class StockController extends Controller
             $orders = StocksSalesOrder::whereYear('created_at',$year)
                 ->whereMonth('created_at',$m)
                 ->count();
-
+            $items_sold = StocksSalesOrderItem::join(
+                'stocks_sales_orders',
+                'stocks_sales_orders.id',
+                '=',
+                'stocks_sales_order_items.sales_order_id'
+            )
+            ->whereYear('stocks_sales_orders.created_at',$year)
+            ->whereMonth('stocks_sales_orders.created_at',$m)
+            ->sum('qty');
             $revenue = StocksSalesOrder::whereYear('created_at',$year)
                 ->whereMonth('created_at',$m)
                 ->sum('grand_total');
@@ -78,6 +217,7 @@ class StockController extends Controller
                 $name => [
                     "target" => $targets[$m] ?? 0,
                     "orders" => $orders,
+                    "items_sold" => $items_sold,
                     "revenue" => $revenue
                 ]
             ];
