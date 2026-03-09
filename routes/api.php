@@ -58,7 +58,6 @@ use App\Http\Controllers\StockController;
             Route::post('/fetch',[StockController::class,'fetch']);
             Route::post('/update/{id}',[StockController::class,'update']);
             Route::delete('/delete/{id}',[StockController::class,'delete']);
-
         });
 
     });

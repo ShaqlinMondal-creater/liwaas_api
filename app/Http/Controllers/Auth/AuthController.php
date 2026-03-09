@@ -331,14 +331,91 @@ class AuthController extends Controller
     }
 
     // Guest to AUth User Make
+    // public function makeUser(Request $request)
+    // {
+    //     $request->validate([
+    //         'name' => 'required|string',
+    //         'email' => 'required|email|unique:users,email',
+    //         'mobile' => 'required|string|unique:users,mobile',
+    //         'guest_id' => 'required|string'
+    //     ]);
+
+    //     // ✅ Check if guest_id exists in carts table
+    //     $guestCartExists = Cart::where('user_id', $request->guest_id)->exists();
+    //     if (!$guestCartExists) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'No cart found for the provided guest_id',
+    //         ], 404);
+    //     }
+
+    //     // ✅ Generate random password
+    //     $password = Str::random(8);
+
+    //     // ✅ Create user
+    //     $user = User::create([
+    //         'name' => $request->name,
+    //         'email' => $request->email,
+    //         'mobile' => $request->mobile,
+    //         'password' => Hash::make($password),
+    //         'role' => 'customer',
+    //         'is_active' => 'true',
+    //         'is_logged_in' => 'true',
+    //     ]);
+
+    //     // ✅ Send mail with name, email, mobile, password
+    //     Mail::to($user->email)->send(new CreateUserMail($user, $password));
+
+
+    //     // ✅ Replace guest_id with new user_id in carts table
+    //     Cart::where('user_id', $request->guest_id)
+    //         ->update(['user_id' => $user->id]);
+
+    //     $user->makeHidden(['created_at', 'updated_at']);
+    //     // ✅ Generate token
+    //     $token = $user->createToken('authToken')->plainTextToken;
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'User created successfully and cart updated',
+    //         'token' => $token,
+    //         'user' => $user,
+    //     ], 201);
+    // }
+
     public function makeUser(Request $request)
     {
         $request->validate([
             'name' => 'required|string',
-            'email' => 'required|email|unique:users,email',
-            'mobile' => 'required|string|unique:users,mobile',
+            'email' => 'required|email',
+            'mobile' => 'required|string',
             'guest_id' => 'required|string'
         ]);
+
+        // ✅ Check existing email & mobile
+        $emailExists = User::where('email', $request->email)->exists();
+        $mobileExists = User::where('mobile', $request->mobile)->exists();
+
+        if ($emailExists && $mobileExists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email and Mobile already exist. Kindly login first.'
+            ], 409);
+        }
+
+        if ($emailExists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email already exists. Kindly login first.'
+            ], 409);
+        }
+
+        if ($mobileExists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mobile already exists. Kindly login first.'
+            ], 409);
+        }
 
         // ✅ Check if guest_id exists in carts table
         $guestCartExists = Cart::where('user_id', $request->guest_id)->exists();
