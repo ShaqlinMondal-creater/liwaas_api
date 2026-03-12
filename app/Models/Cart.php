@@ -16,6 +16,14 @@ class Cart extends Model
         'user_id', 'products_id', 'aid', 'uid', 'regular_price',
         'sell_price', 'quantity', 'total_price',
     ];
+
+    // ⭐ Add this
+    protected $casts = [
+        'regular_price' => 'decimal:2',
+        'sell_price' => 'decimal:2',
+        'total_price' => 'decimal:2',
+        'quantity' => 'integer'
+    ];
     
     // Cart belongs to a user
     public function user()
