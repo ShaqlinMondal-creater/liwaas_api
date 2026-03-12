@@ -370,11 +370,11 @@
 
     {{-- Footer Area --}}
     <div class="footer" style="font-size: 11px; line-height: 1.5;">
-        <strong>LIWAAS PRIVATE LIMITED</strong> &nbsp; | &nbsp;
-        Reg. No: CIN-U52609WB2022PTC256894<br>
-        Corporate Office: 203, Sector V, Salt Lake City, Kolkata, WB - 700091<br>
-        Email: <a href="mailto:support@liwaas.com" style="color: #fff; text-decoration: underline;">support@liwaas.com</a> &nbsp; | &nbsp;
-        Phone: +91 9876543210
+        <strong>LIWAAS STORE</strong> &nbsp; | &nbsp;
+        <br>
+        Azad nagar, Memari, Burdwan, WB - 713146<br>
+        Email: <a href="mailto:business.liwaas@gmail.com" style="color: #fff; text-decoration: underline;">business.liwaas@gmail.com</a> &nbsp; | &nbsp;
+        Phone: +91 8348381252
     </div>
 
 

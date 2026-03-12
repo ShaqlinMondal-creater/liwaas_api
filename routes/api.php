@@ -39,29 +39,6 @@ use App\Http\Controllers\StockController;
         Route::post('/remove-from-cart', [Analytic_viewController::class, 'trackRemoveFromCart']);
     });
 
-    // Route::prefix('stocks')->group(function () {
-    //     Route::post('/add-stock', [StockController::class, 'addProductStock']);
-    //     Route::post('/get-stock', [StockController::class,'getProductStocks']);
-    //     Route::post('/delete-stock', [StockController::class,'deleteStock']);
-    //     Route::post('/edit-stock', [StockController::class,'editStock']);
-
-    //     Route::prefix('sales-order')->group(function () {
-    //         Route::post('/create', [StockController::class, 'createSalesOrder']);
-    //         Route::post('/fetch', [StockController::class,'getSalesOrders']);
-    //         Route::post('/fetch-detail', [StockController::class,'getSalesOrderDetail']);
-    //         Route::delete('/delete', [StockController::class,'deleteSalesOrder']);
-    //         Route::post('/pdf', [StockController::class,'generateSalesOrderPdf']);
-    //         Route::post('/analytics', [StockController::class,'analyticsDashboard']);
-    //     });
-    //     Route::prefix('clients')->group(function(){
-    //         Route::post('/create',[StockController::class,'create']);
-    //         Route::post('/fetch',[StockController::class,'fetch']);
-    //         Route::post('/update/{id}',[StockController::class,'update']);
-    //         Route::delete('/delete/{id}',[StockController::class,'delete']);
-    //     });
-
-    // });
-
     Route::get('/colors/getAll', [HelperController::class, 'getAllColors']); // Get all colors
 
     Route::prefix('products')->group(function () {
@@ -122,6 +99,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 Route::post('/pdf', [StockController::class,'generateSalesOrderPdf']);
                 Route::post('/analytics', [StockController::class,'analyticsDashboard']);
             });
+
             Route::prefix('clients')->group(function(){
                 Route::post('/create',[StockController::class,'create']);
                 Route::post('/fetch',[StockController::class,'fetch']);
@@ -179,7 +157,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/shiprocket/create-order', [ShippingController::class, 'createShiprocketOrder']); // For create order in shiprocket
         Route::post('/shiprocket/serviceability', [ShippingController::class, 'checkServiceability']); // For check serviceability
         Route::post('/shiprocket/assign-courier', [ShippingController::class, 'assignCourier']); // For assign courier to order in shiprocket
-
 
         Route::post('/users', [AdminController::class, 'getAllUsers']); // now accepts body
         Route::post('/getAllAddress', [AddressController::class, 'getAllAddress']); // get all address
@@ -249,7 +226,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     });
 
-    
     // Customer Routes
     Route::middleware(['customerOnly'])->prefix('customer')->group(function () {
 
@@ -266,13 +242,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/update-address', [AddressController::class, 'updateAddress']); // update address by address id
             Route::delete('/delete-address/{address_id}', [AddressController::class, 'deleteAddress']); // delete address by address id
         });
-
-        // Route::prefix('cart')->group(function () {
-        //     Route::post('/create-cart', [CartController::class, 'createCart']);
-        //     Route::post('/update-cart', [CartController::class, 'updateCart']);
-        //     Route::get('/get-cart', [CartController::class, 'getUserCart']);
-        //     Route::delete('/{id}', [CartController::class, 'deleteCart']);
-        // });
 
         Route::prefix('wishlist')->group(function () {
             Route::post('/create', [WishlistController::class, 'addWishlist']);
@@ -296,9 +265,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
         
         Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']); // Payment Verification
-
     });
-    
     
     Route::post('/payments/cancelPayment', [PaymentController::class, 'cancelPayment']); // Payment Verification
 });
