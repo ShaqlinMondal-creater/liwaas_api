@@ -136,6 +136,7 @@ class CartController extends Controller
     // Get Users Cart Data
     public function getUserCart(Request $request)
     {
+        $shippingEnabled = true; // true = apply shipping rule, false = always free
         // ✅ Try to get authenticated user
         $user = null;
         if ($request->bearerToken()) {
@@ -160,8 +161,16 @@ class CartController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Your cart is empty.',
-                'data'    => []
+                'data'    => [],
+                'shipping' => 0
             ], 200);
+        }
+
+        $subtotal = $carts->sum('total_price');
+        $shipping = 0;
+
+        if ($shippingEnabled && $subtotal > 0 && $subtotal < 600) {
+            $shipping = 80;
         }
 
         // ✅ Format response
@@ -200,7 +209,8 @@ class CartController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Cart items retrieved successfully.',
-            'data'    => $formatted
+            'data'    => $formatted,
+            'shipping' => $shipping
         ], 200);
     }
 
