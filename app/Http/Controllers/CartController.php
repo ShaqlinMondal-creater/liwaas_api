@@ -194,8 +194,8 @@ class CartController extends Controller
                 'product_id'   => $cart->products_id,
                 'product_name' => optional($cart->product)->name,
                 'quantity'     => $cart->quantity,
-                'sell_price'   => (float) $cart->sell_price,
-                'total_price'  => (float) $cart->total_price,
+                'sell_price' => round($cart->sell_price, 2),
+                'total_price' => round($cart->total_price, 2),
                 'variation'    => [
                     'uid'    => $cart->uid,
                     'aid'    => $cart->aid,
