@@ -922,5 +922,88 @@ class OrderController extends Controller
         ]);
     }
 
+    public function cancelOrder(Request $request, $id)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'error' => 'Unauthorized'
+            ], 401);
+        }
+
+        // Get the order belonging to this user
+        $order = Orders::with(['shipping','user','items.product','items.variation'])
+            ->where('user_id', $user->id)
+            ->findOrFail($id);
+
+        // Prevent cancelling completed or already cancelled orders
+        if (in_array($order->order_status, ['completed','cancelled'])) {
+            return response()->json([
+                'error' => 'This order cannot be cancelled'
+            ], 400);
+        }
+
+        DB::beginTransaction();
+
+        try {
+
+            // 1️⃣ Update order status
+            $order->order_status = 'cancelled';
+            $order->save();
+
+            // 2️⃣ Update shipping status
+            if ($order->shipping) {
+                $order->shipping->shipping_status = 'Cancelled';
+                $order->shipping->save();
+            }
+
+            // 3️⃣ Update payment status (optional but recommended)
+            if ($order->payment) {
+                $order->payment->payment_status = 'return';
+                $order->payment->save();
+            }
+
+            // 4️⃣ Attach image + color + size like admin function
+            foreach ($order->items as $item) {
+
+                $variation = \App\Models\ProductVariations::where('uid', $item->uid)->first();
+
+                if ($variation) {
+                    $item->image_link = $this->getImageLinkForItem($item);
+                    $item->color = \App\Helpers\ColorHelper::get($variation->color ?? null);
+                    $item->size = $variation->size ?? null;
+                } else {
+                    $item->image_link = null;
+                    $item->color = null;
+                    $item->size = null;
+                }
+            }
+
+            // 5️⃣ Send email notification
+            if ($order->user && !empty($order->user->email)) {
+                Mail::to($order->user->email)->send(new OrderStatusUpdated($order));
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Order cancelled successfully',
+                'order_id' => $order->id,
+                'order_code' => $order->order_code,
+                'status' => $order->order_status
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollback();
+
+            return response()->json([
+                'error' => 'Order cancellation failed',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
 
