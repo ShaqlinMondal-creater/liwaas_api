@@ -91,7 +91,9 @@ class OrderController extends Controller
                     ->first();
 
                 if ($coupon) {
-                    $discount = $coupon->value;
+                    // $discount = $coupon->value;
+                    // $couponId = $coupon->id;
+                    $discount = min($coupon->value, $subTotal); // 🔥 prevent over discount
                     $couponId = $coupon->id;
                 }
             }
@@ -104,7 +106,8 @@ class OrderController extends Controller
             $tax = round($amountAfterDiscount - $taxableAmount, 2);
 
             /* ---------------- SHIPPING ---------------- */
-            $shippingCharge = $amountAfterDiscount > 300 ? 0 : 120;
+            // $shippingCharge = $amountAfterDiscount > 300 ? 0 : 120;
+            $shippingCharge = $subTotal < 600 ? 80 : 0;
 
             /* ---------------- GRAND TOTAL ---------------- */
             $grandTotal = round($amountAfterDiscount + $shippingCharge, 2);
