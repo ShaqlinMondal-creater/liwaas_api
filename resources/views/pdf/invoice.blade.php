@@ -304,7 +304,9 @@
                         </table>
                     </td>
                     <td style="text-align:center;">
-                        Color: {{ $item->color ?? 'N/A' }}
+                        Color: 
+                        <span style="display:inline-block;border-radius:50%;width:15px;height:15px;background-color:{{ $item->color_code ?? '#ffffff' }};"></span>
+                        {{ $item->color_name ?? 'N/A' }}
                         <br>
                         Size: {{ $item->variation->size ?? 'N/A' }}
                     </td>

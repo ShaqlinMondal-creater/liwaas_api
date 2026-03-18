@@ -557,14 +557,7 @@ class OrderController extends Controller
 
         // Get the order
         // $order = Orders::with('items')->findOrFail($id);
-        $order = Orders::with([
-            'items.product',
-            'items.variation',
-            'user',
-            'shipping.address',
-            'invoice',
-            'payment'
-        ])->findOrFail($id);
+        $order = Orders::with(['items', 'payment'])->findOrFail($id);
 
         // ✅ 1. Update shipping status in t_shipping
         if (!empty($request->shipping) && $order->shipping_id) {
@@ -577,23 +570,6 @@ class OrderController extends Controller
 
         if (!empty($request->order_status)) {
             $order->order_status = $request->order_status;
-        }
-
-        // ✅ 4. Attach image, color, and size info to each item
-        foreach ($order->items as $item) {
-
-            $variation = $item->variation;
-
-            if ($variation) {
-                // ✅ SIMPLE LIKE SIZE
-                $item->color = $variation->color ?? null;
-                $item->size = $variation->size ?? null;
-                $item->image_link = $this->getImageLinkForItem($item);
-            } else {
-                $item->color = null;
-                $item->size = null;
-                $item->image_link = null;
-            }
         }
 
         // ✅ 3. Generate invoice and save in t_invoice if shipping is not Pending and invoice not already created
@@ -630,7 +606,20 @@ class OrderController extends Controller
 
         $order->save();
 
-        
+        // ✅ 4. Attach image, color, and size info to each item
+        foreach ($order->items as $item) {
+            $variation = \App\Models\ProductVariations::where('uid', $item->uid)->first();
+            if ($variation) {
+                $item->image_link = $this->getImageLinkForItem($item);
+                // $item->color = $variation->color ?? null;
+                $item->color = \App\Helpers\ColorHelper::get($variation->color ?? null);
+                $item->size = $variation->size ?? null;
+            } else {
+                $item->image_link = null;
+                $item->color = null;
+                $item->size = null;
+            }
+        }
 
         // ✅ 5. Send status update email to user
         if ($order->user && !empty($order->user->email)) {
@@ -781,8 +770,7 @@ class OrderController extends Controller
     }
     private function getImageLinkForItem($item)
     {
-        // $variation = \App\Models\ProductVariations::where('uid', $item->uid)->first();
-        $variation = $item->variation;
+        $variation = \App\Models\ProductVariations::where('uid', $item->uid)->first();
         $imageId = $variation && !empty($variation->images_id) ? trim(explode(',', $variation->images_id)[0]) : 1;
 
         $upload = \App\Models\Upload::find($imageId);
