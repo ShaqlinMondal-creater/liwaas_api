@@ -556,7 +556,8 @@ class OrderController extends Controller
         ]);
 
         // Get the order
-        $order = Orders::with('items')->findOrFail($id);
+        // $order = Orders::with('items')->findOrFail($id);
+        $order = Orders::with(['items', 'payment'])->findOrFail($id);
 
         // ✅ 1. Update shipping status in t_shipping
         if (!empty($request->shipping) && $order->shipping_id) {
@@ -607,16 +608,25 @@ class OrderController extends Controller
 
         // ✅ 4. Attach image, color, and size info to each item
         foreach ($order->items as $item) {
+
             $variation = \App\Models\ProductVariations::where('uid', $item->uid)->first();
+
             if ($variation) {
-                $item->image_link = $this->getImageLinkForItem($item);
-                // $item->color = $variation->color ?? null;
-                $item->color = \App\Helpers\ColorHelper::get($variation->color ?? null);
+
+                $color = \App\Helpers\ColorHelper::get($variation->color);
+
+                $item->color_name = $color['name'] ?? null;
+                $item->color_code = $color['code'] ?? null;
+
                 $item->size = $variation->size ?? null;
+                $item->image_link = $this->getImageLinkForItem($item);
+
             } else {
-                $item->image_link = null;
-                $item->color = null;
+
+                $item->color_name = null;
+                $item->color_code = null;
                 $item->size = null;
+                $item->image_link = null;
             }
         }
 

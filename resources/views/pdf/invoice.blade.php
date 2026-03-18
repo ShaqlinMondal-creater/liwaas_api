@@ -205,7 +205,7 @@
                 </td>
                 <td class="w-50 text-right">
                     <strong>INVOICE NUMBER:</strong> #{{ $order->invoice->invoice_no }}<br>
-                    <strong>INVOICE DATE:</strong> {{ now()->format('M d, Y, h:i A') }}
+                    <strong>INVOICE DATE:</strong> {{ \Carbon\Carbon::now()->setTimezone('Asia/Kolkata')->format('M d, Y, h:i A') }}
                 </td>
             </tr>
         </table>
@@ -247,9 +247,10 @@
                 <td style="width: 50%; vertical-align: top; padding-left: 10px;">
                     <div style="border: 0px solid #ccc; padding: 10px; line-height: 1.4; float: right; min-width: 220px;">
                         <strong>ORDER:</strong> #{{ $order->order_code }}<br>
-                        <strong>ORDER DATE:</strong> {{ $order->created_at->format('M d, Y, h:i A') }}<br>
+                        <strong>ORDER DATE:</strong> {{ \Carbon\Carbon::parse($order->created_at)->setTimezone('Asia/Kolkata')->format('M d, Y, h:i A') }}<br>
                         <strong>Shipping:</strong> {{ $order->shipping->shipping_type ?? 'Home' }}<br>
-                        <strong>Payment:</strong> {{ $order->payment_type ?? 'N/A' }}
+                        <strong>Payment:</strong> {{ $order->payment_type ?? 'N/A' }}<br>
+                        <strong>Payment Status:</strong> {{ $order->payment->payment_status ?? 'Pending' }}
                     </div>
                 </td>
             </tr>
@@ -303,7 +304,9 @@
                         </table>
                     </td>
                     <td style="text-align:center;">
-                        Color: <span style="display:inline-block;border-radius:50%;width:15px;height:15px;background-color:{{ $item->variation->color['code'] ?? '#ffffff' }};"></span>{{ $item->variation->color['name'] ?? '' }}
+                        Color: 
+                        <span style="display:inline-block;border-radius:50%;width:15px;height:15px;background-color:{{ $item->color_code ?? '#ffffff' }};"></span>
+                        {{ $item->color_name ?? 'N/A' }}
                         <br>
                         Size: {{ $item->variation->size ?? 'N/A' }}
                     </td>
@@ -363,7 +366,7 @@
                 <div style="border-top: 1px solid #333; width: 200px; margin-left: auto; margin-bottom: 5px;"></div>
                 <div style="margin-bottom: 10px; font-size: 12px;">Authorized Signatory</div>
                 <img src="{{ $signLogoBase64 }}" alt="Signature Logo" style="height: 40px;"><br>
-                <div style="font-size: 11px; margin-top: 2px;"><strong>LIWAAS PRIVATE LIMITED</strong></div>
+                <div style="font-size: 11px; margin-top: 2px;"><strong>LIWAAS Store</strong></div>
             </td>
         </tr>
     </table>
