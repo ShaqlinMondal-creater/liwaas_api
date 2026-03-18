@@ -271,7 +271,7 @@ class ProductController extends Controller
                 'category:id,name,logo',
                 'variations:aid,uid,color,size,regular_price,sell_price,currency,gst,stock,images_id'
             ]);
-            $query->where('status', 'active');
+            $query->where('product_status', 'active');
 
             // Filters
             if ($request->filled('search')) {
