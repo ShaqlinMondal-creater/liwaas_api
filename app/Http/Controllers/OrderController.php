@@ -612,19 +612,12 @@ class OrderController extends Controller
             $variation = \App\Models\ProductVariations::where('uid', $item->uid)->first();
 
             if ($variation) {
-
-                $color = \App\Helpers\ColorHelper::get($variation->color);
-
-                $item->color_name = $color['name'] ?? null;
-                $item->color_code = $color['code'] ?? null;
-
+                // ✅ SIMPLE LIKE SIZE
+                $item->color = $variation->color ?? null;
                 $item->size = $variation->size ?? null;
                 $item->image_link = $this->getImageLinkForItem($item);
-
             } else {
-
-                $item->color_name = null;
-                $item->color_code = null;
+                $item->color = null;
                 $item->size = null;
                 $item->image_link = null;
             }

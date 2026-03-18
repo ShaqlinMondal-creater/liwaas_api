@@ -304,9 +304,7 @@
                         </table>
                     </td>
                     <td style="text-align:center;">
-                        Color: 
-                        <span style="display:inline-block;border-radius:50%;width:15px;height:15px;background-color:{{ $item->color_code ?? '#ffffff' }};"></span>
-                        {{ $item->color_name ?? 'N/A' }}
+                        Color: {{ $item->color ?? 'N/A' }}
                         <br>
                         Size: {{ $item->variation->size ?? 'N/A' }}
                     </td>
@@ -373,8 +371,7 @@
 
     {{-- Footer Area --}}
     <div class="footer" style="font-size: 11px; line-height: 1.5;">
-        <strong>LIWAAS STORE</strong> &nbsp; | &nbsp;
-        <br>
+        <strong>LIWAAS STORE</strong> &nbsp; | &nbsp; 
         Azad nagar, Memari, Burdwan, WB - 713146<br>
         Email: <a href="mailto:business.liwaas@gmail.com" style="color: #fff; text-decoration: underline;">business.liwaas@gmail.com</a> &nbsp; | &nbsp;
         Phone: +91 8348381252
