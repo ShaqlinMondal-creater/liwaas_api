@@ -253,7 +253,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/create', [ProductReviewController::class, 'addReview']); // create product
             Route::post('/update/{id}', [ProductReviewController::class, 'updateReview']); // update product
             Route::get('/product/{id}', [ProductReviewController::class, 'getReviewsByProductId']); // get all review product id wise
-            Route::get('/all', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
+            Route::post('/all', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
         });
 
         Route::prefix('order')->group(function () {
