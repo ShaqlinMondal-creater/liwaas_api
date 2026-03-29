@@ -249,7 +249,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::delete('/remove/{id}', [WishlistController::class, 'removeFromWishlist']);
         });
 
-        Route::prefix('reviews')->middleware('auth:sanctum')->group(function () {
+        Route::prefix('reviews')->group(function () {
             Route::post('/create', [ProductReviewController::class, 'addReview']); // create product
             Route::post('/update/{id}', [ProductReviewController::class, 'updateReview']); // update product
             Route::get('/product/{id}', [ProductReviewController::class, 'getReviewsByProductId']); // get all review product id wise
