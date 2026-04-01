@@ -84,7 +84,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::middleware(['adminOnly'])->prefix('admin')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'adminDashboard']);
         Route::post('/truncate-table', [AdminController::class, 'truncateTable']); // Truncate Table
-        Route::delete('delete/{id}', [ProductReviewController::class, 'deleteReview']); // Delete review by id
+        Route::delete('/reviews/delete/{id}', [ProductReviewController::class, 'deleteReview']); // Delete review by id
         
         Route::prefix('stocks')->group(function () {
             Route::post('/add-stock', [StockController::class, 'addProductStock']);
