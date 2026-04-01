@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth; 
 use Illuminate\Support\Facades\DB;
 use App\Helpers\ColorHelper;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class ProductReviewController extends Controller
 {
@@ -16,7 +17,7 @@ class ProductReviewController extends Controller
     public function addReview(Request $request)
     {
         $validated = $request->validate([
-            'user'              => 'nullable|string|max:255',
+            'user'              => 'nullable|string|max:500',
             'products_id'       => 'required|exists:products,id',
             'aid'               => 'required|string',
             'uid'               => 'required|integer',
@@ -25,19 +26,20 @@ class ProductReviewController extends Controller
             'upload_images.*'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048', // max 2MB each
         ]);
 
-        $userName = null;
+        $requestUser = trim($request->user ?? '');
 
-        // ✅ If logged in
-        if (auth()->check()) {
-            $userName = auth()->user()->name;
-        }
-        // ✅ Else if user passed from frontend
-        elseif ($request->filled('user')) {
-            $userName = $request->user;
-        }
-        // ✅ Else fallback
-        else {
-            $userName = 'temp_user'; // or null
+        $userName = 'temp_user';
+
+        if (!empty($requestUser)) {
+
+            // Try token
+            $accessToken = PersonalAccessToken::findToken($requestUser);
+
+            if ($accessToken && $accessToken->tokenable) {
+                $userName = $accessToken->tokenable->name;
+            } else {
+                $userName = $requestUser;
+            }
         }
 
         // ✅ Check if the product variation exists
