@@ -41,7 +41,7 @@ use App\Http\Controllers\StockController;
 
     Route::get('/colors/getAll', [HelperController::class, 'getAllColors']); // Get all colors
     Route::get('/reviews', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
-    
+
     Route::prefix('products')->group(function () {
         Route::post('get-product-byslug/{slug}', [ProductController::class, 'getProductsBySlug']); // through slug product filter 
         Route::post('/allProducts', [ProductController::class, 'getAllProducts']); // All product showing
@@ -110,7 +110,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         });
 
-        Route::get('/reviews', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
+        // Route::get('/reviews', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
         
         Route::post('/carts', [CartController::class, 'getAllCartsForAdmin']); // For Carts
         Route::delete('/cart/delete/{id}', [CartController::class, 'deleteCartByAdmin']); // For Carts
