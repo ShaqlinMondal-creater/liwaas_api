@@ -85,7 +85,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/dashboard', [AdminController::class, 'adminDashboard']);
         Route::post('/truncate-table', [AdminController::class, 'truncateTable']); // Truncate Table
         Route::delete('/reviews/delete/{id}', [ProductReviewController::class, 'deleteReview']); // Delete review by id
-        
+        Route::post('/reviews/update/{id}', [ProductReviewController::class, 'updateReview']);
+
         Route::prefix('stocks')->group(function () {
             Route::post('/add-stock', [StockController::class, 'addProductStock']);
             Route::post('/get-stock', [StockController::class,'getProductStocks']);
