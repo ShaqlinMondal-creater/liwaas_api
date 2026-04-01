@@ -12,7 +12,7 @@ class ProductReview extends Model
     protected $table = 'product_reviews';
 
     protected $fillable = [
-        'user_id',
+        'user',
         'products_id',
         'aid',
         'uid',
@@ -27,10 +27,10 @@ class ProductReview extends Model
 
 
      // 🔗 ProductReview belongs to User
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id', 'id');
-    }
+    // public function user()
+    // {
+    //     return $this->belongsTo(User::class, 'user_id', 'id');
+    // }
 
     // 🔗 ProductReview belongs to Product
     public function product()

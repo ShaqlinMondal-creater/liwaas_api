@@ -16,6 +16,7 @@ class ProductReviewController extends Controller
     public function addReview(Request $request)
     {
         $validated = $request->validate([
+            'user'              => 'nullable|string|max:255',
             'products_id'       => 'required|exists:products,id',
             'aid'               => 'required|string',
             'uid'               => 'required|integer',
@@ -24,7 +25,20 @@ class ProductReviewController extends Controller
             'upload_images.*'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048', // max 2MB each
         ]);
 
-        $userId = auth()->id();
+        $userName = null;
+
+        // ✅ If logged in
+        if (auth()->check()) {
+            $userName = auth()->user()->name;
+        }
+        // ✅ Else if user passed from frontend
+        elseif ($request->filled('user')) {
+            $userName = $request->user;
+        }
+        // ✅ Else fallback
+        else {
+            $userName = 'temp_user'; // or null
+        }
 
         // ✅ Check if the product variation exists
         $variation = ProductVariations::where('uid', $validated['uid'])
@@ -51,7 +65,7 @@ class ProductReviewController extends Controller
 
         // ✅ Save review to DB
         $review = ProductReview::create([
-            'user_id'       => $userId,
+            'user'          => $userName,
             'products_id'   => $validated['products_id'],
             'aid'           => $validated['aid'],
             'uid'           => $validated['uid'],
@@ -65,7 +79,7 @@ class ProductReviewController extends Controller
             'message' => 'Review submitted successfully.',
             'data'    => [
                 'id'         => $review->id,
-                'user_id'    => $userId,
+                'user'       => $userName,
                 'product_id' => $validated['products_id'],
                 'uid'        => $validated['uid'],
                 'aid'        => $validated['aid'],
@@ -122,7 +136,7 @@ class ProductReviewController extends Controller
             'message' => 'Review updated successfully.',
             'data'    => [
                 'id'         => $review->id,
-                'user_id'    => $review->user_id,
+                'user'       => $review->user,
                 'product_id' => $review->products_id,
                 'uid'        => $review->uid,
                 'aid'        => $review->aid,
@@ -136,7 +150,7 @@ class ProductReviewController extends Controller
     // Get all review product_id wise
     public function getReviewsByProductId($productId)
     {
-        $reviews = ProductReview::with(['user:id,name', 'variation:uid,color,size']) // Eager load relations
+        $reviews = ProductReview::with(['variation:uid,color,size']) // Eager load relations
             ->where('products_id', $productId)
             ->orderByDesc('id')
             ->get();
@@ -151,8 +165,7 @@ class ProductReviewController extends Controller
         $data = $reviews->map(function ($review) {
             return [
                 'id'         => $review->id,
-                'user_id'    => $review->user_id,
-                'user_name'  => $review->user->name ?? null,
+                'user'       => $review->user,
                 'product_id' => $review->products_id,
                 'uid'        => $review->uid,
                 'aid'        => $review->aid,
@@ -177,7 +190,7 @@ class ProductReviewController extends Controller
     // Get All Review
     public function getAllReviewsWithFilters(Request $request)
     {
-        $reviews = ProductReview::with(['user:id,name', 'product:id,name'])
+        $reviews = ProductReview::with(['product:id,name'])
             ->when($request->product_name, function ($q) use ($request) {
                 $q->whereHas('product', function ($q2) use ($request) {
                     $q2->where('name', 'LIKE', '%' . $request->product_name . '%');
@@ -190,9 +203,7 @@ class ProductReviewController extends Controller
                 $q->where('uid', $request->uid);
             })
             ->when($request->user_name, function ($q) use ($request) {
-                $q->whereHas('user', function ($q2) use ($request) {
-                    $q2->where('name', 'LIKE', '%' . $request->user_name . '%');
-                });
+                $q->where('user', 'LIKE', '%' . $request->user_name . '%'); // ✅ changed
             })
             ->when($request->total_star, function ($q) use ($request) {
                 $q->where('total_star', $request->total_star);
