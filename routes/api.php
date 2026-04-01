@@ -40,7 +40,9 @@ use App\Http\Controllers\StockController;
     });
 
     Route::get('/colors/getAll', [HelperController::class, 'getAllColors']); // Get all colors
-    Route::post('/reviews', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
+
+    Route::post('/reviews/create', [ProductReviewController::class, 'addReview']); // create product
+    Route::post('/reviews/fetch', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
 
     Route::prefix('products')->group(function () {
         Route::post('get-product-byslug/{slug}', [ProductController::class, 'getProductsBySlug']); // through slug product filter 
@@ -84,9 +86,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::middleware(['adminOnly'])->prefix('admin')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'adminDashboard']);
         Route::post('/truncate-table', [AdminController::class, 'truncateTable']); // Truncate Table
+
         Route::delete('/reviews/delete/{id}', [ProductReviewController::class, 'deleteReview']); // Delete review by id
         Route::post('/reviews/update/{id}', [ProductReviewController::class, 'updateReview']);
-
+        Route::get('/reviews/product/{id}', [ProductReviewController::class, 'getReviewsByProductId']); // get all review product id wise
+        
         Route::prefix('stocks')->group(function () {
             Route::post('/add-stock', [StockController::class, 'addProductStock']);
             Route::post('/get-stock', [StockController::class,'getProductStocks']);
@@ -252,9 +256,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
 
         Route::prefix('reviews')->group(function () {
-            Route::post('/create', [ProductReviewController::class, 'addReview']); // create product
-            Route::post('/update/{id}', [ProductReviewController::class, 'updateReview']); // update product
-            Route::get('/product/{id}', [ProductReviewController::class, 'getReviewsByProductId']); // get all review product id wise
+            // Route::post('/create', [ProductReviewController::class, 'addReview']); // create product
+            // Route::post('/update/{id}', [ProductReviewController::class, 'updateReview']); // update product
             Route::post('/all', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
         });
 
