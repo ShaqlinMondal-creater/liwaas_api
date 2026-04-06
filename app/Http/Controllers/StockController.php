@@ -903,19 +903,14 @@ class StockController extends Controller
             </style>
 
             <table class="page-table">
-
                 <tr>
-
                     <td>
                         '.$this->salesOrderPdfBody($order).'
                     </td>
-
                     <td>
                         '.$this->salesOrderPdfBody($order).'
                     </td>
-
                 </tr>
-
             </table>
         ';
 
@@ -1088,7 +1083,7 @@ class StockController extends Controller
                 <div class="terms">
                     <strong>TERM & CONDITION</strong><br>
                     Advance payment is non-refundable after order confirmation.
-                    Balance payment must be cleared at the time of delivery.
+                    The remaining payment must be cleared within 15 days after delivery.
                     <br>
                     <p style="color:#c79b37; font-weight:bold;">
                         Feel Free to Reach Us : business.liwaas@gmail.com / +91 8348381252
@@ -1097,7 +1092,7 @@ class StockController extends Controller
 
                 <div class="signature">
                     <div class="signature-line"></div>
-                    SIGNATURE
+                    Recipient Signature
                 </div>
 
 
