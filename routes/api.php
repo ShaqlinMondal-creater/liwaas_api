@@ -99,6 +99,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             Route::prefix('sales-order')->group(function () {
                 Route::post('/create', [StockController::class, 'createSalesOrder']);
+                Route::post('/update/{id}', [StockController::class, 'updateSalesOrder']);
                 Route::post('/fetch', [StockController::class,'getSalesOrders']);
                 Route::post('/fetch-detail', [StockController::class,'getSalesOrderDetail']);
                 Route::delete('/delete', [StockController::class,'deleteSalesOrder']);

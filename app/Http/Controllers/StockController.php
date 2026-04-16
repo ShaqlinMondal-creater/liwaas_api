@@ -429,7 +429,8 @@ class StockController extends Controller
             'items.*.uid' => 'required',
             'items.*.qty' => 'required|integer|min:1',
             'items.*.price' => 'required|numeric',
-            'items.*.tax' => 'nullable|numeric'
+            'items.*.tax' => 'nullable|numeric',
+            'paid_amount' => 'nullable|numeric|min:0',
         ]);
 
         DB::beginTransaction();
@@ -449,7 +450,13 @@ class StockController extends Controller
                 'sales_order_no' => $sales_order_no,
                 'client_id' => $client->id,
                 'grand_total' => 0,
-                'total_tax' => 0
+                'total_tax' => 0,
+
+                // ✅ NEW FIELDS
+                'so_date' => now()->format('Y-m-d'), // store in DB format
+                'status' => 'pending',
+                'payment_status' => 'pending',
+                'remain_due' => 0
             ]);
 
             foreach ($request->items as $item) {
@@ -496,10 +503,30 @@ class StockController extends Controller
             // calculate round amount (+ or -)
             $round_amount = round($rounded_total - $grand_total,2);
 
+            $paid_amount = $request->paid_amount ?? 0;
+
+            if ($paid_amount > $rounded_total) {
+                throw new \Exception('Paid amount cannot be greater than total');
+            }
+
+            $remain_due = $rounded_total - $paid_amount;
+
+            // set payment status
+            if ($paid_amount == 0) {
+                $payment_status = 'pending';
+            } elseif ($paid_amount < $rounded_total) {
+                $payment_status = 'partial payment';
+            } else {
+                $payment_status = 'completed';
+            }
+
             $order->update([
                 'grand_total' => $rounded_total,
                 'total_tax' => $total_tax,
-                'round_amount' => $round_amount
+                'round_amount' => $round_amount,
+
+                'remain_due' => $remain_due,
+                'payment_status' => $payment_status
             ]);
 
             DB::commit();
@@ -519,6 +546,155 @@ class StockController extends Controller
                     'total_tax' => $total_tax,
                     'round_amount' => $round_amount,
                 ]
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollback();
+
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function updateSalesOrder(Request $request, $id)
+    {
+        $request->validate([
+            'client_id' => 'nullable|exists:stocks_clients,id',
+            'items' => 'nullable|array|min:1',
+            'items.*.uid' => 'required_with:items',
+            'items.*.qty' => 'required_with:items|integer|min:1',
+            'items.*.price' => 'required_with:items|numeric',
+            'items.*.tax' => 'nullable|numeric',
+            'paid_amount' => 'nullable|numeric|min:0',
+            'status' => 'nullable|in:pending,completed,on process',
+            'payment_status' => 'nullable|in:pending,partial payment,completed',
+            'so_date' => 'nullable|date'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            $order = StocksSalesOrder::findOrFail($id);
+
+            $grand_total = $order->grand_total;
+            $total_tax = $order->total_tax;
+            $rounded_total = $order->grand_total;
+
+            // ✅ 1. If items passed → update items + stock
+            if ($request->has('items')) {
+
+                // restore old stock
+                $oldItems = StocksSalesOrderItem::where('sales_order_id', $order->id)->get();
+
+                foreach ($oldItems as $item) {
+                    StocksProduct::where('uid', $item->uid)
+                        ->increment('stock', $item->qty);
+                }
+
+                // delete old items
+                StocksSalesOrderItem::where('sales_order_id', $order->id)->delete();
+
+                $grand_total = 0;
+                $total_tax = 0;
+
+                foreach ($request->items as $item) {
+
+                    $price = $item['price'];
+                    $qty = $item['qty'];
+                    $tax_percent = $item['tax'] ?? 5;
+
+                    $taxable_price = $price / (1 + ($tax_percent / 100));
+                    $tax_amount = $price - $taxable_price;
+
+                    $sub_total = $price * $qty;
+                    $sub_total_tax = $tax_amount * $qty;
+
+                    $grand_total += $sub_total;
+                    $total_tax += $sub_total_tax;
+
+                    StocksSalesOrderItem::create([
+                        'sales_order_id' => $order->id,
+                        'uid' => $item['uid'],
+                        'qty' => $qty,
+                        'price' => $price,
+                        'tax' => $tax_percent,
+                        'sub_total' => $sub_total,
+                        'sub_total_tax' => $sub_total_tax
+                    ]);
+
+                    // reduce stock
+                    StocksProduct::where('uid', $item['uid'])
+                        ->decrement('stock', $qty);
+                }
+
+                $grand_total = round($grand_total, 2);
+                $total_tax = round($total_tax, 2);
+                $rounded_total = round($grand_total);
+                $round_amount = round($rounded_total - $grand_total, 2);
+
+                $order->update([
+                    'grand_total' => $rounded_total,
+                    'total_tax' => $total_tax,
+                    'round_amount' => $round_amount
+                ]);
+            }
+
+            // ✅ 2. Payment logic (only if passed)
+            if ($request->has('paid_amount')) {
+
+                $paid_amount = $request->paid_amount;
+
+                if ($paid_amount > $rounded_total) {
+                    throw new \Exception('Paid amount cannot be greater than total');
+                }
+
+                $remain_due = $rounded_total - $paid_amount;
+
+                if ($paid_amount == 0) {
+                    $payment_status = 'pending';
+                } elseif ($paid_amount < $rounded_total) {
+                    $payment_status = 'partial payment';
+                } else {
+                    $payment_status = 'completed';
+                }
+
+                $order->update([
+                    'remain_due' => $remain_due,
+                    'payment_status' => $payment_status
+                ]);
+            }
+
+            // ✅ 3. Other fields update (only if passed)
+            $updateData = [];
+
+            if ($request->has('client_id')) {
+                $updateData['client_id'] = $request->client_id;
+            }
+
+            if ($request->has('status')) {
+                $updateData['status'] = $request->status;
+            }
+
+            if ($request->has('payment_status')) {
+                $updateData['payment_status'] = $request->payment_status;
+            }
+
+            if ($request->has('so_date')) {
+                $updateData['so_date'] = $request->so_date;
+            }
+
+            if (!empty($updateData)) {
+                $order->update($updateData);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Sales order updated successfully'
             ]);
 
         } catch (\Exception $e) {
@@ -581,8 +757,8 @@ class StockController extends Controller
                 return [
                     'id' => $order->id,
                     'sales_order_no' => $order->sales_order_no,
-                    'date' => $order->updated_at 
-                        ? $order->updated_at->format('d M Y') 
+                    'date' => $order->so_date 
+                        ? \Carbon\Carbon::parse($order->so_date)->format('d-m-Y')
                         : null,
                     'client' => [
                         'id' => $order->client->id ?? null,
@@ -593,6 +769,9 @@ class StockController extends Controller
                         'email' => $order->client->email ?? null
                     ],
                     'grand_total' => $order->grand_total,
+                    'status' => $order->status,
+                    'payment_status' => $order->payment_status,
+                    'remain_due' => $order->remain_due,
                     'total_tax' => $order->total_tax,
                     'pdf' => $order->upload ? $order->upload->file_url : null
                 ];
@@ -648,8 +827,8 @@ class StockController extends Controller
                 'id' => $order->id,
                 'sales_order_no' => $order->sales_order_no,
 
-                'date' => $order->updated_at
-                    ? $order->updated_at->format('d M Y')
+                'date' => $order->so_date 
+                    ? \Carbon\Carbon::parse($order->so_date)->format('d-m-Y')
                     : null,
 
                 'client' => [
@@ -664,7 +843,9 @@ class StockController extends Controller
 
                 'grand_total' => $order->grand_total,
                 'total_tax' => $order->total_tax,
-
+                'status' => $order->status,
+                'payment_status' => $order->payment_status,
+                'remain_due' => $order->remain_due,
                 'items' => $items,
 
                 'pdf' => $order->upload ? [

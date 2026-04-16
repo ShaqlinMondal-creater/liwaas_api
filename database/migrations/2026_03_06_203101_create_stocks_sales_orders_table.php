@@ -16,11 +16,13 @@ return new class extends Migration
             $table->id();
 
             $table->string('sales_order_no')->unique();
-
+            $table->string('status')->default('pending');
+            $table->string('payment_status')->default('pending');
             $table->unsignedBigInteger('client_id');
+            $table->string('so_date')->nullable();
 
             $table->decimal('grand_total', 12, 2)->default(0);
-
+            $table->decimal('remain_due', 12, 2)->default(0);
             $table->decimal('total_tax', 12, 2)->default(0);
             $table->decimal('round_amount', 12, 2)->default(0);
             $table->timestamps();

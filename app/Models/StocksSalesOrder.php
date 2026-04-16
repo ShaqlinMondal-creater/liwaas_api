@@ -14,6 +14,10 @@ class StocksSalesOrder extends Model
         'sales_order_no',
         'client_id',
         'grand_total',
+        'remain_due',
+        'so_date',
+        'status',
+        'payment_status',
         'total_tax',
         'round_amount',
     ];
