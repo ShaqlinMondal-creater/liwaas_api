@@ -494,7 +494,7 @@ class StockController extends Controller
                     ->decrement('stock', $item['qty']);
             }
 
-            $final_total = $grand_total + $total_tax;
+            $final_total = round($grand_total + $total_tax, 2);
 
             // round to nearest integer
             $rounded_total = round($final_total);
