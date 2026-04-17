@@ -664,10 +664,17 @@ class StockController extends Controller
                     $payment_status = 'pending';
                 }
 
-                $order->update([
+                $orderUpdateData = [
                     'remain_due' => $remain_due,
                     'payment_status' => $payment_status
-                ]);
+                ];
+
+                // 🔥 auto complete order if fully paid
+                if ($remain_due == 0) {
+                    $orderUpdateData['status'] = 'completed';
+                }
+
+                $order->update($orderUpdateData);
             }
 
             // ✅ 3. Other fields update (only if passed)
