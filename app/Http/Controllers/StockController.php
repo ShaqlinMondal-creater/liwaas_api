@@ -1214,7 +1214,7 @@ class StockController extends Controller
             }
             $itemCount = count($order->items);
 
-                if($itemCount < 5){
+                if($itemCount < 3){
                     for($x = 0; $x < 4; $x++){
                         $html .= '
                         <tr style="border:1px dashed #999;">
