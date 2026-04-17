@@ -497,11 +497,14 @@ class StockController extends Controller
             $grand_total = round($grand_total,2);
             $total_tax = round($total_tax,2);
 
-            // round to nearest integer
-            $rounded_total = round($grand_total);
+            // ✅ add tax into total
+            $final_total = $grand_total + $total_tax;
 
-            // calculate round amount (+ or -)
-            $round_amount = round($rounded_total - $grand_total,2);
+            // round to nearest integer
+            $rounded_total = round($final_total);
+
+            // calculate round amount
+            $round_amount = round($rounded_total - $final_total,2);
 
             $remain_due = $rounded_total;
             $payment_status = 'pending';
