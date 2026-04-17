@@ -494,17 +494,17 @@ class StockController extends Controller
                     ->decrement('stock', $item['qty']);
             }
 
-            $grand_total = round($grand_total,2);
-            $total_tax = round($total_tax,2);
-
-            // ✅ add tax into total
             $final_total = $grand_total + $total_tax;
 
             // round to nearest integer
             $rounded_total = round($final_total);
 
-            // calculate round amount
-            $round_amount = round($rounded_total - $final_total,2);
+            // calculate round amount (correct)
+            $round_amount = round($rounded_total - $final_total, 2);
+
+            // ✅ NOW round values for storing
+            $grand_total = round($grand_total, 2);
+            $total_tax = round($total_tax, 2);
 
             $remain_due = $rounded_total;
             $payment_status = 'pending';
