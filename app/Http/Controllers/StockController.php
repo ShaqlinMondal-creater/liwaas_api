@@ -647,18 +647,21 @@ class StockController extends Controller
 
                 $paid_amount = $request->paid_amount;
 
-                if ($paid_amount > $rounded_total) {
-                    throw new \Exception('Paid amount cannot be greater than total');
+                $current_due = $order->remain_due;
+
+                if ($paid_amount > $current_due) {
+                    throw new \Exception('Paid amount cannot be greater than remaining due');
                 }
 
-                $remain_due = $rounded_total - $paid_amount;
+                $remain_due = $current_due - $paid_amount;
 
-                if ($paid_amount == 0) {
-                    $payment_status = 'pending';
-                } elseif ($paid_amount < $rounded_total) {
+                // ✅ FIXED LOGIC
+                if ($remain_due == 0) {
+                    $payment_status = 'completed';
+                } elseif ($remain_due < $rounded_total) {
                     $payment_status = 'partial payment';
                 } else {
-                    $payment_status = 'completed';
+                    $payment_status = 'pending';
                 }
 
                 $order->update([
