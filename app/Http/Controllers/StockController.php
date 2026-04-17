@@ -1242,6 +1242,16 @@ class StockController extends Controller
                 </tr>
 
                 <tr>
+                    <td class="right">TAXABLE AMOUNT</td>
+                    <td class="right">'.number_format($order->grand_total - $order->total_tax - $order->round_amount,2).'</td>
+                </tr>
+
+                <tr>
+                    <td class="right">ROUND OFF</td>
+                    <td class="right">'.number_format($order->round_amount,2).'</td>
+                </tr>
+
+                <tr>
                     <td class="right">GRAND TOTAL</td>
                     <td class="right">'.number_format($order->grand_total,2).'</td>
                 </tr>
