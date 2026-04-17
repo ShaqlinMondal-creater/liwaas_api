@@ -430,7 +430,7 @@ class StockController extends Controller
             'items.*.qty' => 'required|integer|min:1',
             'items.*.price' => 'required|numeric',
             'items.*.tax' => 'nullable|numeric',
-            'paid_amount' => 'nullable|numeric|min:0',
+            // 'paid_amount' => 'nullable|numeric|min:0',
         ]);
 
         DB::beginTransaction();
@@ -503,22 +503,8 @@ class StockController extends Controller
             // calculate round amount (+ or -)
             $round_amount = round($rounded_total - $grand_total,2);
 
-            $paid_amount = $request->paid_amount ?? 0;
-
-            if ($paid_amount > $rounded_total) {
-                throw new \Exception('Paid amount cannot be greater than total');
-            }
-
-            $remain_due = $rounded_total - $paid_amount;
-
-            // set payment status
-            if ($paid_amount == 0) {
-                $payment_status = 'pending';
-            } elseif ($paid_amount < $rounded_total) {
-                $payment_status = 'partial payment';
-            } else {
-                $payment_status = 'completed';
-            }
+            $remain_due = $rounded_total;
+            $payment_status = 'pending';
 
             $order->update([
                 'grand_total' => $rounded_total,
@@ -542,7 +528,7 @@ class StockController extends Controller
                         'name' => $client->name,
                         'mobile' => $client->mobile
                     ],
-                    'grand_total' => $grand_total,
+                    'grand_total' => $rounded_total,
                     'total_tax' => $total_tax,
                     'round_amount' => $round_amount,
                 ]
