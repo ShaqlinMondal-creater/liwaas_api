@@ -465,9 +465,8 @@ class StockController extends Controller
                 $qty = $item['qty'];
                 $tax_percent = $item['tax'] ?? 5;
 
-                // ✅ TAX INCLUDED calculation
-                $taxable_price = $price / (1 + ($tax_percent / 100));
-                $tax_amount = round($price - $taxable_price, 2);
+                // ✅ correct tax
+                $tax_amount = round(($price * $tax_percent) / 100, 2);
 
                 // subtotal
                 $sub_total = $price * $qty;
