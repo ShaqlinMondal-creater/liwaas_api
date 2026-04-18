@@ -159,7 +159,7 @@ class StockController extends Controller
         $total_due = StocksSalesOrder::sum('remain_due');
         $total_paid = StocksSalesOrder::select(
             DB::raw('SUM(grand_total - remain_due) as paid')
-        )->value('paid');
+        )->value('paid') ?? 0;
 
         $total_orders = StocksSalesOrder::count();
         $total_items_sold = StocksSalesOrderItem::sum('qty'); // NEW
@@ -233,7 +233,7 @@ class StockController extends Controller
             $paid = StocksSalesOrder::whereYear('created_at',$year)
                 ->whereMonth('created_at',$m)
                 ->select(DB::raw('SUM(grand_total - remain_due) as paid'))
-                ->value('paid');
+                ->value('paid') ?? 0;;
 
             $monthWise[] = [
                 $name => [
