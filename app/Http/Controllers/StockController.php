@@ -584,8 +584,8 @@ class StockController extends Controller
             'items.*.price' => 'required_with:items|numeric',
             'items.*.tax' => 'nullable|numeric',
             'paid_amount' => 'nullable|numeric|min:0',
-            'status' => 'nullable|in:pending,completed,on process',
-            'payment_status' => 'nullable|in:pending,partial payment,completed',
+            // 'status' => 'nullable|in:pending,completed,on process',
+            // 'payment_status' => 'nullable|in:pending,partial payment,completed',
             'so_date' => 'nullable|date'
         ]);
 
@@ -688,7 +688,7 @@ class StockController extends Controller
                 // ✅ FIXED LOGIC
                 if ($remain_due == 0) {
                     $payment_status = 'completed';
-                } elseif ($remain_due < $rounded_total) {
+                } elseif ($remain_due < $order->grand_total) {
                     $payment_status = 'partial payment';
                 } else {
                     $payment_status = 'pending';
@@ -714,13 +714,13 @@ class StockController extends Controller
                 $updateData['client_id'] = $request->client_id;
             }
 
-            if ($request->has('status')) {
-                $updateData['status'] = $request->status;
-            }
+            // if ($request->has('status')) {
+            //     $updateData['status'] = $request->status;
+            // }
 
-            if ($request->has('payment_status')) {
-                $updateData['payment_status'] = $request->payment_status;
-            }
+            // if ($request->has('payment_status')) {
+            //     $updateData['payment_status'] = $request->payment_status;
+            // }
 
             if ($request->has('so_date')) {
                 $updateData['so_date'] = $request->so_date;
