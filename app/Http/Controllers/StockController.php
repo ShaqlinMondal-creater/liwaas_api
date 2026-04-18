@@ -688,23 +688,20 @@ class StockController extends Controller
                 // ✅ FIXED LOGIC
                 if ($remain_due == 0) {
                     $payment_status = 'completed';
+                    $status = 'completed';
                 } elseif ($remain_due < $order->grand_total) {
                     $payment_status = 'partial payment';
+                    $status = 'on process'; // ✅ YOUR RULE
                 } else {
                     $payment_status = 'pending';
+                    $status = 'pending';
                 }
 
-                $orderUpdateData = [
+                $order->update([
                     'remain_due' => $remain_due,
-                    'payment_status' => $payment_status
-                ];
-
-                // 🔥 auto complete order if fully paid
-                if ($remain_due == 0) {
-                    $orderUpdateData['status'] = 'completed';
-                }
-
-                $order->update($orderUpdateData);
+                    'payment_status' => $payment_status,
+                    'status' => $status
+                ]);
             }
 
             // ✅ 3. Other fields update (only if passed)
