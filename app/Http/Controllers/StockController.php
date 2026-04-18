@@ -170,8 +170,8 @@ class StockController extends Controller
         // CURRENT MONTH
         $month = date('n');
 
-        $monthly_orders = StocksSalesOrder::whereYear('created_at',$year)
-                ->whereMonth('created_at',$month)
+        $monthly_orders = StocksSalesOrder::whereYear('so_date',$year)
+                ->whereMonth('so_date',$month)
                 ->count();
 
             $monthly_items_sold = StocksSalesOrderItem::join(
@@ -180,18 +180,18 @@ class StockController extends Controller
             '=',
             'stocks_sales_order_items.sales_order_id'
         )
-        ->whereYear('stocks_sales_orders.created_at',$year)
-        ->whereMonth('stocks_sales_orders.created_at',$month)
+        ->whereYear('stocks_sales_orders.so_date',$year)
+        ->whereMonth('stocks_sales_orders.so_date',$month)
         ->sum('qty');
 
-        $monthly_due = StocksSalesOrder::whereYear('created_at',$year)
-            ->whereMonth('created_at',$month)
+        $monthly_due = StocksSalesOrder::whereYear('so_date',$year)
+            ->whereMonth('so_date',$month)
             ->sum('remain_due');
 
-        $monthly_paid = StocksSalesOrder::whereYear('created_at',$year)
-            ->whereMonth('created_at',$month)
+        $monthly_paid = StocksSalesOrder::whereYear('so_date',$year)
+            ->whereMonth('so_date',$month)
             ->select(DB::raw('SUM(grand_total - remain_due) as paid'))
-            ->value('paid');
+            ->value('paid') ?? 0;
 
         $target = $targets[$month] ?? 0;
 
@@ -211,8 +211,8 @@ class StockController extends Controller
 
         foreach($monthNames as $m=>$name){
 
-            $orders = StocksSalesOrder::whereYear('created_at',$year)
-                ->whereMonth('created_at',$m)
+            $orders = StocksSalesOrder::whereYear('so_date',$year)
+                ->whereMonth('so_date',$m)
                 ->count();
             $items_sold = StocksSalesOrderItem::join(
                 'stocks_sales_orders',
@@ -220,18 +220,18 @@ class StockController extends Controller
                 '=',
                 'stocks_sales_order_items.sales_order_id'
             )
-            ->whereYear('stocks_sales_orders.created_at',$year)
-            ->whereMonth('stocks_sales_orders.created_at',$m)
+            ->whereYear('stocks_sales_orders.so_date',$year)
+            ->whereMonth('stocks_sales_orders.so_date',$m)
             ->sum('qty');
-            $revenue = StocksSalesOrder::whereYear('created_at',$year)
-                ->whereMonth('created_at',$m)
+            $revenue = StocksSalesOrder::whereYear('so_date',$year)
+                ->whereMonth('so_date',$m)
                 ->sum('grand_total');
-            $due = StocksSalesOrder::whereYear('created_at',$year)
-                ->whereMonth('created_at',$m)
+            $due = StocksSalesOrder::whereYear('so_date',$year)
+                ->whereMonth('so_date',$m)
                 ->sum('remain_due');
 
-            $paid = StocksSalesOrder::whereYear('created_at',$year)
-                ->whereMonth('created_at',$m)
+            $paid = StocksSalesOrder::whereYear('so_date',$year)
+                ->whereMonth('so_date',$m)
                 ->select(DB::raw('SUM(grand_total - remain_due) as paid'))
                 ->value('paid') ?? 0;;
 
