@@ -156,6 +156,11 @@ class StockController extends Controller
 
         // TOTAL DATA
         $total_sales = StocksSalesOrder::sum('grand_total');
+        $total_due = StocksSalesOrder::sum('remain_due');
+        $total_paid = StocksSalesOrder::select(
+            DB::raw('SUM(grand_total - remain_due) as paid')
+        )->value('paid');
+
         $total_orders = StocksSalesOrder::count();
         $total_items_sold = StocksSalesOrderItem::sum('qty'); // NEW
         $total_tax = StocksSalesOrder::sum('total_tax');
@@ -178,6 +183,15 @@ class StockController extends Controller
         ->whereYear('stocks_sales_orders.created_at',$year)
         ->whereMonth('stocks_sales_orders.created_at',$month)
         ->sum('qty');
+
+        $monthly_due = StocksSalesOrder::whereYear('created_at',$year)
+            ->whereMonth('created_at',$month)
+            ->sum('remain_due');
+
+        $monthly_paid = StocksSalesOrder::whereYear('created_at',$year)
+            ->whereMonth('created_at',$month)
+            ->select(DB::raw('SUM(grand_total - remain_due) as paid'))
+            ->value('paid');
 
         $target = $targets[$month] ?? 0;
 
@@ -212,13 +226,23 @@ class StockController extends Controller
             $revenue = StocksSalesOrder::whereYear('created_at',$year)
                 ->whereMonth('created_at',$m)
                 ->sum('grand_total');
+            $due = StocksSalesOrder::whereYear('created_at',$year)
+                ->whereMonth('created_at',$m)
+                ->sum('remain_due');
+
+            $paid = StocksSalesOrder::whereYear('created_at',$year)
+                ->whereMonth('created_at',$m)
+                ->select(DB::raw('SUM(grand_total - remain_due) as paid'))
+                ->value('paid');
 
             $monthWise[] = [
                 $name => [
                     "target" => $targets[$m] ?? 0,
                     "orders" => $orders,
                     "items_sold" => $items_sold,
-                    "revenue" => $revenue
+                    "revenue" => $revenue,
+                    "paid" => $paid,
+                    "due" => $due
                 ]
             ];
         }
@@ -253,6 +277,8 @@ class StockController extends Controller
             "data"=>[
                 "total_data"=>[
                     "total_sales"=>$total_sales,
+                    "total_paid"=>$total_paid,
+                    "total_due"=>$total_due,
                     "total_orders"=>$total_orders,
                     "total_tax"=>$total_tax,
                     "total_products"=>$total_products,
@@ -261,6 +287,8 @@ class StockController extends Controller
 
                 "this_month_data"=>[
                     "monthly_target"=>$target,
+                    "monthly_paid"=>$monthly_paid,
+                    "monthly_due"=>$monthly_due,
                     "monthly_orders"=>$monthly_orders,
                     "target_remaining"=>$remaining,
                     "target_progress_percent"=>$progress
