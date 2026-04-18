@@ -622,11 +622,10 @@ class StockController extends Controller
                     $qty = $item['qty'];
                     $tax_percent = $item['tax'] ?? 5;
 
-                    $taxable_price = $price / (1 + ($tax_percent / 100));
-                    $tax_amount = $price - $taxable_price;
+                    $tax_amount = round(($price * $tax_percent) / 100, 2);
 
                     $sub_total = $price * $qty;
-                    $sub_total_tax = $tax_amount * $qty;
+                    $sub_total_tax = round($tax_amount * $qty, 2);
 
                     $grand_total += $sub_total;
                     $total_tax += $sub_total_tax;
@@ -646,15 +645,30 @@ class StockController extends Controller
                         ->decrement('stock', $qty);
                 }
 
+                $final_total = round($grand_total + $total_tax, 2);
+
+                $rounded_total = round($final_total);
+
+                $round_amount = round($rounded_total - $final_total, 2);
+
                 $grand_total = round($grand_total, 2);
                 $total_tax = round($total_tax, 2);
-                $rounded_total = round($grand_total);
-                $round_amount = round($rounded_total - $grand_total, 2);
 
+                // 🔥 calculate already paid amount
+                $paid_total = $order->grand_total - $order->remain_due;
+
+                // 🔥 new due based on updated total
+                $new_remain_due = $rounded_total - $paid_total;
+
+                // prevent negative
+                $new_remain_due = max($new_remain_due, 0);
+
+                // update order
                 $order->update([
                     'grand_total' => $rounded_total,
                     'total_tax' => $total_tax,
-                    'round_amount' => $round_amount
+                    'round_amount' => $round_amount,
+                    'remain_due' => $new_remain_due
                 ]);
             }
 
