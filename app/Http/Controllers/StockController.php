@@ -432,7 +432,7 @@ class StockController extends Controller
 
         // fetch records
         $products = $query
-            ->orderBy('id','desc')
+            ->orderBy('name','desc')
             ->offset($offset)
             ->limit($limit)
             ->get();
