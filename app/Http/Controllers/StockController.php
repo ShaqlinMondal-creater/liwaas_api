@@ -303,6 +303,39 @@ class StockController extends Controller
         ]);
     }
 
+    public function productTransactions(Request $request)
+    {
+        $search = $request->search;
+
+        $query = StocksSalesOrderItem::select(
+            'stocks_sales_order_items.*',
+            'stocks_sales_orders.sales_order_no',
+            'stocks_sales_orders.so_date',
+            'stocks_sales_orders.grand_total',
+            'stocks_clients.name as client_name',
+            'stocks_products.name as product_name'
+        )
+        ->join('stocks_sales_orders', 'stocks_sales_orders.id', '=', 'stocks_sales_order_items.sales_order_id')
+        ->join('stocks_clients', 'stocks_clients.id', '=', 'stocks_sales_orders.client_id')
+        ->join('stocks_products', 'stocks_products.uid', '=', 'stocks_sales_order_items.uid');
+
+        // 🔍 Search filter
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('stocks_products.name', 'LIKE', "%$search%")
+                ->orWhere('stocks_clients.name', 'LIKE', "%$search%");
+            });
+        }
+
+        $data = $query->orderByDesc('stocks_sales_orders.so_date')->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Product transactions fetched successfully',
+            'data' => $data
+        ]);
+    }
+
     public function addProductStock(Request $request)
     {
 
@@ -779,7 +812,7 @@ class StockController extends Controller
 
         // fetch orders
         $orders = $query
-            ->orderBy('id','desc')
+            ->orderBy('so_date','desc')
             ->offset($offset)
             ->limit($limit)
             ->get();
