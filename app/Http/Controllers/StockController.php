@@ -308,26 +308,40 @@ class StockController extends Controller
         $search = $request->search;
 
         $query = StocksSalesOrderItem::select(
-            'stocks_sales_order_items.*',
             'stocks_sales_orders.sales_order_no',
             'stocks_sales_orders.so_date',
-            'stocks_sales_orders.grand_total',
             'stocks_clients.name as client_name',
-            'stocks_products.name as product_name'
+            'stocks_products.uid',
+            'stocks_products.name as product_name',
+            'stocks_products.size',
+            'stocks_products.color',
+            'stocks_sales_order_items.qty',
+            'stocks_sales_order_items.price',
+            'stocks_sales_order_items.sub_total',
+            'stocks_sales_order_items.sub_total_tax'
         )
         ->join('stocks_sales_orders', 'stocks_sales_orders.id', '=', 'stocks_sales_order_items.sales_order_id')
         ->join('stocks_clients', 'stocks_clients.id', '=', 'stocks_sales_orders.client_id')
         ->join('stocks_products', 'stocks_products.uid', '=', 'stocks_sales_order_items.uid');
 
-        // 🔍 Search filter
+        // 🔥 TOKEN SEARCH
         if ($search) {
-            $query->where(function($q) use ($search) {
-                $q->where('stocks_products.name', 'LIKE', "%$search%")
-                ->orWhere('stocks_clients.name', 'LIKE', "%$search%");
-            });
+
+            $tokens = preg_split('/[\s,]+/', trim($search));
+
+            foreach ($tokens as $token) {
+                $query->where(function ($q) use ($token) {
+                    $q->where('stocks_products.name', 'LIKE', "%$token%")
+                    ->orWhere('stocks_products.size', 'LIKE', "%$token%")
+                    ->orWhere('stocks_products.color', 'LIKE', "%$token%")
+                    ->orWhere('stocks_products.uid', 'LIKE', "%$token%");
+                });
+            }
         }
 
-        $data = $query->orderByDesc('stocks_sales_orders.so_date')->get();
+        $data = $query
+            ->orderByDesc('stocks_sales_orders.so_date')
+            ->get();
 
         return response()->json([
             'status' => true,
