@@ -104,7 +104,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 Route::post('/fetch-detail', [StockController::class,'getSalesOrderDetail']);
                 Route::delete('/delete', [StockController::class,'deleteSalesOrder']);
                 Route::post('/pdf', [StockController::class,'generateSalesOrderPdf']);
+
                 Route::post('/analytics', [StockController::class,'analyticsDashboard']);
+                Route::post('/transactions', [StockController::class,'productTransactions']);
             });
 
             Route::prefix('clients')->group(function(){
