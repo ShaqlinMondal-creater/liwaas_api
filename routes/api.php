@@ -107,6 +107,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
                 Route::post('/analytics', [StockController::class,'analyticsDashboard']);
                 Route::post('/transactions', [StockController::class,'productTransactions']);
+                Route::post('/stock-details', [StockController::class,'stockDetails']);
+
             });
 
             Route::prefix('clients')->group(function(){
