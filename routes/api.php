@@ -107,6 +107,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
                 Route::post('/create-return', [StockController::class, 'createReturnProduct']);
                 Route::post('/get-return-items', [StockController::class, 'getReturnItems']);
+                oute::post('/migrate-return', [StockController::class, 'migrateReturnStock']);
 
                 Route::post('/analytics', [StockController::class,'analyticsDashboard']);
                 Route::post('/transactions', [StockController::class,'productTransactions']);
