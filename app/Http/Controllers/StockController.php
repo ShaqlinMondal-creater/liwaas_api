@@ -1032,7 +1032,7 @@ class StockController extends Controller
                 'tax' => $item->tax,
                 'sub_total' => $item->sub_total,
                 'sub_total_tax' => $item->sub_total_tax,
-
+                'status' => $item->status,
                 'product' => [
                     // 'id' => $item->product->id ?? null,
                     'uid' => $item->product->uid ?? null,
