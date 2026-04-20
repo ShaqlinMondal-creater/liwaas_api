@@ -11,6 +11,7 @@ class StocksReturnItem extends Model
     protected $fillable = [
         'sales_order_id',
         'sales_order_item_id',
+        'status',
         'uid',
         'qty',
         'price',

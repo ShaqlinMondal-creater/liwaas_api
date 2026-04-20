@@ -582,8 +582,8 @@ class StockController extends Controller
                 ]);
 
                 // ✅ increase stock
-                StocksProduct::where('uid', $orderItem->uid)
-                    ->increment('stock', $item['qty']);
+                // StocksProduct::where('uid', $orderItem->uid)
+                //     ->increment('stock', $item['qty']);
 
                 // 🔥 calculate total returned qty
                 $returnedQty = StocksReturnItem::where('sales_order_item_id', $orderItem->id)
@@ -640,7 +640,53 @@ class StockController extends Controller
             'data' => $data
         ]);
     }
+    public function migrateReturnStock(Request $request)
+    {
+        $request->validate([
+            'return_ids' => 'required|array|min:1'
+        ]);
 
+        DB::beginTransaction();
+
+        try {
+
+            $returns = StocksReturnItem::whereIn('id', $request->return_ids)
+                ->where('status', 'returned')
+                ->get();
+
+            if ($returns->isEmpty()) {
+                throw new \Exception('No valid return items found');
+            }
+
+            foreach ($returns as $return) {
+
+                // ✅ update stock
+                StocksProduct::where('uid', $return->uid)
+                    ->increment('stock', $return->qty);
+
+                // ✅ update status
+                $return->update([
+                    'status' => 'migrated'
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Stock migrated successfully'
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollback();
+
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
 
     // sales order functions
     public function createSalesOrder(Request $request)
