@@ -105,10 +105,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 Route::delete('/delete', [StockController::class,'deleteSalesOrder']);
                 Route::post('/pdf', [StockController::class,'generateSalesOrderPdf']);
 
+                // Return Order Details
                 Route::post('/create-return', [StockController::class, 'createReturnProduct']);
                 Route::post('/get-return-items', [StockController::class, 'getReturnItems']);
                 Route::post('/migrate-return', [StockController::class, 'migrateReturnStock']);
 
+                // Analytics Details
                 Route::post('/analytics', [StockController::class,'analyticsDashboard']);
                 Route::post('/transactions', [StockController::class,'productTransactions']);
                 Route::post('/stock-details', [StockController::class,'stockDetails']);
