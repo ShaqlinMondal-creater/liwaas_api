@@ -539,6 +539,106 @@ class StockController extends Controller
         ]);
     }
 
+    // Returns stock details for editing
+    public function createReturnProduct(Request $request)
+    {
+        $request->validate([
+            'sales_order_id' => 'required|exists:stocks_sales_orders,id',
+            'items' => 'required|array|min:1',
+            'items.*.sales_order_item_id' => 'required|exists:stocks_sales_order_items,id',
+            'items.*.qty' => 'required|integer|min:1'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            foreach ($request->items as $item) {
+
+                $orderItem = StocksSalesOrderItem::findOrFail($item['sales_order_item_id']);
+
+                if ($item['qty'] > $orderItem->qty) {
+                    throw new \Exception('Return qty exceeds sold qty');
+                }
+
+                // 🔥 calculate
+                $sub_total = $orderItem->price * $item['qty'];
+                $tax_amount = round(($orderItem->price * $orderItem->tax) / 100, 2);
+                $sub_total_tax = $tax_amount * $item['qty'];
+
+                // ✅ insert return record
+                StocksReturnItem::create([
+                    'sales_order_id' => $request->sales_order_id,
+                    'sales_order_item_id' => $orderItem->id,
+                    'uid' => $orderItem->uid,
+                    'qty' => $item['qty'],
+                    'price' => $orderItem->price,
+                    'tax' => $orderItem->tax,
+                    'sub_total' => $sub_total,
+                    'sub_total_tax' => $sub_total_tax,
+                    'return_date' => now()
+                ]);
+
+                // ✅ increase stock
+                StocksProduct::where('uid', $orderItem->uid)
+                    ->increment('stock', $item['qty']);
+
+                // 🔥 calculate total returned qty
+                $returnedQty = StocksReturnItem::where('sales_order_item_id', $orderItem->id)
+                    ->sum('qty');
+
+                // 🔥 update status
+                if ($returnedQty == $orderItem->qty) {
+                    $status = 'returned';
+                } else {
+                    $status = 'inprocess';
+                }
+
+                $orderItem->update([
+                    'status' => $status
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Return processed successfully'
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollback();
+
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function getReturnItems()
+    {
+        $data = StocksReturnItem::select(
+            'stocks_return_items.*',
+            'stocks_sales_orders.sales_order_no',
+            'stocks_sales_orders.so_date',
+            'stocks_clients.name as client_name',
+            'stocks_products.name as product_name',
+            'stocks_products.size',
+            'stocks_products.color'
+        )
+        ->join('stocks_sales_orders','stocks_sales_orders.id','=','stocks_return_items.sales_order_id')
+        ->join('stocks_clients','stocks_clients.id','=','stocks_sales_orders.client_id')
+        ->join('stocks_products','stocks_products.uid','=','stocks_return_items.uid')
+        ->orderByDesc('stocks_return_items.return_date')
+        ->get();
+
+        return response()->json([
+            'status' => true,
+            'data' => $data
+        ]);
+    }
+
 
     // sales order functions
     public function createSalesOrder(Request $request)
