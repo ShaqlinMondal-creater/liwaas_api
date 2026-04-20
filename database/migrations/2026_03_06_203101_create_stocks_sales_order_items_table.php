@@ -16,6 +16,8 @@ return new class extends Migration
             $table->id();
 
             $table->unsignedBigInteger('sales_order_id');
+            // ✅ STATUS COLUMN
+            $table->enum('status', ['returned', 'completed', 'inprocess'])->nullable()->default(null);
 
             $table->string('uid');
 

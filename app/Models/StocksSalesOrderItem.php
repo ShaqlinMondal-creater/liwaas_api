@@ -14,6 +14,7 @@ class StocksSalesOrderItem extends Model
         'qty',
         'price',
         'tax',
+        'status',
         'sub_total',
         'sub_total_tax'
     ];
