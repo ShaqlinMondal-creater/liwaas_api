@@ -1251,8 +1251,17 @@ class StockController extends Controller
 
                     $orderItem = StocksSalesOrderItem::where('id', $item['so_item_id'])
                         ->where('sales_order_id', $order->id)
-                        ->where('status', '!=', 'returned') // ❗ protect returned
-                        ->firstOrFail();
+                        ->first();
+
+                    // ❗ skip if not found
+                    if (!$orderItem) {
+                        continue;
+                    }
+
+                    // ❗ skip ONLY returned items
+                    if ($orderItem->status === 'returned') {
+                        continue;
+                    }
 
                     $oldQty = $orderItem->qty;
                     $newQty = $item['qty'];
