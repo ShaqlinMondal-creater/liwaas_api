@@ -1239,11 +1239,8 @@ class StockController extends Controller
 
             $order = StocksSalesOrder::findOrFail($id);
 
-            $grand_total = 0;
-            $total_tax = 0;
-
             // ===============================
-            // ✅ UPDATE ITEMS BY ID
+            // ✅ UPDATE ITEMS (ONLY ACTIVE)
             // ===============================
             if ($request->has('items')) {
 
@@ -1253,12 +1250,12 @@ class StockController extends Controller
                         ->where('sales_order_id', $order->id)
                         ->first();
 
-                    // ❗ skip if not found
+                    // skip invalid
                     if (!$orderItem) {
                         continue;
                     }
 
-                    // ❗ skip ONLY returned items
+                    // ❗ skip returned items
                     if ($orderItem->status === 'returned') {
                         continue;
                     }
@@ -1266,11 +1263,11 @@ class StockController extends Controller
                     $oldQty = $orderItem->qty;
                     $newQty = $item['qty'];
                     $price = $item['price'];
-                    $tax_percent = $item['tax'] ?? 5;
+                    $tax_percent = $item['tax'] ?? 0;
 
                     $diffQty = $newQty - $oldQty;
 
-                    // 🔥 stock adjust
+                    // 🔥 STOCK ADJUST
                     if ($diffQty > 0) {
                         StocksProduct::where('uid', $orderItem->uid)
                             ->decrement('stock', $diffQty);
@@ -1279,15 +1276,12 @@ class StockController extends Controller
                             ->increment('stock', abs($diffQty));
                     }
 
-                    // 🔥 calculate
+                    // 🔥 CALCULATE
                     $tax_amount = round(($price * $tax_percent) / 100, 2);
                     $sub_total = $price * $newQty;
                     $sub_total_tax = round($tax_amount * $newQty, 2);
 
-                    $grand_total += $sub_total;
-                    $total_tax += $sub_total_tax;
-
-                    // 🔥 update item
+                    // 🔥 UPDATE ITEM
                     $orderItem->update([
                         'qty' => $newQty,
                         'price' => $price,
@@ -1298,12 +1292,21 @@ class StockController extends Controller
                 }
 
                 // ===============================
-                // ✅ RE-CALCULATE TOTALS
+                // ✅ ALWAYS CALCULATE FROM DB (CRITICAL FIX)
                 // ===============================
+
+                $totals = StocksSalesOrderItem::where('sales_order_id', $order->id)
+                    ->selectRaw('SUM(sub_total) as total, SUM(sub_total_tax) as tax')
+                    ->first();
+
+                $grand_total = $totals->total ?? 0;
+                $total_tax = $totals->tax ?? 0;
+
                 $final_total = round($grand_total + $total_tax, 2);
                 $rounded_total = round($final_total);
                 $round_amount = round($rounded_total - $final_total, 2);
 
+                // 🔥 already paid (important)
                 $paid_total = $order->grand_total - $order->remain_due;
 
                 $new_remain_due = $rounded_total - $paid_total;
