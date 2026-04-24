@@ -555,16 +555,19 @@ class StockController extends Controller
 
         try {
 
+            // ✅ STEP 1: Track total return amount
+            $totalReturnAmount = 0;
+
             foreach ($request->items as $item) {
 
-                // ✅ Ensure item belongs to this order (IMPORTANT FIX)
+                // ✅ Ensure item belongs to order
                 $orderItem = StocksSalesOrderItem::where('id', $item['sales_order_item_id'])
                     ->where('sales_order_id', $request->sales_order_id)
                     ->firstOrFail();
 
                 $returnQty = $item['qty'];
 
-                // ✅ Prevent over-return (important)
+                // ✅ Prevent over-return
                 $alreadyReturned = StocksReturnItem::where('sales_order_item_id', $orderItem->id)
                     ->sum('qty');
 
@@ -574,10 +577,13 @@ class StockController extends Controller
                     throw new \Exception('Return qty exceeds available qty');
                 }
 
-                // 🔥 calculate amounts
+                // 🔥 Calculate amounts
                 $sub_total = $orderItem->price * $returnQty;
                 $tax_amount = round(($orderItem->price * $orderItem->tax) / 100, 2);
                 $sub_total_tax = round($tax_amount * $returnQty, 2);
+
+                // ✅ Track return amount
+                $totalReturnAmount += ($sub_total + $sub_total_tax);
 
                 // ===============================
                 // ✅ FULL RETURN
@@ -600,19 +606,24 @@ class StockController extends Controller
                         'return_date' => now(),
                         'status' => 'returned'
                     ]);
+                }
 
-                } else {
+                // ===============================
+                // ✅ PARTIAL RETURN (SPLIT)
+                // ===============================
+                else {
 
                     $remainingQty = $orderItem->qty - $returnQty;
+
                     // 🔹 Update original item
                     $orderItem->update([
                         'qty' => $remainingQty,
                         'sub_total' => $orderItem->price * $remainingQty,
                         'sub_total_tax' => round(($orderItem->price * $orderItem->tax / 100) * $remainingQty, 2),
-                        'status' => 'split'
+                        'status' => 'completed'
                     ]);
 
-                    // 🔹 Create returned row
+                    // 🔹 Create returned item row
                     $returnedItem = StocksSalesOrderItem::create([
                         'sales_order_id' => $orderItem->sales_order_id,
                         'uid' => $orderItem->uid,
@@ -624,10 +635,10 @@ class StockController extends Controller
                         'status' => 'returned'
                     ]);
 
-                    // 🔹 Insert return record (linked to NEW row)
+                    // 🔹 Save return record (linked to NEW row)
                     StocksReturnItem::create([
                         'sales_order_id' => $request->sales_order_id,
-                        'sales_order_item_id' => $returnedItem->id, // ✅ important
+                        'sales_order_item_id' => $returnedItem->id,
                         'uid' => $orderItem->uid,
                         'qty' => $returnQty,
                         'price' => $orderItem->price,
@@ -639,6 +650,31 @@ class StockController extends Controller
                     ]);
                 }
             }
+
+            // ===============================
+            // ✅ STEP 2: UPDATE ORDER (IMPORTANT)
+            // ===============================
+
+            $order = StocksSalesOrder::findOrFail($request->sales_order_id);
+
+            $new_due = max($order->remain_due - $totalReturnAmount, 0);
+
+            if ($new_due == 0) {
+                $payment_status = 'completed';
+                $status = 'completed';
+            } elseif ($new_due < $order->grand_total) {
+                $payment_status = 'partial payment';
+                $status = 'on process';
+            } else {
+                $payment_status = 'pending';
+                $status = 'pending';
+            }
+
+            $order->update([
+                'remain_due' => $new_due,
+                'payment_status' => $payment_status,
+                'status' => $status
+            ]);
 
             DB::commit();
 
@@ -657,6 +693,122 @@ class StockController extends Controller
             ]);
         }
     }
+    
+    // public function createReturnProduct(Request $request)
+    // {
+    //     $request->validate([
+    //         'sales_order_id' => 'required|exists:stocks_sales_orders,id',
+    //         'items' => 'required|array|min:1',
+    //         'items.*.sales_order_item_id' => 'required|exists:stocks_sales_order_items,id',
+    //         'items.*.qty' => 'required|integer|min:1'
+    //     ]);
+
+    //     DB::beginTransaction();
+
+    //     try {
+
+    //         foreach ($request->items as $item) {
+
+    //             // ✅ Ensure item belongs to this order (IMPORTANT FIX)
+    //             $orderItem = StocksSalesOrderItem::where('id', $item['sales_order_item_id'])
+    //                 ->where('sales_order_id', $request->sales_order_id)
+    //                 ->firstOrFail();
+
+    //             $returnQty = $item['qty'];
+
+    //             // ✅ Prevent over-return (important)
+    //             $alreadyReturned = StocksReturnItem::where('sales_order_item_id', $orderItem->id)
+    //                 ->sum('qty');
+
+    //             $availableQty = $orderItem->qty - $alreadyReturned;
+
+    //             if ($returnQty > $availableQty) {
+    //                 throw new \Exception('Return qty exceeds available qty');
+    //             }
+
+    //             // 🔥 calculate amounts
+    //             $sub_total = $orderItem->price * $returnQty;
+    //             $tax_amount = round(($orderItem->price * $orderItem->tax) / 100, 2);
+    //             $sub_total_tax = round($tax_amount * $returnQty, 2);
+
+    //             // ===============================
+    //             // ✅ FULL RETURN
+    //             // ===============================
+    //             if ($returnQty == $orderItem->qty) {
+
+    //                 $orderItem->update([
+    //                     'status' => 'returned'
+    //                 ]);
+
+    //                 StocksReturnItem::create([
+    //                     'sales_order_id' => $request->sales_order_id,
+    //                     'sales_order_item_id' => $orderItem->id,
+    //                     'uid' => $orderItem->uid,
+    //                     'qty' => $returnQty,
+    //                     'price' => $orderItem->price,
+    //                     'tax' => $orderItem->tax,
+    //                     'sub_total' => $sub_total,
+    //                     'sub_total_tax' => $sub_total_tax,
+    //                     'return_date' => now(),
+    //                     'status' => 'returned'
+    //                 ]);
+
+    //             } else {
+
+    //                 $remainingQty = $orderItem->qty - $returnQty;
+    //                 // 🔹 Update original item
+    //                 $orderItem->update([
+    //                     'qty' => $remainingQty,
+    //                     'sub_total' => $orderItem->price * $remainingQty,
+    //                     'sub_total_tax' => round(($orderItem->price * $orderItem->tax / 100) * $remainingQty, 2),
+    //                     'status' => 'split'
+    //                 ]);
+
+    //                 // 🔹 Create returned row
+    //                 $returnedItem = StocksSalesOrderItem::create([
+    //                     'sales_order_id' => $orderItem->sales_order_id,
+    //                     'uid' => $orderItem->uid,
+    //                     'qty' => $returnQty,
+    //                     'price' => $orderItem->price,
+    //                     'tax' => $orderItem->tax,
+    //                     'sub_total' => $orderItem->price * $returnQty,
+    //                     'sub_total_tax' => round(($orderItem->price * $orderItem->tax / 100) * $returnQty, 2),
+    //                     'status' => 'returned'
+    //                 ]);
+
+    //                 // 🔹 Insert return record (linked to NEW row)
+    //                 StocksReturnItem::create([
+    //                     'sales_order_id' => $request->sales_order_id,
+    //                     'sales_order_item_id' => $returnedItem->id, // ✅ important
+    //                     'uid' => $orderItem->uid,
+    //                     'qty' => $returnQty,
+    //                     'price' => $orderItem->price,
+    //                     'tax' => $orderItem->tax,
+    //                     'sub_total' => $sub_total,
+    //                     'sub_total_tax' => $sub_total_tax,
+    //                     'return_date' => now(),
+    //                     'status' => 'returned'
+    //                 ]);
+    //             }
+    //         }
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'Return processed successfully'
+    //         ]);
+
+    //     } catch (\Exception $e) {
+
+    //         DB::rollback();
+
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => $e->getMessage()
+    //         ]);
+    //     }
+    // }
     public function getReturnItems()
     {
         $data = StocksReturnItem::select(
