@@ -304,6 +304,81 @@ class StockController extends Controller
             ]
         ]);
     }
+    public function financeAnalytics(Request $request)
+    {
+        $year = $request->year ?? date('Y');
+
+        $months = [
+            1=>"january",2=>"february",3=>"march",4=>"april",
+            5=>"may",6=>"june",7=>"july",8=>"august",
+            9=>"september",10=>"october",11=>"november",12=>"december"
+        ];
+
+        $result = [];
+
+        foreach ($months as $m => $name) {
+
+            // ===============================
+            // ✅ SALES ORDERS (MONTH)
+            // ===============================
+            $orders = StocksSalesOrder::whereYear('so_date', $year)
+                ->whereMonth('so_date', $m)
+                ->get();
+
+            $orderIds = $orders->pluck('id');
+
+            // ===============================
+            // ✅ TOTAL ITEMS SOLD (NON-RETURNED)
+            // ===============================
+            $itemsSold = StocksSalesOrderItem::whereIn('sales_order_id', $orderIds)
+                ->where('status', '!=', 'returned')
+                ->sum('qty');
+
+            // ===============================
+            // ✅ RETURN ITEMS
+            // ===============================
+            $returnItems = StocksReturnItem::whereIn('sales_order_id', $orderIds)
+                ->sum('qty');
+
+            // ===============================
+            // ✅ TOTAL SALES AMOUNT (ORIGINAL)
+            // ===============================
+            $totalSales = $orders->sum('grand_total');
+
+            // ===============================
+            // ✅ RETURN AMOUNT
+            // ===============================
+            $returnAmount = StocksReturnItem::whereIn('sales_order_id', $orderIds)
+                ->sum(DB::raw('sub_total + sub_total_tax'));
+
+            // ===============================
+            // ✅ TOTAL DUE
+            // ===============================
+            $totalDue = $orders->sum('remain_due');
+
+            // ===============================
+            // ✅ TOTAL PAID
+            // ===============================
+            $totalPaid = $orders->sum(DB::raw('grand_total - remain_due'));
+
+            $result[] = [
+                $name => [
+                    "items_sold" => $itemsSold,
+                    "items_returned" => $returnItems,
+                    "total_sales_amount" => $totalSales,
+                    "total_return_amount" => $returnAmount,
+                    "total_paid_amount" => $totalPaid,
+                    "total_due_amount" => $totalDue
+                ]
+            ];
+        }
+
+        return response()->json([
+            "status" => true,
+            "message" => "Finance analytics fetched successfully",
+            "data" => $result
+        ]);
+    }
 
     public function productTransactions(Request $request)
     {
@@ -351,7 +426,6 @@ class StockController extends Controller
             'data' => $data
         ]);
     }
-
     public function stockDetails()
     {
         // 🔥 get total sold per product (uid)
@@ -396,6 +470,7 @@ class StockController extends Controller
             'data' => array_values($grouped)
         ]);
     }
+    
 
     public function addProductStock(Request $request)
     {
