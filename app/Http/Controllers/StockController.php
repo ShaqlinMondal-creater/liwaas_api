@@ -1222,6 +1222,10 @@ class StockController extends Controller
             'limit' => (int)$limit,
             'offset' => (int)$offset,
             'data' => $orders->map(function($order){
+
+                $returnAmount = StocksReturnItem::where('sales_order_id', $order->id)
+                    ->sum(DB::raw('sub_total + sub_total_tax'));
+
                 return [
                     'id' => $order->id,
                     'sales_order_no' => $order->sales_order_no,
@@ -1239,6 +1243,7 @@ class StockController extends Controller
                     'grand_total' => $order->grand_total,
                     'status' => $order->status,
                     'payment_status' => $order->payment_status,
+                    'return_amount' => $returnAmount ?? 0,
                     'remain_due' => $order->remain_due,
                     'total_tax' => $order->total_tax,
                     'pdf' => $order->upload ? $order->upload->file_url : null
@@ -1286,6 +1291,9 @@ class StockController extends Controller
 
         });
 
+        $returnAmount = StocksReturnItem::where('sales_order_id', $order->id)
+            ->sum(DB::raw('sub_total + sub_total_tax'));
+
         return response()->json([
             'status' => true,
             'message' => 'Sales order detail fetched successfully',
@@ -1313,6 +1321,7 @@ class StockController extends Controller
                 'total_tax' => $order->total_tax,
                 'status' => $order->status,
                 'payment_status' => $order->payment_status,
+                'return_amount' => $returnAmount ?? 0,
                 'remain_due' => $order->remain_due,
                 'items' => $items,
 
@@ -1326,6 +1335,7 @@ class StockController extends Controller
         ]);
 
     }
+
     public function deleteSalesOrder(Request $request)
     {
 
