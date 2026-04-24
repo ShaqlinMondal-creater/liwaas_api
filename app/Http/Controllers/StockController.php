@@ -349,7 +349,8 @@ class StockController extends Controller
             // ✅ RETURN AMOUNT
             // ===============================
             $returnAmount = StocksReturnItem::whereIn('sales_order_id', $orderIds)
-                ->sum(DB::raw('sub_total + sub_total_tax'));
+                ->selectRaw('SUM(sub_total + sub_total_tax) as total')
+                ->value('total') ?? 0;
 
             // ===============================
             // ✅ TOTAL DUE
@@ -359,7 +360,9 @@ class StockController extends Controller
             // ===============================
             // ✅ TOTAL PAID
             // ===============================
-            $totalPaid = $orders->sum(DB::raw('grand_total - remain_due'));
+            $totalPaid = $orders->sum(function ($order) {
+                return $order->grand_total - $order->remain_due;
+            });
 
             $result[] = [
                 $name => [
