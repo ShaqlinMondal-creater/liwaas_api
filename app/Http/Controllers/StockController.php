@@ -620,7 +620,7 @@ class StockController extends Controller
                         'qty' => $remainingQty,
                         'sub_total' => $orderItem->price * $remainingQty,
                         'sub_total_tax' => round(($orderItem->price * $orderItem->tax / 100) * $remainingQty, 2),
-                        'status' => 'completed'
+                        'status' => 'split'
                     ]);
 
                     // 🔹 Create returned item row
@@ -693,7 +693,7 @@ class StockController extends Controller
             ]);
         }
     }
-    
+
     // public function createReturnProduct(Request $request)
     // {
     //     $request->validate([
