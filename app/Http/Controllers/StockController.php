@@ -1005,14 +1005,229 @@ class StockController extends Controller
             ]);
         }
     }
+    // public function updateSalesOrder(Request $request, $id)
+    // {
+    //     $request->validate([
+    //         'client_id' => 'nullable|exists:stocks_clients,id',
+    //         'items' => 'nullable|array|min:1',
+    //         'items.*.uid' => 'required_with:items',
+    //         'items.*.qty' => 'required_with:items|integer|min:1',
+    //         'items.*.price' => 'required_with:items|numeric',
+    //         'items.*.tax' => 'nullable|numeric',
+    //         'paid_amount' => 'nullable|numeric|min:0',
+    //         'so_date' => 'nullable|date'
+    //     ]);
+
+    //     DB::beginTransaction();
+
+    //     try {
+
+    //         $order = StocksSalesOrder::findOrFail($id);
+
+    //         $grand_total = 0;
+    //         $total_tax = 0;
+
+    //         // ===============================
+    //         // ✅ 1. UPDATE ITEMS (NO DELETE)
+    //         // ===============================
+    //         if ($request->has('items')) {
+
+    //             // get existing NON-RETURNED items only
+    //             $existingItems = StocksSalesOrderItem::where('sales_order_id', $order->id)
+    //                 ->where('status', '!=', 'returned')
+    //                 ->get()
+    //                 ->keyBy('uid');
+
+    //             $newUids = [];
+
+    //             foreach ($request->items as $item) {
+
+    //                 $uid = $item['uid'];
+    //                 $price = $item['price'];
+    //                 $qty = $item['qty'];
+    //                 $tax_percent = $item['tax'] ?? 5;
+
+    //                 $tax_amount = round(($price * $tax_percent) / 100, 2);
+
+    //                 $sub_total = $price * $qty;
+    //                 $sub_total_tax = round($tax_amount * $qty, 2);
+
+    //                 $grand_total += $sub_total;
+    //                 $total_tax += $sub_total_tax;
+
+    //                 $newUids[] = $uid;
+
+    //                 // ===============================
+    //                 // ✅ EXISTING ITEM → UPDATE
+    //                 // ===============================
+    //                 if (isset($existingItems[$uid])) {
+
+    //                     $oldQty = $existingItems[$uid]->qty;
+    //                     $diffQty = $qty - $oldQty;
+
+    //                     // adjust stock difference only
+    //                     if ($diffQty > 0) {
+    //                         StocksProduct::where('uid', $uid)->decrement('stock', $diffQty);
+    //                     } elseif ($diffQty < 0) {
+    //                         StocksProduct::where('uid', $uid)->increment('stock', abs($diffQty));
+    //                     }
+
+    //                     $existingItems[$uid]->update([
+    //                         'qty' => $qty,
+    //                         'price' => $price,
+    //                         'tax' => $tax_percent,
+    //                         'sub_total' => $sub_total,
+    //                         'sub_total_tax' => $sub_total_tax
+    //                     ]);
+    //                 }
+
+    //                 // ===============================
+    //                 // ✅ NEW ITEM → CREATE
+    //                 // ===============================
+    //                 else {
+
+    //                     StocksSalesOrderItem::create([
+    //                         'sales_order_id' => $order->id,
+    //                         'uid' => $uid,
+    //                         'qty' => $qty,
+    //                         'price' => $price,
+    //                         'tax' => $tax_percent,
+    //                         'sub_total' => $sub_total,
+    //                         'sub_total_tax' => $sub_total_tax
+    //                     ]);
+
+    //                     StocksProduct::where('uid', $uid)->decrement('stock', $qty);
+    //                 }
+    //             }
+
+    //             // ===============================
+    //             // ✅ REMOVE DELETED ITEMS
+    //             // ===============================
+    //             foreach ($existingItems as $uid => $existingItem) {
+
+    //                 if (!in_array($uid, $newUids)) {
+
+    //                     // restore stock
+    //                     StocksProduct::where('uid', $uid)
+    //                         ->increment('stock', $existingItem->qty);
+
+    //                     $existingItem->delete();
+    //                 }
+    //             }
+
+    //             // ===============================
+    //             // ✅ TOTAL CALCULATION
+    //             // ===============================
+    //             $final_total = round($grand_total + $total_tax, 2);
+    //             $rounded_total = round($final_total);
+    //             $round_amount = round($rounded_total - $final_total, 2);
+
+    //             // already paid
+    //             $paid_total = $order->grand_total - $order->remain_due;
+
+    //             $new_remain_due = max($rounded_total - $paid_total, 0);
+
+    //             $order->update([
+    //                 'grand_total' => $rounded_total,
+    //                 'total_tax' => $total_tax,
+    //                 'round_amount' => $round_amount,
+    //                 'remain_due' => $new_remain_due
+    //             ]);
+
+    //             // ===============================
+    //             // ✅ STATUS AUTO UPDATE
+    //             // ===============================
+    //             if ($new_remain_due == 0) {
+    //                 $payment_status = 'completed';
+    //                 $status = 'completed';
+    //             } elseif ($new_remain_due < $rounded_total) {
+    //                 $payment_status = 'partial payment';
+    //                 $status = 'on process';
+    //             } else {
+    //                 $payment_status = 'pending';
+    //                 $status = 'pending';
+    //             }
+
+    //             $order->update([
+    //                 'payment_status' => $payment_status,
+    //                 'status' => $status
+    //             ]);
+    //         }
+
+    //         // ===============================
+    //         // ✅ PAYMENT UPDATE
+    //         // ===============================
+    //         if ($request->has('paid_amount')) {
+
+    //             $paid_amount = $request->paid_amount;
+    //             $current_due = $order->remain_due;
+
+    //             if ($paid_amount > $current_due) {
+    //                 throw new \Exception('Paid amount cannot be greater than remaining due');
+    //             }
+
+    //             $remain_due = $current_due - $paid_amount;
+
+    //             if ($remain_due == 0) {
+    //                 $payment_status = 'completed';
+    //                 $status = 'completed';
+    //             } elseif ($remain_due < $order->grand_total) {
+    //                 $payment_status = 'partial payment';
+    //                 $status = 'on process';
+    //             } else {
+    //                 $payment_status = 'pending';
+    //                 $status = 'pending';
+    //             }
+
+    //             $order->update([
+    //                 'remain_due' => $remain_due,
+    //                 'payment_status' => $payment_status,
+    //                 'status' => $status
+    //             ]);
+    //         }
+
+    //         // ===============================
+    //         // ✅ OTHER FIELDS
+    //         // ===============================
+    //         $updateData = [];
+
+    //         if ($request->has('client_id')) {
+    //             $updateData['client_id'] = $request->client_id;
+    //         }
+
+    //         if ($request->has('so_date')) {
+    //             $updateData['so_date'] = $request->so_date;
+    //         }
+
+    //         if (!empty($updateData)) {
+    //             $order->update($updateData);
+    //         }
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'Sales order updated successfully'
+    //         ]);
+
+    //     } catch (\Exception $e) {
+
+    //         DB::rollback();
+
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => $e->getMessage()
+    //         ]);
+    //     }
+    // }
     public function updateSalesOrder(Request $request, $id)
     {
         $request->validate([
             'client_id' => 'nullable|exists:stocks_clients,id',
             'items' => 'nullable|array|min:1',
-            'items.*.uid' => 'required_with:items',
-            'items.*.qty' => 'required_with:items|integer|min:1',
-            'items.*.price' => 'required_with:items|numeric',
+            'items.*.so_item_id' => 'required|exists:stocks_sales_order_items,id',
+            'items.*.qty' => 'required|integer|min:1',
+            'items.*.price' => 'required|numeric',
             'items.*.tax' => 'nullable|numeric',
             'paid_amount' => 'nullable|numeric|min:0',
             'so_date' => 'nullable|date'
@@ -1028,129 +1243,68 @@ class StockController extends Controller
             $total_tax = 0;
 
             // ===============================
-            // ✅ 1. UPDATE ITEMS (NO DELETE)
+            // ✅ UPDATE ITEMS BY ID
             // ===============================
             if ($request->has('items')) {
 
-                // get existing NON-RETURNED items only
-                $existingItems = StocksSalesOrderItem::where('sales_order_id', $order->id)
-                    ->where('status', '!=', 'returned')
-                    ->get()
-                    ->keyBy('uid');
-
-                $newUids = [];
-
                 foreach ($request->items as $item) {
 
-                    $uid = $item['uid'];
+                    $orderItem = StocksSalesOrderItem::where('id', $item['so_item_id'])
+                        ->where('sales_order_id', $order->id)
+                        ->where('status', '!=', 'returned') // ❗ protect returned
+                        ->firstOrFail();
+
+                    $oldQty = $orderItem->qty;
+                    $newQty = $item['qty'];
                     $price = $item['price'];
-                    $qty = $item['qty'];
                     $tax_percent = $item['tax'] ?? 5;
 
-                    $tax_amount = round(($price * $tax_percent) / 100, 2);
+                    $diffQty = $newQty - $oldQty;
 
-                    $sub_total = $price * $qty;
-                    $sub_total_tax = round($tax_amount * $qty, 2);
+                    // 🔥 stock adjust
+                    if ($diffQty > 0) {
+                        StocksProduct::where('uid', $orderItem->uid)
+                            ->decrement('stock', $diffQty);
+                    } elseif ($diffQty < 0) {
+                        StocksProduct::where('uid', $orderItem->uid)
+                            ->increment('stock', abs($diffQty));
+                    }
+
+                    // 🔥 calculate
+                    $tax_amount = round(($price * $tax_percent) / 100, 2);
+                    $sub_total = $price * $newQty;
+                    $sub_total_tax = round($tax_amount * $newQty, 2);
 
                     $grand_total += $sub_total;
                     $total_tax += $sub_total_tax;
 
-                    $newUids[] = $uid;
-
-                    // ===============================
-                    // ✅ EXISTING ITEM → UPDATE
-                    // ===============================
-                    if (isset($existingItems[$uid])) {
-
-                        $oldQty = $existingItems[$uid]->qty;
-                        $diffQty = $qty - $oldQty;
-
-                        // adjust stock difference only
-                        if ($diffQty > 0) {
-                            StocksProduct::where('uid', $uid)->decrement('stock', $diffQty);
-                        } elseif ($diffQty < 0) {
-                            StocksProduct::where('uid', $uid)->increment('stock', abs($diffQty));
-                        }
-
-                        $existingItems[$uid]->update([
-                            'qty' => $qty,
-                            'price' => $price,
-                            'tax' => $tax_percent,
-                            'sub_total' => $sub_total,
-                            'sub_total_tax' => $sub_total_tax
-                        ]);
-                    }
-
-                    // ===============================
-                    // ✅ NEW ITEM → CREATE
-                    // ===============================
-                    else {
-
-                        StocksSalesOrderItem::create([
-                            'sales_order_id' => $order->id,
-                            'uid' => $uid,
-                            'qty' => $qty,
-                            'price' => $price,
-                            'tax' => $tax_percent,
-                            'sub_total' => $sub_total,
-                            'sub_total_tax' => $sub_total_tax
-                        ]);
-
-                        StocksProduct::where('uid', $uid)->decrement('stock', $qty);
-                    }
+                    // 🔥 update item
+                    $orderItem->update([
+                        'qty' => $newQty,
+                        'price' => $price,
+                        'tax' => $tax_percent,
+                        'sub_total' => $sub_total,
+                        'sub_total_tax' => $sub_total_tax
+                    ]);
                 }
 
                 // ===============================
-                // ✅ REMOVE DELETED ITEMS
-                // ===============================
-                foreach ($existingItems as $uid => $existingItem) {
-
-                    if (!in_array($uid, $newUids)) {
-
-                        // restore stock
-                        StocksProduct::where('uid', $uid)
-                            ->increment('stock', $existingItem->qty);
-
-                        $existingItem->delete();
-                    }
-                }
-
-                // ===============================
-                // ✅ TOTAL CALCULATION
+                // ✅ RE-CALCULATE TOTALS
                 // ===============================
                 $final_total = round($grand_total + $total_tax, 2);
                 $rounded_total = round($final_total);
                 $round_amount = round($rounded_total - $final_total, 2);
 
-                // already paid
                 $paid_total = $order->grand_total - $order->remain_due;
 
-                $new_remain_due = max($rounded_total - $paid_total, 0);
+                $new_remain_due = $rounded_total - $paid_total;
+                $new_remain_due = max($new_remain_due, 0);
 
                 $order->update([
                     'grand_total' => $rounded_total,
                     'total_tax' => $total_tax,
                     'round_amount' => $round_amount,
                     'remain_due' => $new_remain_due
-                ]);
-
-                // ===============================
-                // ✅ STATUS AUTO UPDATE
-                // ===============================
-                if ($new_remain_due == 0) {
-                    $payment_status = 'completed';
-                    $status = 'completed';
-                } elseif ($new_remain_due < $rounded_total) {
-                    $payment_status = 'partial payment';
-                    $status = 'on process';
-                } else {
-                    $payment_status = 'pending';
-                    $status = 'pending';
-                }
-
-                $order->update([
-                    'payment_status' => $payment_status,
-                    'status' => $status
                 ]);
             }
 
@@ -1220,176 +1374,7 @@ class StockController extends Controller
             ]);
         }
     }
-    // public function updateSalesOrder(Request $request, $id)
-    // {
-    //     $request->validate([
-    //         'client_id' => 'nullable|exists:stocks_clients,id',
-    //         'items' => 'nullable|array|min:1',
-    //         'items.*.uid' => 'required_with:items',
-    //         'items.*.qty' => 'required_with:items|integer|min:1',
-    //         'items.*.price' => 'required_with:items|numeric',
-    //         'items.*.tax' => 'nullable|numeric',
-    //         'paid_amount' => 'nullable|numeric|min:0',
-    //         // 'status' => 'nullable|in:pending,completed,on process',
-    //         // 'payment_status' => 'nullable|in:pending,partial payment,completed',
-    //         'so_date' => 'nullable|date'
-    //     ]);
 
-    //     DB::beginTransaction();
-
-    //     try {
-
-    //         $order = StocksSalesOrder::findOrFail($id);
-
-    //         $grand_total = $order->grand_total;
-    //         $total_tax = $order->total_tax;
-    //         $rounded_total = $order->grand_total;
-
-    //         // ✅ 1. If items passed → update items + stock
-    //         if ($request->has('items')) {
-
-    //             // restore old stock
-    //             $oldItems = StocksSalesOrderItem::where('sales_order_id', $order->id)->get();
-
-    //             foreach ($oldItems as $item) {
-    //                 StocksProduct::where('uid', $item->uid)
-    //                     ->increment('stock', $item->qty);
-    //             }
-
-    //             // delete old items
-    //             StocksSalesOrderItem::where('sales_order_id', $order->id)->delete();
-
-    //             $grand_total = 0;
-    //             $total_tax = 0;
-
-    //             foreach ($request->items as $item) {
-
-    //                 $price = $item['price'];
-    //                 $qty = $item['qty'];
-    //                 $tax_percent = $item['tax'] ?? 5;
-
-    //                 $tax_amount = round(($price * $tax_percent) / 100, 2);
-
-    //                 $sub_total = $price * $qty;
-    //                 $sub_total_tax = round($tax_amount * $qty, 2);
-
-    //                 $grand_total += $sub_total;
-    //                 $total_tax += $sub_total_tax;
-
-    //                 StocksSalesOrderItem::create([
-    //                     'sales_order_id' => $order->id,
-    //                     'uid' => $item['uid'],
-    //                     'qty' => $qty,
-    //                     'price' => $price,
-    //                     'tax' => $tax_percent,
-    //                     'sub_total' => $sub_total,
-    //                     'sub_total_tax' => $sub_total_tax
-    //                 ]);
-
-    //                 // reduce stock
-    //                 StocksProduct::where('uid', $item['uid'])
-    //                     ->decrement('stock', $qty);
-    //             }
-
-    //             $final_total = round($grand_total + $total_tax, 2);
-
-    //             $rounded_total = round($final_total);
-
-    //             $round_amount = round($rounded_total - $final_total, 2);
-
-    //             $grand_total = round($grand_total, 2);
-    //             $total_tax = round($total_tax, 2);
-
-    //             // 🔥 calculate already paid amount
-    //             $paid_total = $order->grand_total - $order->remain_due;
-
-    //             // 🔥 new due based on updated total
-    //             $new_remain_due = $rounded_total - $paid_total;
-
-    //             // prevent negative
-    //             $new_remain_due = max($new_remain_due, 0);
-
-    //             // update order
-    //             $order->update([
-    //                 'grand_total' => $rounded_total,
-    //                 'total_tax' => $total_tax,
-    //                 'round_amount' => $round_amount,
-    //                 'remain_due' => $new_remain_due
-    //             ]);
-    //         }
-
-    //         // ✅ 2. Payment logic (only if passed)
-    //         if ($request->has('paid_amount')) {
-
-    //             $paid_amount = $request->paid_amount;
-
-    //             $current_due = $order->remain_due;
-
-    //             if ($paid_amount > $current_due) {
-    //                 throw new \Exception('Paid amount cannot be greater than remaining due');
-    //             }
-
-    //             $remain_due = $current_due - $paid_amount;
-
-    //             // ✅ FIXED LOGIC
-    //             if ($remain_due == 0) {
-    //                 $payment_status = 'completed';
-    //                 $status = 'completed';
-    //             } elseif ($remain_due < $order->grand_total) {
-    //                 $payment_status = 'partial payment';
-    //                 $status = 'on process'; // ✅ YOUR RULE
-    //             } else {
-    //                 $payment_status = 'pending';
-    //                 $status = 'pending';
-    //             }
-
-    //             $order->update([
-    //                 'remain_due' => $remain_due,
-    //                 'payment_status' => $payment_status,
-    //                 'status' => $status
-    //             ]);
-    //         }
-
-    //         // ✅ 3. Other fields update (only if passed)
-    //         $updateData = [];
-
-    //         if ($request->has('client_id')) {
-    //             $updateData['client_id'] = $request->client_id;
-    //         }
-
-    //         // if ($request->has('status')) {
-    //         //     $updateData['status'] = $request->status;
-    //         // }
-
-    //         // if ($request->has('payment_status')) {
-    //         //     $updateData['payment_status'] = $request->payment_status;
-    //         // }
-
-    //         if ($request->has('so_date')) {
-    //             $updateData['so_date'] = $request->so_date;
-    //         }
-
-    //         if (!empty($updateData)) {
-    //             $order->update($updateData);
-    //         }
-
-    //         DB::commit();
-
-    //         return response()->json([
-    //             'status' => true,
-    //             'message' => 'Sales order updated successfully'
-    //         ]);
-
-    //     } catch (\Exception $e) {
-
-    //         DB::rollback();
-
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => $e->getMessage()
-    //         ]);
-    //     }
-    // }
     public function getSalesOrders(Request $request)
     {
 
