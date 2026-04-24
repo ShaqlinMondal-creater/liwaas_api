@@ -557,48 +557,87 @@ class StockController extends Controller
 
             foreach ($request->items as $item) {
 
-                $orderItem = StocksSalesOrderItem::findOrFail($item['sales_order_item_id']);
+                // ✅ Ensure item belongs to this order (IMPORTANT FIX)
+                $orderItem = StocksSalesOrderItem::where('id', $item['sales_order_item_id'])
+                    ->where('sales_order_id', $request->sales_order_id)
+                    ->firstOrFail();
 
-                if ($item['qty'] > $orderItem->qty) {
-                    throw new \Exception('Return qty exceeds sold qty');
-                }
+                $returnQty = $item['qty'];
 
-                // 🔥 calculate
-                $sub_total = $orderItem->price * $item['qty'];
-                $tax_amount = round(($orderItem->price * $orderItem->tax) / 100, 2);
-                $sub_total_tax = $tax_amount * $item['qty'];
-
-                // ✅ insert return record
-                StocksReturnItem::create([
-                    'sales_order_id' => $request->sales_order_id,
-                    'sales_order_item_id' => $orderItem->id,
-                    'uid' => $orderItem->uid,
-                    'qty' => $item['qty'],
-                    'price' => $orderItem->price,
-                    'tax' => $orderItem->tax,
-                    'sub_total' => $sub_total,
-                    'sub_total_tax' => $sub_total_tax,
-                    'return_date' => now()
-                ]);
-
-                // ✅ increase stock
-                // StocksProduct::where('uid', $orderItem->uid)
-                //     ->increment('stock', $item['qty']);
-
-                // 🔥 calculate total returned qty
-                $returnedQty = StocksReturnItem::where('sales_order_item_id', $orderItem->id)
+                // ✅ Prevent over-return (important)
+                $alreadyReturned = StocksReturnItem::where('sales_order_item_id', $orderItem->id)
                     ->sum('qty');
 
-                // 🔥 update status
-                if ($returnedQty == $orderItem->qty) {
-                    $status = 'returned';
-                } else {
-                    $status = 'inprocess';
+                $availableQty = $orderItem->qty - $alreadyReturned;
+
+                if ($returnQty > $availableQty) {
+                    throw new \Exception('Return qty exceeds available qty');
                 }
 
-                $orderItem->update([
-                    'status' => $status
-                ]);
+                // 🔥 calculate amounts
+                $sub_total = $orderItem->price * $returnQty;
+                $tax_amount = round(($orderItem->price * $orderItem->tax) / 100, 2);
+                $sub_total_tax = round($tax_amount * $returnQty, 2);
+
+                // ===============================
+                // ✅ FULL RETURN
+                // ===============================
+                if ($returnQty == $orderItem->qty) {
+
+                    $orderItem->update([
+                        'status' => 'returned'
+                    ]);
+
+                    StocksReturnItem::create([
+                        'sales_order_id' => $request->sales_order_id,
+                        'sales_order_item_id' => $orderItem->id,
+                        'uid' => $orderItem->uid,
+                        'qty' => $returnQty,
+                        'price' => $orderItem->price,
+                        'tax' => $orderItem->tax,
+                        'sub_total' => $sub_total,
+                        'sub_total_tax' => $sub_total_tax,
+                        'return_date' => now(),
+                        'status' => 'returned'
+                    ]);
+
+                } else {
+
+                    $remainingQty = $orderItem->qty - $returnQty;
+                    // 🔹 Update original item
+                    $orderItem->update([
+                        'qty' => $remainingQty,
+                        'sub_total' => $orderItem->price * $remainingQty,
+                        'sub_total_tax' => round(($orderItem->price * $orderItem->tax / 100) * $remainingQty, 2),
+                        'status' => 'split'
+                    ]);
+
+                    // 🔹 Create returned row
+                    $returnedItem = StocksSalesOrderItem::create([
+                        'sales_order_id' => $orderItem->sales_order_id,
+                        'uid' => $orderItem->uid,
+                        'qty' => $returnQty,
+                        'price' => $orderItem->price,
+                        'tax' => $orderItem->tax,
+                        'sub_total' => $orderItem->price * $returnQty,
+                        'sub_total_tax' => round(($orderItem->price * $orderItem->tax / 100) * $returnQty, 2),
+                        'status' => 'returned'
+                    ]);
+
+                    // 🔹 Insert return record (linked to NEW row)
+                    StocksReturnItem::create([
+                        'sales_order_id' => $request->sales_order_id,
+                        'sales_order_item_id' => $returnedItem->id, // ✅ important
+                        'uid' => $orderItem->uid,
+                        'qty' => $returnQty,
+                        'price' => $orderItem->price,
+                        'tax' => $orderItem->tax,
+                        'sub_total' => $sub_total,
+                        'sub_total_tax' => $sub_total_tax,
+                        'return_date' => now(),
+                        'status' => 'returned'
+                    ]);
+                }
             }
 
             DB::commit();
