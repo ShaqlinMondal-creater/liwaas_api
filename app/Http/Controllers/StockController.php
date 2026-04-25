@@ -1076,221 +1076,6 @@ class StockController extends Controller
             ]);
         }
     }
-    // public function updateSalesOrder(Request $request, $id)
-    // {
-    //     $request->validate([
-    //         'client_id' => 'nullable|exists:stocks_clients,id',
-    //         'items' => 'nullable|array|min:1',
-    //         'items.*.uid' => 'required_with:items',
-    //         'items.*.qty' => 'required_with:items|integer|min:1',
-    //         'items.*.price' => 'required_with:items|numeric',
-    //         'items.*.tax' => 'nullable|numeric',
-    //         'paid_amount' => 'nullable|numeric|min:0',
-    //         'so_date' => 'nullable|date'
-    //     ]);
-
-    //     DB::beginTransaction();
-
-    //     try {
-
-    //         $order = StocksSalesOrder::findOrFail($id);
-
-    //         $grand_total = 0;
-    //         $total_tax = 0;
-
-    //         // ===============================
-    //         // ✅ 1. UPDATE ITEMS (NO DELETE)
-    //         // ===============================
-    //         if ($request->has('items')) {
-
-    //             // get existing NON-RETURNED items only
-    //             $existingItems = StocksSalesOrderItem::where('sales_order_id', $order->id)
-    //                 ->where('status', '!=', 'returned')
-    //                 ->get()
-    //                 ->keyBy('uid');
-
-    //             $newUids = [];
-
-    //             foreach ($request->items as $item) {
-
-    //                 $uid = $item['uid'];
-    //                 $price = $item['price'];
-    //                 $qty = $item['qty'];
-    //                 $tax_percent = $item['tax'] ?? 5;
-
-    //                 $tax_amount = round(($price * $tax_percent) / 100, 2);
-
-    //                 $sub_total = $price * $qty;
-    //                 $sub_total_tax = round($tax_amount * $qty, 2);
-
-    //                 $grand_total += $sub_total;
-    //                 $total_tax += $sub_total_tax;
-
-    //                 $newUids[] = $uid;
-
-    //                 // ===============================
-    //                 // ✅ EXISTING ITEM → UPDATE
-    //                 // ===============================
-    //                 if (isset($existingItems[$uid])) {
-
-    //                     $oldQty = $existingItems[$uid]->qty;
-    //                     $diffQty = $qty - $oldQty;
-
-    //                     // adjust stock difference only
-    //                     if ($diffQty > 0) {
-    //                         StocksProduct::where('uid', $uid)->decrement('stock', $diffQty);
-    //                     } elseif ($diffQty < 0) {
-    //                         StocksProduct::where('uid', $uid)->increment('stock', abs($diffQty));
-    //                     }
-
-    //                     $existingItems[$uid]->update([
-    //                         'qty' => $qty,
-    //                         'price' => $price,
-    //                         'tax' => $tax_percent,
-    //                         'sub_total' => $sub_total,
-    //                         'sub_total_tax' => $sub_total_tax
-    //                     ]);
-    //                 }
-
-    //                 // ===============================
-    //                 // ✅ NEW ITEM → CREATE
-    //                 // ===============================
-    //                 else {
-
-    //                     StocksSalesOrderItem::create([
-    //                         'sales_order_id' => $order->id,
-    //                         'uid' => $uid,
-    //                         'qty' => $qty,
-    //                         'price' => $price,
-    //                         'tax' => $tax_percent,
-    //                         'sub_total' => $sub_total,
-    //                         'sub_total_tax' => $sub_total_tax
-    //                     ]);
-
-    //                     StocksProduct::where('uid', $uid)->decrement('stock', $qty);
-    //                 }
-    //             }
-
-    //             // ===============================
-    //             // ✅ REMOVE DELETED ITEMS
-    //             // ===============================
-    //             foreach ($existingItems as $uid => $existingItem) {
-
-    //                 if (!in_array($uid, $newUids)) {
-
-    //                     // restore stock
-    //                     StocksProduct::where('uid', $uid)
-    //                         ->increment('stock', $existingItem->qty);
-
-    //                     $existingItem->delete();
-    //                 }
-    //             }
-
-    //             // ===============================
-    //             // ✅ TOTAL CALCULATION
-    //             // ===============================
-    //             $final_total = round($grand_total + $total_tax, 2);
-    //             $rounded_total = round($final_total);
-    //             $round_amount = round($rounded_total - $final_total, 2);
-
-    //             // already paid
-    //             $paid_total = $order->grand_total - $order->remain_due;
-
-    //             $new_remain_due = max($rounded_total - $paid_total, 0);
-
-    //             $order->update([
-    //                 'grand_total' => $rounded_total,
-    //                 'total_tax' => $total_tax,
-    //                 'round_amount' => $round_amount,
-    //                 'remain_due' => $new_remain_due
-    //             ]);
-
-    //             // ===============================
-    //             // ✅ STATUS AUTO UPDATE
-    //             // ===============================
-    //             if ($new_remain_due == 0) {
-    //                 $payment_status = 'completed';
-    //                 $status = 'completed';
-    //             } elseif ($new_remain_due < $rounded_total) {
-    //                 $payment_status = 'partial payment';
-    //                 $status = 'on process';
-    //             } else {
-    //                 $payment_status = 'pending';
-    //                 $status = 'pending';
-    //             }
-
-    //             $order->update([
-    //                 'payment_status' => $payment_status,
-    //                 'status' => $status
-    //             ]);
-    //         }
-
-    //         // ===============================
-    //         // ✅ PAYMENT UPDATE
-    //         // ===============================
-    //         if ($request->has('paid_amount')) {
-
-    //             $paid_amount = $request->paid_amount;
-    //             $current_due = $order->remain_due;
-
-    //             if ($paid_amount > $current_due) {
-    //                 throw new \Exception('Paid amount cannot be greater than remaining due');
-    //             }
-
-    //             $remain_due = $current_due - $paid_amount;
-
-    //             if ($remain_due == 0) {
-    //                 $payment_status = 'completed';
-    //                 $status = 'completed';
-    //             } elseif ($remain_due < $order->grand_total) {
-    //                 $payment_status = 'partial payment';
-    //                 $status = 'on process';
-    //             } else {
-    //                 $payment_status = 'pending';
-    //                 $status = 'pending';
-    //             }
-
-    //             $order->update([
-    //                 'remain_due' => $remain_due,
-    //                 'payment_status' => $payment_status,
-    //                 'status' => $status
-    //             ]);
-    //         }
-
-    //         // ===============================
-    //         // ✅ OTHER FIELDS
-    //         // ===============================
-    //         $updateData = [];
-
-    //         if ($request->has('client_id')) {
-    //             $updateData['client_id'] = $request->client_id;
-    //         }
-
-    //         if ($request->has('so_date')) {
-    //             $updateData['so_date'] = $request->so_date;
-    //         }
-
-    //         if (!empty($updateData)) {
-    //             $order->update($updateData);
-    //         }
-
-    //         DB::commit();
-
-    //         return response()->json([
-    //             'status' => true,
-    //             'message' => 'Sales order updated successfully'
-    //         ]);
-
-    //     } catch (\Exception $e) {
-
-    //         DB::rollback();
-
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => $e->getMessage()
-    //         ]);
-    //     }
-    // }
     public function updateSalesOrder(Request $request, $id)
     {
         $request->validate([
@@ -1457,10 +1242,8 @@ class StockController extends Controller
             ]);
         }
     }
-
     public function getSalesOrders(Request $request)
     {
-
         $limit = $request->limit ?? 10;
         $offset = $request->offset ?? 0;
 
@@ -1471,7 +1254,7 @@ class StockController extends Controller
             }
         ]);
 
-        // search
+        // 🔍 SEARCH
         if ($request->filled('search')) {
 
             $search = $request->search;
@@ -1481,17 +1264,47 @@ class StockController extends Controller
                 $q->where('sales_order_no','like','%'.$search.'%')
                 ->orWhereHas('client', function($c) use ($search){
                     $c->where('name','like','%'.$search.'%')
-                        ->orWhere('mobile','like','%'.$search.'%');
+                    ->orWhere('mobile','like','%'.$search.'%');
                 });
 
             });
-
         }
 
-        // total count
-        $total = $query->count();
+        // ✅ PAYMENT STATUS
+        if ($request->payment_status) {
+            $query->where('payment_status', $request->payment_status);
+        }
 
-        // fetch orders
+        // ✅ ORDER STATUS
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        // ✅ MONTH FILTER
+        if ($request->month) {
+
+            $monthMap = [
+                'january'=>1,'february'=>2,'march'=>3,'april'=>4,
+                'may'=>5,'june'=>6,'july'=>7,'august'=>8,
+                'september'=>9,'october'=>10,'november'=>11,'december'=>12
+            ];
+
+            $month = strtolower($request->month);
+
+            if (isset($monthMap[$month])) {
+                $query->whereMonth('so_date', $monthMap[$month]);
+            }
+        }
+
+        // ✅ EXACT DATE
+        if ($request->so_date) {
+            $query->whereDate('so_date', $request->so_date);
+        }
+
+        // ✅ TOTAL COUNT
+        $total = (clone $query)->count();
+
+        // ✅ FETCH DATA
         $orders = $query
             ->orderBy('so_date','desc')
             ->offset($offset)
@@ -1507,7 +1320,8 @@ class StockController extends Controller
             'data' => $orders->map(function($order){
 
                 $returnAmount = StocksReturnItem::where('sales_order_id', $order->id)
-                    ->sum(DB::raw('sub_total + sub_total_tax'));
+                    ->selectRaw('SUM(sub_total + sub_total_tax) as total')
+                    ->value('total') ?? 0;
 
                 return [
                     'id' => $order->id,
@@ -1526,7 +1340,7 @@ class StockController extends Controller
                     'grand_total' => $order->grand_total,
                     'status' => $order->status,
                     'payment_status' => $order->payment_status,
-                    'return_amount' => $returnAmount ?? 0,
+                    'return_amount' => $returnAmount,
                     'remain_due' => $order->remain_due,
                     'total_tax' => $order->total_tax,
                     'pdf' => $order->upload ? $order->upload->file_url : null
@@ -1534,6 +1348,82 @@ class StockController extends Controller
             })
         ]);
     }
+    // public function getSalesOrders(Request $request)
+    // {
+
+    //     $limit = $request->limit ?? 10;
+    //     $offset = $request->offset ?? 0;
+
+    //     $query = StocksSalesOrder::with([
+    //         'client',
+    //         'upload' => function($q){
+    //             $q->where('type','order');
+    //         }
+    //     ]);
+
+    //     // search
+    //     if ($request->filled('search')) {
+
+    //         $search = $request->search;
+
+    //         $query->where(function ($q) use ($search) {
+
+    //             $q->where('sales_order_no','like','%'.$search.'%')
+    //             ->orWhereHas('client', function($c) use ($search){
+    //                 $c->where('name','like','%'.$search.'%')
+    //                     ->orWhere('mobile','like','%'.$search.'%');
+    //             });
+
+    //         });
+
+    //     }
+
+    //     // total count
+    //     $total = $query->count();
+
+    //     // fetch orders
+    //     $orders = $query
+    //         ->orderBy('so_date','desc')
+    //         ->offset($offset)
+    //         ->limit($limit)
+    //         ->get();
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Sales orders fetched successfully',
+    //         'total' => $total,
+    //         'limit' => (int)$limit,
+    //         'offset' => (int)$offset,
+    //         'data' => $orders->map(function($order){
+
+    //             $returnAmount = StocksReturnItem::where('sales_order_id', $order->id)
+    //                 ->sum(DB::raw('sub_total + sub_total_tax'));
+
+    //             return [
+    //                 'id' => $order->id,
+    //                 'sales_order_no' => $order->sales_order_no,
+    //                 'date' => $order->so_date 
+    //                     ? \Carbon\Carbon::parse($order->so_date)->format('d-m-Y')
+    //                     : null,
+    //                 'client' => [
+    //                     'id' => $order->client->id ?? null,
+    //                     'name' => $order->client->name ?? null,
+    //                     'owner_name' => $order->client->owner_name ?? null,
+    //                     'mobile' => $order->client->mobile ?? null,
+    //                     'address' => $order->client->address ?? null,
+    //                     'email' => $order->client->email ?? null
+    //                 ],
+    //                 'grand_total' => $order->grand_total,
+    //                 'status' => $order->status,
+    //                 'payment_status' => $order->payment_status,
+    //                 'return_amount' => $returnAmount ?? 0,
+    //                 'remain_due' => $order->remain_due,
+    //                 'total_tax' => $order->total_tax,
+    //                 'pdf' => $order->upload ? $order->upload->file_url : null
+    //             ];
+    //         })
+    //     ]);
+    // }
     public function getSalesOrderDetail(Request $request)
     {
 
