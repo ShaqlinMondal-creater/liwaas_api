@@ -387,6 +387,9 @@ class StockController extends Controller
     {
         $search = $request->search;
 
+        $limit = $request->limit ?? 20;
+        $offset = $request->offset ?? 0;
+
         $query = StocksSalesOrderItem::select(
             'stocks_sales_orders.sales_order_no',
             'stocks_sales_orders.so_date',
@@ -399,13 +402,13 @@ class StockController extends Controller
             'stocks_sales_order_items.price',
             'stocks_sales_order_items.sub_total',
             'stocks_sales_order_items.sub_total_tax',
-            'stocks_sales_order_items.status' // ✅ NEW
+            'stocks_sales_order_items.status'
         )
         ->join('stocks_sales_orders', 'stocks_sales_orders.id', '=', 'stocks_sales_order_items.sales_order_id')
         ->join('stocks_clients', 'stocks_clients.id', '=', 'stocks_sales_orders.client_id')
         ->join('stocks_products', 'stocks_products.uid', '=', 'stocks_sales_order_items.uid');
 
-        // 🔥 TOKEN SEARCH
+        // 🔍 TOKEN SEARCH
         if ($search) {
 
             $tokens = preg_split('/[\s,]+/', trim($search));
@@ -446,13 +449,22 @@ class StockController extends Controller
             $query->whereYear('stocks_sales_orders.so_date', $request->year);
         }
 
+        // ✅ TOTAL COUNT (before pagination)
+        $total = (clone $query)->count();
+
+        // ✅ PAGINATION
         $data = $query
             ->orderByDesc('stocks_sales_orders.so_date')
+            ->offset($offset)
+            ->limit($limit)
             ->get();
 
         return response()->json([
             'status' => true,
             'message' => 'Product transactions fetched successfully',
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset,
             'data' => $data
         ]);
     }
