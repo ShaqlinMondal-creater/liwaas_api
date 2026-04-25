@@ -386,26 +386,6 @@ class StockController extends Controller
     public function productTransactions(Request $request)
     {
         $search = $request->search;
-        if ($request->status) {
-            $query->where('stocks_sales_order_items.status', $request->status);
-        }
-        if ($request->month) {
-
-            $monthMap = [
-                'january'=>1,'february'=>2,'march'=>3,'april'=>4,
-                'may'=>5,'june'=>6,'july'=>7,'august'=>8,
-                'september'=>9,'october'=>10,'november'=>11,'december'=>12
-            ];
-
-            $month = strtolower($request->month);
-
-            if (isset($monthMap[$month])) {
-                $query->whereMonth('stocks_sales_orders.so_date', $monthMap[$month]);
-            }
-        }
-        if ($request->year) {
-            $query->whereYear('stocks_sales_orders.so_date', $request->year);
-        }
 
         $query = StocksSalesOrderItem::select(
             'stocks_sales_orders.sales_order_no',
@@ -419,7 +399,7 @@ class StockController extends Controller
             'stocks_sales_order_items.price',
             'stocks_sales_order_items.sub_total',
             'stocks_sales_order_items.sub_total_tax',
-            'stocks_sales_order_items.status',
+            'stocks_sales_order_items.status' // ✅ NEW
         )
         ->join('stocks_sales_orders', 'stocks_sales_orders.id', '=', 'stocks_sales_order_items.sales_order_id')
         ->join('stocks_clients', 'stocks_clients.id', '=', 'stocks_sales_orders.client_id')
@@ -438,6 +418,32 @@ class StockController extends Controller
                     ->orWhere('stocks_products.uid', 'LIKE', "%$token%");
                 });
             }
+        }
+
+        // ✅ STATUS FILTER
+        if ($request->status) {
+            $query->where('stocks_sales_order_items.status', $request->status);
+        }
+
+        // ✅ MONTH FILTER
+        if ($request->month) {
+
+            $monthMap = [
+                'january'=>1,'february'=>2,'march'=>3,'april'=>4,
+                'may'=>5,'june'=>6,'july'=>7,'august'=>8,
+                'september'=>9,'october'=>10,'november'=>11,'december'=>12
+            ];
+
+            $month = strtolower($request->month);
+
+            if (isset($monthMap[$month])) {
+                $query->whereMonth('stocks_sales_orders.so_date', $monthMap[$month]);
+            }
+        }
+
+        // ✅ YEAR FILTER (recommended)
+        if ($request->year) {
+            $query->whereYear('stocks_sales_orders.so_date', $request->year);
         }
 
         $data = $query
