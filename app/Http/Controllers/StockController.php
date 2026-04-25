@@ -382,7 +382,6 @@ class StockController extends Controller
             "data" => $result
         ]);
     }
-
     public function productTransactions(Request $request)
     {
         $search = $request->search;
@@ -513,7 +512,6 @@ class StockController extends Controller
         ]);
     }
     
-
     public function addProductStock(Request $request)
     {
 
@@ -810,125 +808,12 @@ class StockController extends Controller
             ]);
         }
     }
-
-    // public function createReturnProduct(Request $request)
-    // {
-    //     $request->validate([
-    //         'sales_order_id' => 'required|exists:stocks_sales_orders,id',
-    //         'items' => 'required|array|min:1',
-    //         'items.*.sales_order_item_id' => 'required|exists:stocks_sales_order_items,id',
-    //         'items.*.qty' => 'required|integer|min:1'
-    //     ]);
-
-    //     DB::beginTransaction();
-
-    //     try {
-
-    //         foreach ($request->items as $item) {
-
-    //             // ✅ Ensure item belongs to this order (IMPORTANT FIX)
-    //             $orderItem = StocksSalesOrderItem::where('id', $item['sales_order_item_id'])
-    //                 ->where('sales_order_id', $request->sales_order_id)
-    //                 ->firstOrFail();
-
-    //             $returnQty = $item['qty'];
-
-    //             // ✅ Prevent over-return (important)
-    //             $alreadyReturned = StocksReturnItem::where('sales_order_item_id', $orderItem->id)
-    //                 ->sum('qty');
-
-    //             $availableQty = $orderItem->qty - $alreadyReturned;
-
-    //             if ($returnQty > $availableQty) {
-    //                 throw new \Exception('Return qty exceeds available qty');
-    //             }
-
-    //             // 🔥 calculate amounts
-    //             $sub_total = $orderItem->price * $returnQty;
-    //             $tax_amount = round(($orderItem->price * $orderItem->tax) / 100, 2);
-    //             $sub_total_tax = round($tax_amount * $returnQty, 2);
-
-    //             // ===============================
-    //             // ✅ FULL RETURN
-    //             // ===============================
-    //             if ($returnQty == $orderItem->qty) {
-
-    //                 $orderItem->update([
-    //                     'status' => 'returned'
-    //                 ]);
-
-    //                 StocksReturnItem::create([
-    //                     'sales_order_id' => $request->sales_order_id,
-    //                     'sales_order_item_id' => $orderItem->id,
-    //                     'uid' => $orderItem->uid,
-    //                     'qty' => $returnQty,
-    //                     'price' => $orderItem->price,
-    //                     'tax' => $orderItem->tax,
-    //                     'sub_total' => $sub_total,
-    //                     'sub_total_tax' => $sub_total_tax,
-    //                     'return_date' => now(),
-    //                     'status' => 'returned'
-    //                 ]);
-
-    //             } else {
-
-    //                 $remainingQty = $orderItem->qty - $returnQty;
-    //                 // 🔹 Update original item
-    //                 $orderItem->update([
-    //                     'qty' => $remainingQty,
-    //                     'sub_total' => $orderItem->price * $remainingQty,
-    //                     'sub_total_tax' => round(($orderItem->price * $orderItem->tax / 100) * $remainingQty, 2),
-    //                     'status' => 'split'
-    //                 ]);
-
-    //                 // 🔹 Create returned row
-    //                 $returnedItem = StocksSalesOrderItem::create([
-    //                     'sales_order_id' => $orderItem->sales_order_id,
-    //                     'uid' => $orderItem->uid,
-    //                     'qty' => $returnQty,
-    //                     'price' => $orderItem->price,
-    //                     'tax' => $orderItem->tax,
-    //                     'sub_total' => $orderItem->price * $returnQty,
-    //                     'sub_total_tax' => round(($orderItem->price * $orderItem->tax / 100) * $returnQty, 2),
-    //                     'status' => 'returned'
-    //                 ]);
-
-    //                 // 🔹 Insert return record (linked to NEW row)
-    //                 StocksReturnItem::create([
-    //                     'sales_order_id' => $request->sales_order_id,
-    //                     'sales_order_item_id' => $returnedItem->id, // ✅ important
-    //                     'uid' => $orderItem->uid,
-    //                     'qty' => $returnQty,
-    //                     'price' => $orderItem->price,
-    //                     'tax' => $orderItem->tax,
-    //                     'sub_total' => $sub_total,
-    //                     'sub_total_tax' => $sub_total_tax,
-    //                     'return_date' => now(),
-    //                     'status' => 'returned'
-    //                 ]);
-    //             }
-    //         }
-
-    //         DB::commit();
-
-    //         return response()->json([
-    //             'status' => true,
-    //             'message' => 'Return processed successfully'
-    //         ]);
-
-    //     } catch (\Exception $e) {
-
-    //         DB::rollback();
-
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => $e->getMessage()
-    //         ]);
-    //     }
-    // }
-    public function getReturnItems()
+    public function getReturnItems(Request $request)
     {
-        $data = StocksReturnItem::select(
+        $limit = $request->limit ?? 20;
+        $offset = $request->offset ?? 0;
+
+        $query = StocksReturnItem::select(
             'stocks_return_items.*',
             'stocks_sales_orders.sales_order_no',
             'stocks_sales_orders.so_date',
@@ -939,15 +824,84 @@ class StockController extends Controller
         )
         ->join('stocks_sales_orders','stocks_sales_orders.id','=','stocks_return_items.sales_order_id')
         ->join('stocks_clients','stocks_clients.id','=','stocks_sales_orders.client_id')
-        ->join('stocks_products','stocks_products.uid','=','stocks_return_items.uid')
-        ->orderByDesc('stocks_return_items.return_date')
-        ->get();
+        ->join('stocks_products','stocks_products.uid','=','stocks_return_items.uid');
+
+        // 🔍 SEARCH (product name)
+        if ($request->search) {
+            $query->where('stocks_products.name', 'LIKE', '%' . $request->search . '%');
+        }
+
+        // ✅ CLIENT FILTER
+        if ($request->client_name) {
+            $query->where('stocks_clients.name', 'LIKE', '%' . $request->client_name . '%');
+        }
+
+        // ✅ SALES ORDER NO FILTER
+        if ($request->sales_order_no) {
+            $query->where('stocks_sales_orders.sales_order_no', 'LIKE', '%' . $request->sales_order_no . '%');
+        }
+
+        // ✅ MONTH FILTER (return_date)
+        if ($request->month) {
+
+            $monthMap = [
+                'january'=>1,'february'=>2,'march'=>3,'april'=>4,
+                'may'=>5,'june'=>6,'july'=>7,'august'=>8,
+                'september'=>9,'october'=>10,'november'=>11,'december'=>12
+            ];
+
+            $month = strtolower($request->month);
+
+            if (isset($monthMap[$month])) {
+                $query->whereMonth('stocks_return_items.return_date', $monthMap[$month]);
+            }
+        }
+
+        // ✅ RETURN DATE FILTER
+        if ($request->return_date) {
+            $query->whereDate('stocks_return_items.return_date', $request->return_date);
+        }
+
+        // ✅ TOTAL COUNT
+        $total = (clone $query)->count();
+
+        // ✅ DATA WITH PAGINATION
+        $data = $query
+            ->orderByDesc('stocks_return_items.return_date')
+            ->offset($offset)
+            ->limit($limit)
+            ->get();
 
         return response()->json([
             'status' => true,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset,
             'data' => $data
         ]);
     }
+    // public function getReturnItems()
+    // {
+    //     $data = StocksReturnItem::select(
+    //         'stocks_return_items.*',
+    //         'stocks_sales_orders.sales_order_no',
+    //         'stocks_sales_orders.so_date',
+    //         'stocks_clients.name as client_name',
+    //         'stocks_products.name as product_name',
+    //         'stocks_products.size',
+    //         'stocks_products.color'
+    //     )
+    //     ->join('stocks_sales_orders','stocks_sales_orders.id','=','stocks_return_items.sales_order_id')
+    //     ->join('stocks_clients','stocks_clients.id','=','stocks_sales_orders.client_id')
+    //     ->join('stocks_products','stocks_products.uid','=','stocks_return_items.uid')
+    //     ->orderByDesc('stocks_return_items.return_date')
+    //     ->get();
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'data' => $data
+    //     ]);
+    // }
     public function migrateReturnStock(Request $request)
     {
         $request->validate([
