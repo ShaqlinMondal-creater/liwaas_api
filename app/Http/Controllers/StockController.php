@@ -468,49 +468,109 @@ class StockController extends Controller
         ]);
     }
     public function stockDetails()
-    {
-        // 🔥 get total sold per product (uid)
-        $soldData = StocksSalesOrderItem::select(
-            'uid',
-            DB::raw('SUM(qty) as total_sold')
-        )
-        ->groupBy('uid')
-        ->pluck('total_sold', 'uid');
+{
+    // ✅ SOLD (excluding returned)
+    $soldData = StocksSalesOrderItem::select(
+        'uid',
+        DB::raw('SUM(qty) as total_sold')
+    )
+    ->where('status', '!=', 'returned')
+    ->groupBy('uid')
+    ->pluck('total_sold', 'uid');
 
-        $products = StocksProduct::all();
+    // ✅ RETURNED
+    $returnData = StocksReturnItem::select(
+        'uid',
+        DB::raw('SUM(qty) as total_returned')
+    )
+    ->groupBy('uid')
+    ->pluck('total_returned', 'uid');
 
-        $grouped = [];
+    $products = StocksProduct::all();
 
-        foreach ($products as $product) {
+    $grouped = [];
 
-            $sold = $soldData[$product->uid] ?? 0;
+    foreach ($products as $product) {
 
-            $opening_stock = $product->stock + $sold;
+        $sold = $soldData[$product->uid] ?? 0;
+        $returned = $returnData[$product->uid] ?? 0;
 
-            $key = $product->name . '_' . $product->color;
+        // ✅ NET SOLD
+        $net_sold = $sold; // already filtered
 
-            if (!isset($grouped[$key])) {
-                $grouped[$key] = [
-                    'product_name' => $product->name,
-                    'color' => $product->color,
-                    'variants' => []
-                ];
-            }
+        // ✅ OPENING STOCK
+        $opening_stock = $product->stock + $net_sold;
 
-            $grouped[$key]['variants'][] = [
-                'uid' => $product->uid,
-                'size' => $product->size,
-                'opening_stock' => $opening_stock,
-                'available_stock' => $product->stock
+        $key = $product->name . '_' . $product->color;
+
+        if (!isset($grouped[$key])) {
+            $grouped[$key] = [
+                'product_name' => $product->name,
+                'color' => $product->color,
+                'variants' => []
             ];
         }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Stock details fetched successfully',
-            'data' => array_values($grouped)
-        ]);
+        $grouped[$key]['variants'][] = [
+            'uid' => $product->uid,
+            'size' => $product->size,
+            'opening_stock' => $opening_stock,
+            'available_stock' => $product->stock,
+            'sold_qty' => $sold,
+            'returned_qty' => $returned
+        ];
     }
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Stock details fetched successfully',
+        'data' => array_values($grouped)
+    ]);
+}
+    // public function stockDetails()
+    // {
+    //     // 🔥 get total sold per product (uid)
+    //     $soldData = StocksSalesOrderItem::select(
+    //         'uid',
+    //         DB::raw('SUM(qty) as total_sold')
+    //     )
+    //     ->groupBy('uid')
+    //     ->pluck('total_sold', 'uid');
+
+    //     $products = StocksProduct::all();
+
+    //     $grouped = [];
+
+    //     foreach ($products as $product) {
+
+    //         $sold = $soldData[$product->uid] ?? 0;
+
+    //         $opening_stock = $product->stock + $sold;
+
+    //         $key = $product->name . '_' . $product->color;
+
+    //         if (!isset($grouped[$key])) {
+    //             $grouped[$key] = [
+    //                 'product_name' => $product->name,
+    //                 'color' => $product->color,
+    //                 'variants' => []
+    //             ];
+    //         }
+
+    //         $grouped[$key]['variants'][] = [
+    //             'uid' => $product->uid,
+    //             'size' => $product->size,
+    //             'opening_stock' => $opening_stock,
+    //             'available_stock' => $product->stock
+    //         ];
+    //     }
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Stock details fetched successfully',
+    //         'data' => array_values($grouped)
+    //     ]);
+    // }
     
     public function addProductStock(Request $request)
     {
