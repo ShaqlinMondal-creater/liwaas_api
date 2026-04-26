@@ -2217,30 +2217,32 @@ class StockController extends Controller
         $year = $request->year ?? date('Y');
 
         // ===============================
-        // TOTAL PROFIT
+        // TOTAL CALCULATION
         // ===============================
 
-        $total_sell_value = StocksSalesOrderItem::where(function($q){
+        $baseQuery = StocksSalesOrderItem::where(function($q){
             $q->whereNull('status')
             ->orWhere('status','!=','returned');
-        })
-        ->sum('sub_total');
+        });
 
-        $total_stock_value = StocksSalesOrderItem::where(function($q){
-            $q->whereNull('status')
-            ->orWhere('status','!=','returned');
-        })
-        ->select(DB::raw('SUM(qty * price * 0.52) as total'))
-        ->value('total') ?? 0;
+        // total sell value
+        $total_sell_value = (clone $baseQuery)->sum('sub_total');
 
+        // total stock value (cost)
+        $total_stock_value = (clone $baseQuery)
+            ->select(DB::raw('SUM(qty * price * 0.52) as total'))
+            ->value('total') ?? 0;
+
+        // ✅ CORRECT PROFIT
         $total_profit = $total_sell_value - $total_stock_value;
 
+        // margin %
         $profit_margin = $total_sell_value > 0
             ? round(($total_profit / $total_sell_value) * 100, 2)
             : 0;
 
         // ===============================
-        // MONTH WISE PROFIT
+        // MONTH WISE (12 MONTHS)
         // ===============================
 
         $monthNames = [
@@ -2253,7 +2255,7 @@ class StockController extends Controller
 
         foreach($monthNames as $m => $name){
 
-            $sell = StocksSalesOrderItem::join(
+            $query = StocksSalesOrderItem::join(
                 'stocks_sales_orders',
                 'stocks_sales_orders.id',
                 '=',
@@ -2264,26 +2266,20 @@ class StockController extends Controller
             ->where(function($q){
                 $q->whereNull('stocks_sales_order_items.status')
                 ->orWhere('stocks_sales_order_items.status','!=','returned');
-            })
-            ->sum('stocks_sales_order_items.sub_total');
+            });
 
-            $stock = StocksSalesOrderItem::join(
-                'stocks_sales_orders',
-                'stocks_sales_orders.id',
-                '=',
-                'stocks_sales_order_items.sales_order_id'
-            )
-            ->whereYear('stocks_sales_orders.so_date',$year)
-            ->whereMonth('stocks_sales_orders.so_date',$m)
-            ->where(function($q){
-                $q->whereNull('stocks_sales_order_items.status')
-                ->orWhere('stocks_sales_order_items.status','!=','returned');
-            })
-            ->select(DB::raw('SUM(qty * price * 0.52) as total'))
-            ->value('total') ?? 0;
+            // sell value
+            $sell = (clone $query)->sum('stocks_sales_order_items.sub_total');
 
+            // stock value
+            $stock = (clone $query)
+                ->select(DB::raw('SUM(qty * price * 0.52) as total'))
+                ->value('total') ?? 0;
+
+            // profit
             $profit = $sell - $stock;
 
+            // margin
             $margin = $sell > 0
                 ? round(($profit / $sell) * 100, 2)
                 : 0;
@@ -2318,5 +2314,4 @@ class StockController extends Controller
             ]
         ]);
     }
-
 }
