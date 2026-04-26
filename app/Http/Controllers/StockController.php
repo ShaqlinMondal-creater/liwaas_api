@@ -2213,113 +2213,47 @@ class StockController extends Controller
     }
 
     public function profitAnalytics(Request $request)
-    {
-        $year = $request->year ?? date('Y');
+{
+    $year = $request->year ?? date('Y');
 
-        // ===============================
-        // BASE QUERY (JOIN PRODUCT)
-        // ===============================
-        $baseQuery = StocksSalesOrderItem::join(
-            'stocks_products',
-            'stocks_products.uid',
-            '=',
-            'stocks_sales_order_items.uid'
-        )
-        ->where(function($q){
-            $q->whereNull('stocks_sales_order_items.status')
-            ->orWhere('stocks_sales_order_items.status','!=','returned');
-        });
+    // ===============================
+    // TOTAL (FIXED QUERY)
+    // ===============================
+    $total = StocksSalesOrderItem::join(
+        'stocks_products',
+        'stocks_products.uid',
+        '=',
+        'stocks_sales_order_items.uid'
+    )
+    ->where(function($q){
+        $q->whereNull('stocks_sales_order_items.status')
+          ->orWhere('stocks_sales_order_items.status','!=','returned');
+    })
+    ->selectRaw('
+        SUM(stocks_sales_order_items.qty * stocks_sales_order_items.price) as sell,
+        SUM(stocks_sales_order_items.qty * stocks_products.sale_price * 0.52) as cost
+    ')
+    ->first();
 
-        // ===============================
-        // TOTAL CALCULATION
-        // ===============================
+    $total_sell_value = $total->sell ?? 0;
+    $total_stock_value = $total->cost ?? 0;
 
-        // sell value (actual)
-        $total_sell_value = (clone $baseQuery)
-            ->sum(DB::raw('stocks_sales_order_items.qty * stocks_sales_order_items.price'));
+    $total_profit = $total_sell_value - $total_stock_value;
 
-        // stock value (cost from product table)
-        $total_stock_value = (clone $baseQuery)
-            ->sum(DB::raw('stocks_sales_order_items.qty * stocks_products.sale_price * 0.52'));
+    $profit_margin = $total_sell_value > 0
+        ? round(($total_profit / $total_sell_value) * 100, 2)
+        : 0;
 
-        // profit
-        $total_profit = $total_sell_value - $total_stock_value;
-
-        $profit_margin = $total_sell_value > 0
-            ? round(($total_profit / $total_sell_value) * 100, 2)
-            : 0;
-
-        // ===============================
-        // MONTH WISE
-        // ===============================
-        $monthNames = [
-            1=>"january",2=>"february",3=>"march",4=>"april",
-            5=>"may",6=>"june",7=>"july",8=>"august",
-            9=>"september",10=>"october",11=>"november",12=>"december"
-        ];
-
-        $monthWise = [];
-
-        foreach($monthNames as $m => $name){
-
-            $query = StocksSalesOrderItem::join(
-                'stocks_sales_orders',
-                'stocks_sales_orders.id',
-                '=',
-                'stocks_sales_order_items.sales_order_id'
-            )
-            ->join(
-                'stocks_products',
-                'stocks_products.uid',
-                '=',
-                'stocks_sales_order_items.uid'
-            )
-            ->whereYear('stocks_sales_orders.so_date',$year)
-            ->whereMonth('stocks_sales_orders.so_date',$m)
-            ->where(function($q){
-                $q->whereNull('stocks_sales_order_items.status')
-                ->orWhere('stocks_sales_order_items.status','!=','returned');
-            });
-
-            $sell = (clone $query)
-                ->sum(DB::raw('stocks_sales_order_items.qty * stocks_sales_order_items.price'));
-
-            $stock = (clone $query)
-                ->sum(DB::raw('stocks_sales_order_items.qty * stocks_products.sale_price * 0.52'));
-
-            $profit = $sell - $stock;
-
-            $margin = $sell > 0
-                ? round(($profit / $sell) * 100, 2)
-                : 0;
-
-            $monthWise[] = [
-                $name => [
-                    "total_sales_stock_value" => $stock,
-                    "sell_value" => $sell,
-                    "profit" => $profit,
-                    "profit_margin" => $margin
-                ]
-            ];
-        }
-
-        // ===============================
-        // RESPONSE
-        // ===============================
-        return response()->json([
-            "status" => true,
-            "message" => "Profit analytics fetched successfully",
-            "data" => [
-
-                "total_profit_data" => [
-                    "total_sell_value" => $total_sell_value,
-                    "total_stock_value" => $total_stock_value,
-                    "total_profit" => $total_profit,
-                    "profit_margin" => $profit_margin
-                ],
-
-                "month_wise_profit" => $monthWise
+    return response()->json([
+        "status" => true,
+        "data" => [
+            "total_profit_data" => [
+                "total_sell_value" => $total_sell_value,
+                "total_stock_value" => $total_stock_value,
+                "total_profit" => $total_profit,
+                "profit_margin" => $profit_margin
             ]
-        ]);
-    }
+        ]
+    ]);
+}
 }
