@@ -262,224 +262,6 @@ class StockController extends Controller
             ]
         ]);
     }
-    // public function analyticsDashboard(Request $request)
-    // {
-    //     $year = $request->year ?? date('Y');
-
-    //     // ===============================
-    //     // TARGETS
-    //     // ===============================
-    //     $targets = [
-    //         3 => 100, 4 => 150, 5 => 250, 6 => 300,
-    //         7 => 400, 8 => 350, 9 => 300, 10 => 200,
-    //         11 => 200, 12 => 150
-    //     ];
-
-    //     // ===============================
-    //     // TOTAL DATA
-    //     // ===============================
-    //     $total_sales = StocksSalesOrder::sum('grand_total');
-    //     $total_due = StocksSalesOrder::sum('remain_due');
-
-    //     $total_paid = StocksSalesOrder::select(
-    //         DB::raw('SUM(grand_total - remain_due) as paid')
-    //     )->value('paid') ?? 0;
-
-    //     $total_orders = StocksSalesOrder::count();
-
-    //     // ✅ ITEMS SOLD (exclude returned)
-    //     $total_items_sold = StocksSalesOrderItem::where(function($q){
-    //         $q->whereNull('status')
-    //         ->orWhere('status','!=','returned');
-    //     })->sum('qty');
-
-    //     $total_tax = StocksSalesOrder::sum('total_tax');
-
-    //     // ===============================
-    //     // STOCK DATA
-    //     // ===============================
-    //     $total_products = StocksProduct::count();
-    //     $low_stock_products = StocksProduct::where('stock','<',5)->count();
-
-    //     // ✅ STOCK VALUE (ALL PRODUCTS)
-    //     $stock_value = StocksProduct::select(
-    //         DB::raw('SUM(sale_price * stock * 0.52) as total')
-    //     )->value('total') ?? 0;
-
-    //     // ✅ SALES STOCK VALUE (ONLY SOLD ITEMS)
-    //     $total_sales_stock_value = StocksSalesOrderItem::where(function($q){
-    //         $q->whereNull('status')
-    //         ->orWhere('status','!=','returned');
-    //     })
-    //     ->select(DB::raw('SUM(qty * price * 0.52) as total'))
-    //     ->value('total') ?? 0;
-
-    //     // ===============================
-    //     // CURRENT MONTH
-    //     // ===============================
-    //     $month = date('n');
-
-    //     $monthly_orders = StocksSalesOrder::whereYear('so_date',$year)
-    //         ->whereMonth('so_date',$month)
-    //         ->count();
-
-    //     $monthly_items_sold = StocksSalesOrderItem::join(
-    //         'stocks_sales_orders',
-    //         'stocks_sales_orders.id',
-    //         '=',
-    //         'stocks_sales_order_items.sales_order_id'
-    //     )
-    //     ->whereYear('stocks_sales_orders.so_date',$year)
-    //     ->whereMonth('stocks_sales_orders.so_date',$month)
-    //     ->where(function($q){
-    //         $q->whereNull('stocks_sales_order_items.status')
-    //         ->orWhere('stocks_sales_order_items.status','!=','returned');
-    //     })
-    //     ->sum('qty');
-
-    //     $monthly_due = StocksSalesOrder::whereYear('so_date',$year)
-    //         ->whereMonth('so_date',$month)
-    //         ->sum('remain_due');
-
-    //     $monthly_paid = StocksSalesOrder::whereYear('so_date',$year)
-    //         ->whereMonth('so_date',$month)
-    //         ->select(DB::raw('SUM(grand_total - remain_due) as paid'))
-    //         ->value('paid') ?? 0;
-
-    //     $target = $targets[$month] ?? 0;
-    //     $remaining = max($target - $monthly_orders,0);
-
-    //     $progress = $target > 0
-    //         ? round(($monthly_orders/$target)*100,2)
-    //         : 0;
-
-    //     // ===============================
-    //     // MONTH WISE DATA
-    //     // ===============================
-    //     $monthNames = [
-    //         3=>"march",4=>"april",5=>"may",6=>"june",7=>"july",
-    //         8=>"august",9=>"september",10=>"october",11=>"november",12=>"december"
-    //     ];
-
-    //     $monthWise = [];
-
-    //     foreach($monthNames as $m=>$name){
-
-    //         $orders = StocksSalesOrder::whereYear('so_date',$year)
-    //             ->whereMonth('so_date',$m)
-    //             ->count();
-
-    //         $items_sold = StocksSalesOrderItem::join(
-    //             'stocks_sales_orders',
-    //             'stocks_sales_orders.id',
-    //             '=',
-    //             'stocks_sales_order_items.sales_order_id'
-    //         )
-    //         ->whereYear('stocks_sales_orders.so_date',$year)
-    //         ->whereMonth('stocks_sales_orders.so_date',$m)
-    //         ->where(function($q){
-    //             $q->whereNull('stocks_sales_order_items.status')
-    //             ->orWhere('stocks_sales_order_items.status','!=','returned');
-    //         })
-    //         ->sum('qty');
-
-    //         $revenue = StocksSalesOrder::whereYear('so_date',$year)
-    //             ->whereMonth('so_date',$m)
-    //             ->sum('grand_total');
-
-    //         $due = StocksSalesOrder::whereYear('so_date',$year)
-    //             ->whereMonth('so_date',$m)
-    //             ->sum('remain_due');
-
-    //         $paid = StocksSalesOrder::whereYear('so_date',$year)
-    //             ->whereMonth('so_date',$m)
-    //             ->select(DB::raw('SUM(grand_total - remain_due) as paid'))
-    //             ->value('paid') ?? 0;
-
-    //         $monthWise[] = [
-    //             $name => [
-    //                 "target" => $targets[$m] ?? 0,
-    //                 "orders" => $orders,
-    //                 "items_sold" => $items_sold,
-    //                 "revenue" => $revenue,
-    //                 "paid" => $paid,
-    //                 "due" => $due
-    //             ]
-    //         ];
-    //     }
-
-    //     // ===============================
-    //     // TOP PRODUCTS
-    //     // ===============================
-    //     $topProducts = StocksSalesOrderItem::select(
-    //         'stocks_products.name as product_name',
-    //         DB::raw('SUM(qty) as units_sold'),
-    //         DB::raw('SUM(sub_total) as revenue')
-    //     )
-    //     ->join('stocks_products','stocks_products.uid','=','stocks_sales_order_items.uid')
-    //     ->where(function($q){
-    //         $q->whereNull('stocks_sales_order_items.status')
-    //         ->orWhere('stocks_sales_order_items.status','!=','returned');
-    //     })
-    //     ->groupBy('stocks_products.name')
-    //     ->orderByDesc('units_sold')
-    //     ->limit(3)
-    //     ->get();
-
-    //     // ===============================
-    //     // CLIENT SALES
-    //     // ===============================
-    //     $clientSales = StocksSalesOrder::select(
-    //         'stocks_clients.name as client_name',
-    //         DB::raw('SUM(grand_total) as total_sales'),
-    //         DB::raw('COUNT(*) as orders')
-    //     )
-    //     ->join('stocks_clients','stocks_clients.id','=','stocks_sales_orders.client_id')
-    //     ->groupBy('stocks_clients.name')
-    //     ->orderByDesc('total_sales')
-    //     ->limit(3)
-    //     ->get();
-
-    //     return response()->json([
-    //         "status"=>true,
-    //         "message"=>"Analytics fetched successfully",
-    //         "data"=>[
-
-    //             // ✅ STOCK DATA
-    //             "stock_data"=>[
-    //                 "stock_value"=>$stock_value,
-    //                 "total_products"=>$total_products,
-    //                 "low_stock_products"=>$low_stock_products
-    //             ],
-
-    //             // ✅ TOTAL DATA
-    //             "total_data"=>[
-    //                 "total_sales"=>$total_sales,
-    //                 "total_paid"=>$total_paid,
-    //                 "total_due"=>$total_due,
-    //                 "total_orders"=>$total_orders,
-    //                 "total_items_sold"=>$total_items_sold,
-    //                 "total_tax"=>$total_tax,
-    //                 "total_sales_stock_value"=>$total_sales_stock_value
-    //             ],
-
-    //             "this_month_data"=>[
-    //                 "monthly_target"=>$target,
-    //                 "monthly_paid"=>$monthly_paid,
-    //                 "monthly_due"=>$monthly_due,
-    //                 "monthly_orders"=>$monthly_orders,
-    //                 "target_remaining"=>$remaining,
-    //                 "target_progress_percent"=>$progress
-    //             ],
-
-    //             "month_wise_data"=>$monthWise,
-
-    //             "top_selling_products"=>$topProducts,
-
-    //             "sales_by_clients"=>$clientSales
-    //         ]
-    //     ]);
-    // }
     public function financeAnalytics(Request $request)
     {
         $year = $request->year ?? date('Y');
@@ -1530,82 +1312,6 @@ class StockController extends Controller
             })
         ]);
     }
-    // public function getSalesOrders(Request $request)
-    // {
-
-    //     $limit = $request->limit ?? 10;
-    //     $offset = $request->offset ?? 0;
-
-    //     $query = StocksSalesOrder::with([
-    //         'client',
-    //         'upload' => function($q){
-    //             $q->where('type','order');
-    //         }
-    //     ]);
-
-    //     // search
-    //     if ($request->filled('search')) {
-
-    //         $search = $request->search;
-
-    //         $query->where(function ($q) use ($search) {
-
-    //             $q->where('sales_order_no','like','%'.$search.'%')
-    //             ->orWhereHas('client', function($c) use ($search){
-    //                 $c->where('name','like','%'.$search.'%')
-    //                     ->orWhere('mobile','like','%'.$search.'%');
-    //             });
-
-    //         });
-
-    //     }
-
-    //     // total count
-    //     $total = $query->count();
-
-    //     // fetch orders
-    //     $orders = $query
-    //         ->orderBy('so_date','desc')
-    //         ->offset($offset)
-    //         ->limit($limit)
-    //         ->get();
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Sales orders fetched successfully',
-    //         'total' => $total,
-    //         'limit' => (int)$limit,
-    //         'offset' => (int)$offset,
-    //         'data' => $orders->map(function($order){
-
-    //             $returnAmount = StocksReturnItem::where('sales_order_id', $order->id)
-    //                 ->sum(DB::raw('sub_total + sub_total_tax'));
-
-    //             return [
-    //                 'id' => $order->id,
-    //                 'sales_order_no' => $order->sales_order_no,
-    //                 'date' => $order->so_date 
-    //                     ? \Carbon\Carbon::parse($order->so_date)->format('d-m-Y')
-    //                     : null,
-    //                 'client' => [
-    //                     'id' => $order->client->id ?? null,
-    //                     'name' => $order->client->name ?? null,
-    //                     'owner_name' => $order->client->owner_name ?? null,
-    //                     'mobile' => $order->client->mobile ?? null,
-    //                     'address' => $order->client->address ?? null,
-    //                     'email' => $order->client->email ?? null
-    //                 ],
-    //                 'grand_total' => $order->grand_total,
-    //                 'status' => $order->status,
-    //                 'payment_status' => $order->payment_status,
-    //                 'return_amount' => $returnAmount ?? 0,
-    //                 'remain_due' => $order->remain_due,
-    //                 'total_tax' => $order->total_tax,
-    //                 'pdf' => $order->upload ? $order->upload->file_url : null
-    //             ];
-    //         })
-    //     ]);
-    // }
     public function getSalesOrderDetail(Request $request)
     {
 
@@ -2212,28 +1918,38 @@ class StockController extends Controller
         ]);
     }
 
-    public function profitAnalytics(Request $request)
+public function profitAnalytics(Request $request)
 {
     $year = $request->year ?? date('Y');
 
     // ===============================
-    // TOTAL (FIXED QUERY)
+    // BASE QUERY (FIXED)
     // ===============================
-    $total = StocksSalesOrderItem::join(
+    $baseQuery = StocksSalesOrderItem::join(
+        'stocks_sales_orders',
+        'stocks_sales_orders.id',
+        '=',
+        'stocks_sales_order_items.sales_order_id'
+    )
+    ->join(
         'stocks_products',
         'stocks_products.uid',
         '=',
         'stocks_sales_order_items.uid'
     )
+    ->whereYear('stocks_sales_orders.so_date', $year)
     ->where(function($q){
         $q->whereNull('stocks_sales_order_items.status')
           ->orWhere('stocks_sales_order_items.status','!=','returned');
-    })
-    ->selectRaw('
+    });
+
+    // ===============================
+    // TOTAL
+    // ===============================
+    $total = (clone $baseQuery)->selectRaw('
         SUM(stocks_sales_order_items.qty * stocks_sales_order_items.price) as sell,
         SUM(stocks_sales_order_items.qty * stocks_products.sale_price * 0.52) as cost
-    ')
-    ->first();
+    ')->first();
 
     $total_sell_value = $total->sell ?? 0;
     $total_stock_value = $total->cost ?? 0;
@@ -2244,15 +1960,73 @@ class StockController extends Controller
         ? round(($total_profit / $total_sell_value) * 100, 2)
         : 0;
 
+    // ===============================
+    // MONTH WISE
+    // ===============================
+    $months = [
+        1=>"january",2=>"february",3=>"march",4=>"april",
+        5=>"may",6=>"june",7=>"july",8=>"august",
+        9=>"september",10=>"october",11=>"november",12=>"december"
+    ];
+
+    $monthWise = [];
+
+    foreach($months as $m => $name){
+
+        $query = StocksSalesOrderItem::join(
+            'stocks_sales_orders',
+            'stocks_sales_orders.id',
+            '=',
+            'stocks_sales_order_items.sales_order_id'
+        )
+        ->join(
+            'stocks_products',
+            'stocks_products.uid',
+            '=',
+            'stocks_sales_order_items.uid'
+        )
+        ->whereYear('stocks_sales_orders.so_date', $year)
+        ->whereMonth('stocks_sales_orders.so_date', $m)
+        ->where(function($q){
+            $q->whereNull('stocks_sales_order_items.status')
+              ->orWhere('stocks_sales_order_items.status','!=','returned');
+        });
+
+        $data = (clone $query)->selectRaw('
+            SUM(stocks_sales_order_items.qty * stocks_sales_order_items.price) as sell,
+            SUM(stocks_sales_order_items.qty * stocks_products.sale_price * 0.52) as cost
+        ')->first();
+
+        $sell = $data->sell ?? 0;
+        $stock = $data->cost ?? 0;
+
+        $profit = $sell - $stock;
+
+        $margin = $sell > 0
+            ? round(($profit / $sell) * 100, 2)
+            : 0;
+
+        $monthWise[] = [
+            $name => [
+                "total_sales_stock_value" => $stock,
+                "sell_value" => $sell,
+                "profit" => $profit,
+                "profit_margin" => $margin
+            ]
+        ];
+    }
+
     return response()->json([
         "status" => true,
+        "message" => "Profit analytics fetched successfully",
         "data" => [
             "total_profit_data" => [
                 "total_sell_value" => $total_sell_value,
                 "total_stock_value" => $total_stock_value,
                 "total_profit" => $total_profit,
                 "profit_margin" => $profit_margin
-            ]
+            ],
+            "month_wise_profit" => $monthWise
         ]
     ]);
 }
