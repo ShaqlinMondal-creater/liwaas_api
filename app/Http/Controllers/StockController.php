@@ -2212,4 +2212,111 @@ class StockController extends Controller
         ]);
     }
 
+    public function profitAnalytics(Request $request)
+    {
+        $year = $request->year ?? date('Y');
+
+        // ===============================
+        // TOTAL PROFIT
+        // ===============================
+
+        $total_sell_value = StocksSalesOrderItem::where(function($q){
+            $q->whereNull('status')
+            ->orWhere('status','!=','returned');
+        })
+        ->sum('sub_total');
+
+        $total_stock_value = StocksSalesOrderItem::where(function($q){
+            $q->whereNull('status')
+            ->orWhere('status','!=','returned');
+        })
+        ->select(DB::raw('SUM(qty * price * 0.52) as total'))
+        ->value('total') ?? 0;
+
+        $total_profit = $total_sell_value - $total_stock_value;
+
+        $profit_margin = $total_sell_value > 0
+            ? round(($total_profit / $total_sell_value) * 100, 2)
+            : 0;
+
+        // ===============================
+        // MONTH WISE PROFIT
+        // ===============================
+
+        $monthNames = [
+            1=>"january",2=>"february",3=>"march",4=>"april",
+            5=>"may",6=>"june",7=>"july",8=>"august",
+            9=>"september",10=>"october",11=>"november",12=>"december"
+        ];
+
+        $monthWise = [];
+
+        foreach($monthNames as $m => $name){
+
+            $sell = StocksSalesOrderItem::join(
+                'stocks_sales_orders',
+                'stocks_sales_orders.id',
+                '=',
+                'stocks_sales_order_items.sales_order_id'
+            )
+            ->whereYear('stocks_sales_orders.so_date',$year)
+            ->whereMonth('stocks_sales_orders.so_date',$m)
+            ->where(function($q){
+                $q->whereNull('stocks_sales_order_items.status')
+                ->orWhere('stocks_sales_order_items.status','!=','returned');
+            })
+            ->sum('stocks_sales_order_items.sub_total');
+
+            $stock = StocksSalesOrderItem::join(
+                'stocks_sales_orders',
+                'stocks_sales_orders.id',
+                '=',
+                'stocks_sales_order_items.sales_order_id'
+            )
+            ->whereYear('stocks_sales_orders.so_date',$year)
+            ->whereMonth('stocks_sales_orders.so_date',$m)
+            ->where(function($q){
+                $q->whereNull('stocks_sales_order_items.status')
+                ->orWhere('stocks_sales_order_items.status','!=','returned');
+            })
+            ->select(DB::raw('SUM(qty * price * 0.52) as total'))
+            ->value('total') ?? 0;
+
+            $profit = $sell - $stock;
+
+            $margin = $sell > 0
+                ? round(($profit / $sell) * 100, 2)
+                : 0;
+
+            $monthWise[] = [
+                $name => [
+                    "total_sales_stock_value" => $stock,
+                    "sell_value" => $sell,
+                    "profit" => $profit,
+                    "profit_margin" => $margin
+                ]
+            ];
+        }
+
+        // ===============================
+        // RESPONSE
+        // ===============================
+
+        return response()->json([
+            "status" => true,
+            "message" => "Profit analytics fetched successfully",
+            "data" => [
+
+                "total_profit_data" => [
+                    "total_sell_value" => $total_sell_value,
+                    "total_stock_value" => $total_stock_value,
+                    "total_profit" => $total_profit,
+                    "profit_margin" => $profit_margin
+                ],
+
+                "month_wise_profit" => $monthWise
+            ]
+        ]);
+    }
+
 }

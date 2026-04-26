@@ -113,6 +113,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 // Analytics Details
                 Route::post('/analytics', [StockController::class,'analyticsDashboard']);
                 Route::post('/finance', [StockController::class,'financeAnalytics']);
+                Route::post('/profit-margin', [StockController::class,'profitAnalytics']);
+
 
                 Route::post('/transactions', [StockController::class,'productTransactions']);
                 Route::post('/stock-details', [StockController::class,'stockDetails']);
