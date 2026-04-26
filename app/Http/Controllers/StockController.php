@@ -191,6 +191,38 @@ class StockController extends Controller
         }
 
         // ===============================
+        // TOP PRODUCTS
+        // ===============================
+        $topProducts = StocksSalesOrderItem::select(
+            'stocks_products.name as product_name',
+            DB::raw('SUM(qty) as units_sold'),
+            DB::raw('SUM(sub_total) as revenue')
+        )
+        ->join('stocks_products','stocks_products.uid','=','stocks_sales_order_items.uid')
+        ->where(function($q){
+            $q->whereNull('stocks_sales_order_items.status')
+            ->orWhere('stocks_sales_order_items.status','!=','returned');
+        })
+        ->groupBy('stocks_products.name')
+        ->orderByDesc('units_sold')
+        ->limit(3)
+        ->get();
+
+
+        // ===============================
+        // CLIENT SALES
+        // ===============================
+        $clientSales = StocksSalesOrder::select(
+            'stocks_clients.name as client_name',
+            DB::raw('SUM(grand_total) as total_sales'),
+            DB::raw('COUNT(*) as orders')
+        )
+        ->join('stocks_clients','stocks_clients.id','=','stocks_sales_orders.client_id')
+        ->groupBy('stocks_clients.name')
+        ->orderByDesc('total_sales')
+        ->limit(3)
+        ->get();
+        // ===============================
         // RESPONSE
         // ===============================
         return response()->json([
