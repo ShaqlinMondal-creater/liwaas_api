@@ -468,65 +468,55 @@ class StockController extends Controller
         ]);
     }
     public function stockDetails()
-{
-    // ✅ SOLD (excluding returned)
-    $soldData = StocksSalesOrderItem::select(
-        'uid',
-        DB::raw('SUM(qty) as total_sold')
-    )
-    ->where('status', '!=', 'returned')
-    ->groupBy('uid')
-    ->pluck('total_sold', 'uid');
+    {
+        // ✅ ONLY NON-RETURNED SOLD
+        $soldData = StocksSalesOrderItem::select(
+            'uid',
+            DB::raw('SUM(qty) as total_sold')
+        )
+        ->where(function($q){
+            $q->whereNull('status')
+            ->orWhere('status', '!=', 'returned');
+        })
+        ->groupBy('uid')
+        ->pluck('total_sold', 'uid');
 
-    // ✅ RETURNED
-    $returnData = StocksReturnItem::select(
-        'uid',
-        DB::raw('SUM(qty) as total_returned')
-    )
-    ->groupBy('uid')
-    ->pluck('total_returned', 'uid');
+        $products = StocksProduct::all();
 
-    $products = StocksProduct::all();
+        $grouped = [];
 
-    $grouped = [];
+        foreach ($products as $product) {
 
-    foreach ($products as $product) {
+            $sold = $soldData[$product->uid] ?? 0;
 
-        $sold = $soldData[$product->uid] ?? 0;
-        $returned = $returnData[$product->uid] ?? 0;
+            // ✅ FINAL FORMULA (YOUR REQUIREMENT)
+            $opening_stock = $product->stock + $sold;
 
-        // ✅ NET SOLD
-        $net_sold = $sold; // already filtered
+            $key = $product->name . '_' . $product->color;
 
-        // ✅ OPENING STOCK
-        $opening_stock = $product->stock + $net_sold;
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    'product_name' => $product->name,
+                    'color' => $product->color,
+                    'variants' => []
+                ];
+            }
 
-        $key = $product->name . '_' . $product->color;
-
-        if (!isset($grouped[$key])) {
-            $grouped[$key] = [
-                'product_name' => $product->name,
-                'color' => $product->color,
-                'variants' => []
+            $grouped[$key]['variants'][] = [
+                'uid' => $product->uid,
+                'size' => $product->size,
+                'opening_stock' => $opening_stock,
+                'available_stock' => $product->stock,
+                'sold_qty' => $sold
             ];
         }
 
-        $grouped[$key]['variants'][] = [
-            'uid' => $product->uid,
-            'size' => $product->size,
-            'opening_stock' => $opening_stock,
-            'available_stock' => $product->stock,
-            'sold_qty' => $sold,
-            'returned_qty' => $returned
-        ];
+        return response()->json([
+            'status' => true,
+            'message' => 'Stock details fetched successfully',
+            'data' => array_values($grouped)
+        ]);
     }
-
-    return response()->json([
-        'status' => true,
-        'message' => 'Stock details fetched successfully',
-        'data' => array_values($grouped)
-    ]);
-}
     // public function stockDetails()
     // {
     //     // 🔥 get total sold per product (uid)
