@@ -425,8 +425,7 @@ class StockController extends Controller
             'data' => $data
         ]);
     }
-    use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+
 
 public function profitAnalytics(Request $request)
 {
