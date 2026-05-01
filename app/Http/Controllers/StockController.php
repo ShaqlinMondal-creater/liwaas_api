@@ -680,13 +680,20 @@ public function profitAnalytics(Request $request)
         '=',
         'stocks_sales_order_items.uid'
     )
+    ->where(function($q){
+        $q->whereNull('stocks_sales_order_items.status')
+        ->orWhere('stocks_sales_order_items.status','!=','returned');
+    })
     ->select(DB::raw('SUM(stocks_products.sale_price * 0.52 * stocks_sales_order_items.qty) as total'))
     ->value('total') ?? 0;
 
     // ✅ TOTAL PROFIT (NEW LOGIC)
-    $total_profit = StocksSalesOrderItem::select(
-        DB::raw('SUM(price * 0.13 * qty) as total')
-    )->value('total') ?? 0;
+    $total_profit = StocksSalesOrderItem::where(function($q){
+        $q->whereNull('status')
+        ->orWhere('status','!=','returned');
+    })
+    ->select(DB::raw('SUM(price * 0.13 * qty) as total'))
+    ->value('total') ?? 0;
 
     // ✅ LIST PRICE (using sale_price)
     $total_list_price = StocksSalesOrderItem::join(
@@ -750,6 +757,10 @@ public function profitAnalytics(Request $request)
         '=',
         'stocks_sales_order_items.sales_order_id'
     )
+    ->where(function($q){
+        $q->whereNull('stocks_sales_order_items.status')
+        ->orWhere('stocks_sales_order_items.status','!=','returned');
+    })
     ->whereYear('stocks_sales_orders.so_date',$year)
     ->whereMonth('stocks_sales_orders.so_date',$month)
     ->select(DB::raw('SUM(price * 0.13 * qty) as total'))
@@ -798,6 +809,10 @@ public function profitAnalytics(Request $request)
             '=',
             'stocks_sales_order_items.sales_order_id'
         )
+        ->where(function($q){
+            $q->whereNull('stocks_sales_order_items.status')
+            ->orWhere('stocks_sales_order_items.status','!=','returned');
+        })
         ->whereYear('stocks_sales_orders.so_date',$year)
         ->whereMonth('stocks_sales_orders.so_date',$m)
         ->select(DB::raw('SUM(price * 0.13 * qty) as total'))
