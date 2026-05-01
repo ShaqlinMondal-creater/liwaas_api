@@ -475,7 +475,10 @@ public function profitAnalytics(Request $request)
     ->select(DB::raw('SUM(stocks_products.sale_price * stocks_sales_order_items.qty) as total'))
     ->value('total') ?? 0;
 
-    $total_profit = $total_sell_value - $total_stock_value;
+    $total_stock_value = (float) $total_stock_value;
+    $total_sell_value = (float) $total_sell_value;
+
+    $total_profit = round($total_sell_value - $total_stock_value, 2);
 
     $profit_margin = $total_stock_value > 0
         ? round(($total_profit / $total_stock_value) * 100, 2)
@@ -540,7 +543,7 @@ public function profitAnalytics(Request $request)
         ->whereMonth('so_date',$month)
         ->sum('grand_total');
 
-    $t_month_profit = $t_month_sell - $t_month_sales_stock_value;
+    $t_month_profit = round($t_month_sell - $t_month_sales_stock_value, 2);
 
     $t_month_profit_percent = $t_month_sales_stock_value > 0
         ? round(($t_month_profit / $t_month_sales_stock_value) * 100, 2)
@@ -602,7 +605,9 @@ public function profitAnalytics(Request $request)
         ->select(DB::raw('SUM(stocks_products.sale_price * stocks_sales_order_items.qty) as total'))
         ->value('total') ?? 0;
 
-        $profit = $sell_value - $stock_value;
+        $profit = round($sell_value - $stock_value, 2);
+
+        $stock_value = (float) $stock_value;
 
         $profit_margin = $stock_value > 0
             ? round(($profit / $stock_value) * 100, 2)
