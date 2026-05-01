@@ -425,6 +425,7 @@ class StockController extends Controller
             'data' => $data
         ]);
     }
+
 public function profitAnalytics(Request $request)
 {
     $year = $request->year ?? date('Y');
@@ -480,7 +481,7 @@ public function profitAnalytics(Request $request)
 
     $total_profit = round($total_sell_value - $total_stock_value, 2);
 
-    $profit_margin = $total_stock_value > 0
+    $total_profit_margin = $total_stock_value > 0
         ? round(($total_profit / $total_stock_value) * 100, 2)
         : 0;
 
@@ -638,7 +639,7 @@ public function profitAnalytics(Request $request)
                 "total_sell_value" => $total_sell_value,
                 "total_stock_value" => $total_stock_value,
                 "total_profit" => $total_profit,
-                "profit_margin" => $profit_margin,
+                "profit_margin" => $total_profit_margin,
                 "total_list_price" => $total_list_price,
                 "total_paid" => $total_paid,
                 "total_due" => $total_due,
@@ -661,7 +662,6 @@ public function profitAnalytics(Request $request)
         ]
     ]);
 }
-
 
     public function stockDetails()
     {
