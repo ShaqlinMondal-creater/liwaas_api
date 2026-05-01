@@ -527,7 +527,8 @@ public function profitAnalytics(Request $request)
     ->whereMonth('stocks_sales_orders.so_date',$month)
     ->select(DB::raw('SUM(stocks_products.sale_price * 0.52 * stocks_sales_order_items.qty) as total'))
     ->value('total') ?? 0;
-
+    $t_month_sales_stock_value = (float) $t_month_sales_stock_value;
+    
     $t_month_list_price = StocksSalesOrderItem::join(
         'stocks_sales_orders',
         'stocks_sales_orders.id',
