@@ -87,11 +87,17 @@ class StockController extends Controller
         // ===============================
         // SALES STOCK VALUE (ONLY SOLD)
         // ===============================
-        $total_sales_stock_value = StocksSalesOrderItem::where(function($q){
-            $q->whereNull('status')
-            ->orWhere('status','!=','returned');
+        $total_sales_stock_value = StocksSalesOrderItem::join(
+            'stocks_products',
+            'stocks_products.uid',
+            '=',
+            'stocks_sales_order_items.uid'
+        )
+        ->where(function($q){
+            $q->whereNull('stocks_sales_order_items.status')
+            ->orWhere('stocks_sales_order_items.status','!=','returned');
         })
-        ->select(DB::raw('SUM(qty * price * 0.52) as total'))
+        ->select(DB::raw('SUM(stocks_products.sale_price * 0.52 * stocks_sales_order_items.qty) as total'))
         ->value('total') ?? 0;
 
         // ===============================
