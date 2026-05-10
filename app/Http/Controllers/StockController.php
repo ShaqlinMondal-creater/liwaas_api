@@ -711,7 +711,8 @@ class StockController extends Controller
             'name' => 'required|string',
             'size' => 'required|string',
             'color' => 'required|string',
-            'list_price' => 'required|numeric',
+            'purchase_price' => 'required|numeric',
+            'slot_no' => 'nullable|string',
             'sale_price' => 'required|numeric',
             'stock' => 'required|integer'
         ]);
@@ -725,7 +726,8 @@ class StockController extends Controller
             'name' => $request->name,
             'size' => $request->size,
             'color' => $request->color,
-            'list_price' => $request->list_price,
+            'purchase_price' => $request->purchase_price,
+            'slot_no' => $request->slot_no,
             'sale_price' => $request->sale_price,
             'stock' => $request->stock,
             'status' => $request->status ?? 1
@@ -773,8 +775,12 @@ class StockController extends Controller
             $product->color = $request->color;
         }
 
-        if ($request->has('list_price')) {
-            $product->list_price = $request->list_price;
+        if ($request->has('purchase_price')) {
+            $product->purchase_price = $request->purchase_price;
+        }
+
+        if ($request->has('slot_no')) {
+            $product->slot_no = $request->slot_no;
         }
 
         if ($request->has('sale_price')) {
@@ -1072,28 +1078,6 @@ class StockController extends Controller
             'data' => $data
         ]);
     }
-    // public function getReturnItems()
-    // {
-    //     $data = StocksReturnItem::select(
-    //         'stocks_return_items.*',
-    //         'stocks_sales_orders.sales_order_no',
-    //         'stocks_sales_orders.so_date',
-    //         'stocks_clients.name as client_name',
-    //         'stocks_products.name as product_name',
-    //         'stocks_products.size',
-    //         'stocks_products.color'
-    //     )
-    //     ->join('stocks_sales_orders','stocks_sales_orders.id','=','stocks_return_items.sales_order_id')
-    //     ->join('stocks_clients','stocks_clients.id','=','stocks_sales_orders.client_id')
-    //     ->join('stocks_products','stocks_products.uid','=','stocks_return_items.uid')
-    //     ->orderByDesc('stocks_return_items.return_date')
-    //     ->get();
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'data' => $data
-    //     ]);
-    // }
     public function migrateReturnStock(Request $request)
     {
         $request->validate([
@@ -1570,7 +1554,7 @@ class StockController extends Controller
                     'name' => $item->product->name ?? null,
                     'size' => $item->product->size ?? null,
                     'color' => $item->product->color ?? null,
-                    'list_price' => $item->product->list_price ?? null,
+                    'purchase_price' => $item->product->purchase_price ?? null,
                     'sale_price' => $item->product->sale_price ?? null,
                     'stock' => $item->product->stock ?? null,
                     // 'status' => $item->product->status ?? null
@@ -2083,7 +2067,6 @@ class StockController extends Controller
             "data" => $client
         ]);
     }
-
     // GET ALL CLIENTS
     public function fetch(Request $request)
     {
@@ -2102,7 +2085,6 @@ class StockController extends Controller
             "data" => $clients
         ]);
     }
-
     // UPDATE CLIENT
     public function update(Request $request,$id)
     {
@@ -2125,7 +2107,6 @@ class StockController extends Controller
             "data"=>$client
         ]);
     }
-
     // DELETE CLIENT
     public function delete($id)
     {

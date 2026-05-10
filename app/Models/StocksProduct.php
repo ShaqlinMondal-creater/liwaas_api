@@ -13,7 +13,8 @@ class StocksProduct extends Model
         'name',
         'size',
         'color',
-        'list_price',
+        'slot_no',
+        'purchase_price',
         'sale_price',
         'stock',
         'status'

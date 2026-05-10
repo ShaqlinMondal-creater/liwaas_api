@@ -22,8 +22,9 @@ return new class extends Migration
             $table->string('size')->nullable();
 
             $table->string('color')->nullable();
+            $table->string('slot_no')->nullable();
 
-            $table->decimal('list_price', 10, 2)->default(0);
+            $table->decimal('purchase_price', 10, 2)->default(0);
 
             $table->decimal('sale_price', 10, 2)->default(0);
 
