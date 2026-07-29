@@ -55,7 +55,7 @@ class OrderController extends Controller
         DB::beginTransaction();
 
         try {
-            $userId = $user->id;
+            $userId = (string) $user->id;
 
             $cartItems = Cart::with(['variation', 'product'])
                 ->where('user_id', $userId)
