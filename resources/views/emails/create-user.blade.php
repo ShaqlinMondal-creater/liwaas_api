@@ -30,8 +30,16 @@
                             <ul style="list-style:none; padding:0; font-size:14px; line-height:1.8;">
                                 <li><strong>Email:</strong> {{ $user->email }}</li>
                                 <li><strong>Mobile:</strong> {{ $user->mobile }}</li>
-                                <li><strong>Password:</strong> {{ $password }}</li>
+                                @if(!empty($password))
+                                    <li><strong>Temporary Password:</strong> {{ $password }}</li>
+                                @endif
                             </ul>
+
+                            @if(!empty($password))
+                                <p style="font-size:14px; line-height:1.6; color:#deb64c;">
+                                    Please sign in with this temporary password and change it after login for better security.
+                                </p>
+                            @endif
 
                             <!-- Login Button -->
                             <p style="margin:30px 0;">

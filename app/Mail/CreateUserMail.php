@@ -18,7 +18,7 @@ class CreateUserMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct($user, $password)
+    public function __construct($user, $password = null)
     {
         $this->user = $user;
         $this->password = $password;
@@ -27,7 +27,7 @@ class CreateUserMail extends Mailable
     public function build()
     {
         return $this->subject('Welcome to Liwaas - Your Account Details')
-                    ->markdown('emails.create-user')
+                    ->view('emails.create-user')
                     ->with([
                         'user' => $this->user,
                         'password' => $this->password,

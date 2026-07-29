@@ -25,6 +25,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email',
             'mobile' => 'required|string|unique:users,mobile',
             'password' => 'required|string|min:6',
+            'send_password_email' => 'nullable|boolean',
         ]);
 
         $user = new User();
@@ -36,6 +37,20 @@ class AuthController extends Controller
         $user->is_active = 'true';
         $user->is_logged_in = 'true'; // Automatically log in after registration
         $user->save();
+
+        // Welcome email:
+        // - Normal signup → without password
+        // - Checkout temp account → with temporary password
+        try {
+            $includePassword = $request->boolean('send_password_email');
+            Mail::to($user->email)->send(new CreateUserMail(
+                $user,
+                $includePassword ? $validatedData['password'] : null
+            ));
+        } catch (\Throwable $mailError) {
+            // Do not block registration if mail delivery fails
+            \Log::warning('Welcome email failed after register: '.$mailError->getMessage());
+        }
 
         // Create token
         $token = $user->createToken('api-token')->plainTextToken;
