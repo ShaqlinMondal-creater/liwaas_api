@@ -106,8 +106,9 @@ class OrderController extends Controller
             $tax = round($amountAfterDiscount - $taxableAmount, 2);
 
             /* ---------------- SHIPPING ---------------- */
-            // $shippingCharge = $amountAfterDiscount > 300 ? 0 : 120;
-            $shippingCharge = $subTotal < 600 ? 80 : 0;
+            $minOrderPrice = (float) config('liwaas.min_order_price', 500);
+            $shippingFee = (float) config('liwaas.shipping_charge', 80);
+            $shippingCharge = $subTotal >= $minOrderPrice ? 0 : $shippingFee;
 
             /* ---------------- GRAND TOTAL ---------------- */
             $grandTotal = round($amountAfterDiscount + $shippingCharge, 2);

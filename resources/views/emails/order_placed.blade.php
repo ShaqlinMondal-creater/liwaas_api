@@ -96,26 +96,35 @@
             <!-- Totals -->
             <tr>
               <td align="right" style="padding-top: 20px;">
+                @php
+                  $shippingCharge = (float) ($order->shipping->shipping_charge ?? 0);
+                  $tax = (float) ($order->tax_price ?? 0);
+                  $discount = (float) ($order->coupon_discount ?? 0);
+                  // GST-inclusive amount after discount = grand - shipping
+                  $amountAfterDiscount = (float) $order->grand_total - $shippingCharge;
+                  // Subtotal shown as taxable value (ex-GST)
+                  $subtotalExTax = round($amountAfterDiscount - $tax, 2);
+                @endphp
                 <table cellpadding="5" cellspacing="0" style="width: 300px; float: right;">
                   <tr>
                     <td style="border-bottom: 1px solid #eee;">Subtotal:</td>
-                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($order->grand_total - ($order->shipping->shipping_charge ?? 0), 2) }}</td>
+                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($subtotalExTax, 2) }}</td>
                   </tr>
                   <tr>
                     <td style="border-bottom: 1px solid #eee;">Tax (5%):</td>
-                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($order->tax_price, 2) }}</td>
+                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($tax, 2) }}</td>
                   </tr>
                   <tr>
                     <td style="border-bottom: 1px solid #eee;">Shipping:</td>
-                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($order->shipping->shipping_charge ?? 0, 2) }}</td>
+                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($shippingCharge, 2) }}</td>
                   </tr>
                   <tr>
                     <td style="border-bottom: 1px solid #eee;">Discount:</td>
-                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($order->coupon_discount ?? 0, 2) }}</td>
+                    <td style="border-bottom: 1px solid #eee;" align="right">₹{{ number_format($discount, 2) }}</td>
                   </tr>
                   <tr>
                     <td style="font-weight: bold; font-size: 16px;">GRAND TOTAL:</td>
-                    <td style="font-weight: bold; font-size: 16px;" align="right">₹{{ number_format($order->grand_total, 2) }}</td>
+                    <td style="font-weight: bold; font-size: 16px;" align="right">₹{{ number_format((float) $order->grand_total, 2) }}</td>
                   </tr>
                 </table>
               </td>
