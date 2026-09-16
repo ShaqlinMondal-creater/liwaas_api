@@ -14,6 +14,7 @@ class SectionView extends Model
     protected $fillable = [
         'section_name',
         'aid',
+        'uid',
         'status',
         'force_status',
     ];

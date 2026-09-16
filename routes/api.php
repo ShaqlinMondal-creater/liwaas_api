@@ -227,6 +227,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/delete-variation-images', [UploadController::class, 'deleteVariationImages']); // Delete Product Images
 
             Route::post('/all-images', [UploadController::class, 'getAllUploads']); // Delete Product Images
+            Route::delete('/delete/{id}', [UploadController::class, 'deleteUpload']);
         });
         
         // For Orders

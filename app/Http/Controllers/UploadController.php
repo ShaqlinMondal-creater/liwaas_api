@@ -378,6 +378,67 @@ class UploadController extends Controller
         }
     }
 
+    public function deleteUpload($id)
+    {
+        $upload = Upload::find($id);
+
+        if (!$upload) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload not found.',
+            ], 404);
+        }
+
+        if ($upload->path) {
+            Storage::disk('public')->delete($upload->path);
+        }
+
+        $uploadId = (int) $id;
+
+        Product::query()
+            ->where(function ($query) use ($uploadId) {
+                $query->where('upload_id', (string) $uploadId)
+                    ->orWhere('upload_id', 'like', $uploadId . ',%')
+                    ->orWhere('upload_id', 'like', '%,' . $uploadId . ',%')
+                    ->orWhere('upload_id', 'like', '%,' . $uploadId);
+            })
+            ->get()
+            ->each(function (Product $product) use ($uploadId) {
+                $product->upload_id = $this->stripCsvId($product->upload_id, $uploadId);
+                $product->save();
+            });
+
+        ProductVariations::query()
+            ->where(function ($query) use ($uploadId) {
+                $query->where('images_id', (string) $uploadId)
+                    ->orWhere('images_id', 'like', $uploadId . ',%')
+                    ->orWhere('images_id', 'like', '%,' . $uploadId . ',%')
+                    ->orWhere('images_id', 'like', '%,' . $uploadId);
+            })
+            ->get()
+            ->each(function (ProductVariations $variation) use ($uploadId) {
+                $variation->images_id = $this->stripCsvId($variation->images_id, $uploadId);
+                $variation->save();
+            });
+
+        $upload->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Upload deleted successfully.',
+        ]);
+    }
+
+    private function stripCsvId(?string $csv, int $id): ?string
+    {
+        $remaining = array_values(array_filter(
+            array_map('trim', explode(',', $csv ?? '')),
+            fn ($value) => $value !== '' && (int) $value !== $id
+        ));
+
+        return $remaining ? implode(',', $remaining) : null;
+    }
+
 
     // Delete Product Variation Images
     // public function deleteProductImages(Request $request)

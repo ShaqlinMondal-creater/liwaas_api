@@ -179,14 +179,23 @@ class SectionViewController extends Controller
     {
         $validated = $request->validate([
             'section_name' => 'required|string',
-            'uid' => 'required|integer',
+            'uid' => 'required_without:aid',
+            'aid' => 'required_without:uid|nullable|string',
             'status' => 'nullable|boolean',
             'force_status' => 'nullable|boolean',
         ]);
 
-        // ✅ Check if section_name + uid already exists
+        $uid = $request->input('uid');
+        $aid = $validated['aid'] ?? ($uid !== null && $uid !== '' ? (string) $uid : null);
+
         $exists = SectionView::where('section_name', $validated['section_name'])
-            ->where('uid', $validated['uid'])
+            ->where(function ($query) use ($uid, $aid) {
+                if ($uid !== null && $uid !== '') {
+                    $query->where('uid', $uid)->orWhere('aid', (string) $uid);
+                } else {
+                    $query->where('aid', $aid);
+                }
+            })
             ->exists();
 
         if ($exists) {
@@ -198,7 +207,8 @@ class SectionViewController extends Controller
 
         $section = SectionView::create([
             'section_name' => $validated['section_name'],
-            'uid' => $validated['uid'],
+            'aid' => $aid,
+            'uid' => $uid,
             'status' => $request->input('status', 0),
             'force_status' => $request->input('force_status', 0)
         ]);
