@@ -126,7 +126,7 @@ class OrderController extends Controller
 
             // 🔸 If Prepaid, create Razorpay Order
             if (strtolower($request->payment_type) === 'prepaid') {
-                $api = new Api(env('RAZORPAY_KEY'), env('RAZORPAY_SECRET'));
+                $api = new Api(config('services.razorpay.key'), config('services.razorpay.secret'));
                 $razorpayOrder = $api->order->create([
                     'receipt' => 'rcpt_' . Str::random(10),
                     'amount' => (int) round($grandTotal * 100), // amount in paise
@@ -251,6 +251,7 @@ class OrderController extends Controller
             if ($razorpayOrderId) {
                 $response['razorpay_order_id'] = $razorpayOrderId;
                 $response['currency'] = 'INR';
+                $response['razorpay_key'] = config('services.razorpay.key');
             }
 
             return response()->json($response, 201);
