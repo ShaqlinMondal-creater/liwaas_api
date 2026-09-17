@@ -19,7 +19,7 @@ class HomepageContentController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'key' => 'required|string|in:hero,video_banner,brand_story',
+            'key' => 'required|string|in:hero,video_banner,brand_story,features',
             'content' => 'required|array',
         ]);
 
@@ -47,6 +47,7 @@ class HomepageContentController extends Controller
             'hero' => $this->defaultsFor('hero'),
             'video_banner' => $this->defaultsFor('video_banner'),
             'brand_story' => $this->defaultsFor('brand_story'),
+            'features' => $this->defaultsFor('features'),
         ];
 
         $path = config('homepage_content.file');
@@ -86,7 +87,33 @@ class HomepageContentController extends Controller
                 continue;
             }
 
+            if ($key === 'features' && $field === 'items') {
+                $merged[$field] = $this->mergeFeatureItems(
+                    is_array($value) ? $value : [],
+                    is_array($fallback) ? $fallback : []
+                );
+                continue;
+            }
+
             $merged[$field] = $value === '' || $value === null ? $fallback : $value;
+        }
+
+        return $merged;
+    }
+
+    private function mergeFeatureItems(array $incoming, array $fallback): array
+    {
+        $merged = [];
+
+        foreach ($fallback as $index => $item) {
+            $row = is_array($incoming[$index] ?? null) ? $incoming[$index] : [];
+            $title = isset($row['title']) && is_string($row['title']) ? trim($row['title']) : '';
+            $desc = isset($row['desc']) && is_string($row['desc']) ? trim($row['desc']) : '';
+
+            $merged[] = [
+                'title' => $title !== '' ? $title : (string) ($item['title'] ?? ''),
+                'desc' => $desc !== '' ? $desc : (string) ($item['desc'] ?? ''),
+            ];
         }
 
         return $merged;

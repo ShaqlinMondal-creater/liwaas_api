@@ -29,4 +29,40 @@ return [
         'cta_url' => '#collections',
         'background' => 'https://images.pexels.com/photos/6311663/pexels-photo-6311663.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop',
     ],
+
+    'features' => [
+        'tag' => 'Premium Experience',
+        'title_line_1' => 'NOT JUST A TSHIRT.',
+        'title_line_2' => 'AN EXPERIENCE.',
+        'subtext' => 'Every detail is considered. Every choice is intentional. This is what premium feels like.',
+        'footer_note' => 'The difference is in the details',
+        'cta_label' => 'Shop The Collection',
+        'cta_url' => '#collections',
+        'items' => [
+            [
+                'title' => '280GSM Weight',
+                'desc' => 'Heavyweight cotton that holds its structure and drapes perfectly over the body.',
+            ],
+            [
+                'title' => 'Oversized Silhouette',
+                'desc' => 'Cut 2 sizes larger than standard, with dropped shoulders and extended length.',
+            ],
+            [
+                'title' => 'Enzyme Washed',
+                'desc' => 'Bio-enzyme washing for a naturally soft, pre-worn feel from day one.',
+            ],
+            [
+                'title' => 'Sustainable Cotton',
+                'desc' => 'Sourced from certified sustainable farms across India and Turkey.',
+            ],
+            [
+                'title' => 'Double Stitched',
+                'desc' => 'Reinforced seams at every stress point ensure decades of wear.',
+            ],
+            [
+                'title' => '100% Cotton',
+                'desc' => 'Zero synthetic blends. Pure cotton from fibre to finish.',
+            ],
+        ],
+    ],
 ];
