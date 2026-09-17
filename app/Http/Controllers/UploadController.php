@@ -3,14 +3,16 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Models\Product;
 use App\Models\ProductVariations;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Upload;
-use Illuminate\Support\Facades\Storage;
 
 class UploadController extends Controller
 {
@@ -335,6 +337,70 @@ class UploadController extends Controller
                 'logo_url' => $upload->url
             ]
         ]);
+    }
+
+    // WordPress-style media upload (not tied to product/brand/category)
+    public function uploadMedia(Request $request)
+    {
+        $files = $request->file('file');
+
+        if ($files instanceof UploadedFile) {
+            $files = [$files];
+        }
+
+        if (!is_array($files) || $files === []) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please choose a file to upload.',
+            ], 422);
+        }
+
+        Validator::make(
+            ['file' => $files],
+            [
+                'file' => 'required|array',
+                'file.*' => 'file|mimes:jpeg,png,jpg,gif,webp,mp4,webm,mov|max:51200',
+            ]
+        )->validate();
+
+        $items = [];
+
+        foreach ($files as $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+
+            $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('media', $fileName, 'public');
+
+            $upload = Upload::create([
+                'path' => $path,
+                'url' => Storage::url($path),
+                'file_name' => $file->getClientOriginalName() ?: $fileName,
+                'extension' => $file->getClientOriginalExtension(),
+            ]);
+
+            $items[] = [
+                'id' => $upload->id,
+                'url' => url($upload->url),
+                'path' => $upload->path,
+                'file_name' => $upload->file_name,
+                'extension' => $upload->extension,
+            ];
+        }
+
+        if (!$items) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No valid files were uploaded.',
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => count($items) === 1 ? 'File uploaded successfully.' : 'Files uploaded successfully.',
+            'data' => count($items) === 1 ? $items[0] : $items,
+        ], 201);
     }
 
     // Get all uploads

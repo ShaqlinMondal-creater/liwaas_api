@@ -19,7 +19,7 @@ class HomepageContentController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'key' => 'required|string|in:hero',
+            'key' => 'required|string|in:hero,video_banner',
             'content' => 'required|array',
         ]);
 
@@ -45,6 +45,7 @@ class HomepageContentController extends Controller
     {
         $defaults = [
             'hero' => $this->defaultsFor('hero'),
+            'video_banner' => $this->defaultsFor('video_banner'),
         ];
 
         $path = config('homepage_content.file');
@@ -78,6 +79,12 @@ class HomepageContentController extends Controller
             }
 
             $value = is_string($incoming[$field]) ? trim($incoming[$field]) : $incoming[$field];
+
+            if ($key === 'video_banner' && $field === 'video') {
+                $merged[$field] = is_string($value) ? $value : $fallback;
+                continue;
+            }
+
             $merged[$field] = $value === '' || $value === null ? $fallback : $value;
         }
 

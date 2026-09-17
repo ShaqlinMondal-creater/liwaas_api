@@ -14,4 +14,8 @@ return [
         'secondary_url' => '#story',
         'background' => 'https://images.pexels.com/photos/5384423/pexels-photo-5384423.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop',
     ],
+
+    'video_banner' => [
+        'video' => '',
+    ],
 ];
