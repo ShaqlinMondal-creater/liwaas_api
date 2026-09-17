@@ -46,7 +46,7 @@ return [
         ],
         'testimonials' => [
             'label' => 'Testimonials',
-            'description' => 'THEY WORE IT…',
+            'description' => 'Live customer reviews from product pages',
             'default' => true,
         ],
         'newsletter' => [

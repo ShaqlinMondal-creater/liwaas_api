@@ -46,6 +46,7 @@ use App\Http\Controllers\ContactInquiryController;
 
     Route::post('/reviews/create', [ProductReviewController::class, 'addReview']); // create product
     Route::post('/reviews/fetch', [ProductReviewController::class, 'getAllReviewsWithFilters']); // get all reviews (have filter)
+    Route::get('/reviews/featured', [ProductReviewController::class, 'getFeaturedReviews']);
 
     Route::prefix('products')->group(function () {
         Route::post('get-product-byslug/{slug}', [ProductController::class, 'getProductsBySlug']); // through slug product filter 

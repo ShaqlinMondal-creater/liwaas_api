@@ -189,6 +189,42 @@ class ProductReviewController extends Controller
         ], 200);
     }
 
+    public function getFeaturedReviews()
+    {
+        $reviews = ProductReview::with(['product:id,name'])
+            ->whereNotNull('comments')
+            ->where('comments', '!=', '')
+            ->latest()
+            ->limit(8)
+            ->get();
+
+        $data = $reviews->map(function ($review) {
+            $images = is_array($review->upload_images)
+                ? array_values(array_filter($review->upload_images))
+                : [];
+
+            return [
+                'id' => $review->id,
+                'user' => $review->user,
+                'total_star' => $review->total_star,
+                'comments' => $review->comments,
+                'upload_images' => $images,
+                'product' => $review->product
+                    ? [
+                        'id' => $review->product->id,
+                        'name' => $review->product->name,
+                    ]
+                    : null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Featured reviews fetched successfully.',
+            'data' => $data,
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+
     // Get All Review
     public function getAllReviewsWithFilters(Request $request)
     {
