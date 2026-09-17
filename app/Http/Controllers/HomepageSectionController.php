@@ -14,7 +14,7 @@ class HomepageSectionController extends Controller
             'message' => 'Homepage sections fetched successfully.',
             'data' => $this->enabledMap(),
             'items' => $this->itemList(),
-        ]);
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     public function updateSections(Request $request)
