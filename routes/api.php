@@ -22,6 +22,7 @@ use App\Http\Controllers\CouponController;
 use App\Http\Controllers\Analytic_viewController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\HomepageSectionController;
+use App\Http\Controllers\ContactInquiryController;
 
 
     // Public routes
@@ -64,6 +65,7 @@ use App\Http\Controllers\HomepageSectionController;
     Route::post('/allCategories', [CategoryController::class, 'getAllCategories']); //All category showing
     Route::post('/extras/getall', [ExtrasController::class, 'getAllExtras']);  //For Get Extras with Filter
     Route::get('/homepage/sections', [HomepageSectionController::class, 'getSections']);
+    Route::post('/contact', [ContactInquiryController::class, 'store'])->middleware('throttle:8,1');
     Route::post('sections/getsections-products', [SectionViewController::class, 'getSectionsProducts']); 
 
     Route::prefix('cart')->group(function () {
@@ -167,6 +169,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             Route::get('/homepage/sections', [HomepageSectionController::class, 'getSections']);
             Route::post('/homepage/sections', [HomepageSectionController::class, 'updateSections']);
+
+            Route::get('/contact', [ContactInquiryController::class, 'index']);
+            Route::delete('/contact/{id}', [ContactInquiryController::class, 'destroy']);
 
             // For Products
             Route::prefix('shiprocket')->group(function () {
