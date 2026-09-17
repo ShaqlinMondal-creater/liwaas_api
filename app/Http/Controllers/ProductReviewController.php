@@ -6,8 +6,11 @@ use App\Models\ProductReview;
 use App\Models\Product;
 use App\Models\ProductVariations;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; 
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Helpers\ColorHelper;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -23,7 +26,8 @@ class ProductReviewController extends Controller
             'uid'               => 'required|integer',
             'total_star'        => 'required|integer|min:1|max:5',
             'comments'          => 'nullable|string',
-            'upload_images.*'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048', // max 2MB each
+            'upload_images'     => 'nullable',
+            'upload_images.*'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $requestUser = trim($request->user ?? '');
@@ -54,16 +58,7 @@ class ProductReviewController extends Controller
             ], 404);
         }
 
-        // ✅ Handle image uploads
-        $uploadedPaths = [];
-
-        if ($request->hasFile('upload_images')) {
-            foreach ($request->file('upload_images') as $image) {
-                $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                $image->move(public_path('uploads/reviews'), $filename);
-                $uploadedPaths[] = asset('uploads/reviews/' . $filename);
-            }
-        }
+        $uploadedPaths = $this->storeReviewImages($request);
 
         // ✅ Save review to DB
         $review = ProductReview::create([
@@ -87,7 +82,8 @@ class ProductReviewController extends Controller
                 'aid'        => $validated['aid'],
                 'star'       => $validated['total_star'],
                 'comments'   => $validated['comments'] ?? '',
-                'images'     => $uploadedPaths,
+                'images'     => $this->publicReviewImages($uploadedPaths),
+                'upload_images' => $this->publicReviewImages($uploadedPaths),
             ],
         ], 201);
     }
@@ -108,22 +104,15 @@ class ProductReviewController extends Controller
         $validated = $request->validate([
             'total_star'        => 'nullable|integer|min:1|max:5',
             'comments'          => 'nullable|string',
+            'upload_images'     => 'nullable',
             'upload_images.*'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        // Handle new image uploads (replace old)
-        $uploadedPaths = $review->upload_images ?? [];
+        $uploadedPaths = $this->reviewImageList($review->upload_images);
+        $newPaths = $this->storeReviewImages($request);
 
-        if ($request->hasFile('upload_images')) {
-            // Delete old images (optional, if needed to clean up files)
-
-            // Replace all images
-            $uploadedPaths = [];
-            foreach ($request->file('upload_images') as $image) {
-                $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                $image->move(public_path('uploads/reviews'), $filename);
-                $uploadedPaths[] = asset('uploads/reviews/' . $filename);
-            }
+        if ($newPaths !== []) {
+            $uploadedPaths = $newPaths;
         }
 
         // Update review
@@ -144,7 +133,8 @@ class ProductReviewController extends Controller
                 'aid'        => $review->aid,
                 'star'       => $review->total_star,
                 'comments'   => $review->comments,
-                'images'     => $review->upload_images,
+                'images'     => $this->publicReviewImages($review->upload_images),
+                'upload_images' => $this->publicReviewImages($review->upload_images),
             ],
         ]);
     }
@@ -177,7 +167,8 @@ class ProductReviewController extends Controller
                 ],
                 'star'       => $review->total_star,
                 'comments'   => $review->comments,
-                'images'     => $review->upload_images ?? [],
+                'images'     => $this->publicReviewImages($review->upload_images),
+                'upload_images' => $this->publicReviewImages($review->upload_images),
                 'created_at' => $review->created_at->toDateTimeString(),
             ];
         });
@@ -199,16 +190,12 @@ class ProductReviewController extends Controller
             ->get();
 
         $data = $reviews->map(function ($review) {
-            $images = is_array($review->upload_images)
-                ? array_values(array_filter($review->upload_images))
-                : [];
-
             return [
                 'id' => $review->id,
                 'user' => $review->user,
                 'total_star' => $review->total_star,
                 'comments' => $review->comments,
-                'upload_images' => $images,
+                'upload_images' => $this->publicReviewImages($review->upload_images),
                 'product' => $review->product
                     ? [
                         'id' => $review->product->id,
@@ -259,7 +246,8 @@ class ProductReviewController extends Controller
                 'uid'          => $review->uid,
                 'total_star'   => $review->total_star,
                 'comments'     => $review->comments,
-                'upload_images'=> $review->upload_images,
+                'upload_images'=> $this->publicReviewImages($review->upload_images),
+                'images'       => $this->publicReviewImages($review->upload_images),
                 'user'         => $review->user,
                 'product'      => $review->product,
             ];
@@ -284,14 +272,8 @@ class ProductReviewController extends Controller
             ], 404);
         }
 
-        // Optionally delete associated images from storage
-        if (is_array($review->upload_images)) {
-            foreach ($review->upload_images as $imgUrl) {
-                $path = public_path(str_replace(url('/'), '', $imgUrl));
-                if (file_exists($path)) {
-                    @unlink($path);
-                }
-            }
+        foreach ($this->reviewImageList($review->upload_images) as $imgUrl) {
+            $this->deleteReviewImageFile($imgUrl);
         }
 
         $review->delete();
@@ -300,6 +282,120 @@ class ProductReviewController extends Controller
             'success' => true,
             'message' => 'Review deleted successfully.',
         ], 200);
+    }
+
+    /**
+     * @return UploadedFile[]
+     */
+    private function reviewImageFiles(Request $request): array
+    {
+        $files = $request->file('upload_images', []);
+
+        if ($files instanceof UploadedFile) {
+            $files = [$files];
+        }
+
+        if (!is_array($files)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $files,
+            fn ($file) => $file instanceof UploadedFile && $file->isValid()
+        ));
+    }
+
+    /**
+     * @return string[]
+     */
+    private function storeReviewImages(Request $request): array
+    {
+        $paths = [];
+
+        foreach ($this->reviewImageFiles($request) as $file) {
+            $fileName = time() . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+            $stored = $file->storeAs('reviews', $fileName, 'public');
+            $paths[] = Storage::url($stored);
+        }
+
+        return $paths;
+    }
+
+    /**
+     * @return string[]
+     */
+    private function reviewImageList(mixed $raw): array
+    {
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $raw = $decoded;
+            } elseif (trim($raw) !== '') {
+                $raw = preg_split('/\s*,\s*/', $raw) ?: [];
+            } else {
+                $raw = [];
+            }
+        }
+
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $urls = [];
+
+        foreach ($raw as $item) {
+            if (!is_string($item)) {
+                continue;
+            }
+
+            $item = trim($item);
+
+            if ($item === '') {
+                continue;
+            }
+
+            $urls[] = $item;
+        }
+
+        return array_values(array_unique($urls));
+    }
+
+    /**
+     * @return string[]
+     */
+    private function publicReviewImages(mixed $raw): array
+    {
+        $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+
+        return array_values(array_filter(array_map(function (string $path) use ($appHost) {
+            if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+                $host = parse_url($path, PHP_URL_HOST);
+                $relative = parse_url($path, PHP_URL_PATH) ?: $path;
+
+                if ($host && $appHost && strcasecmp((string) $host, (string) $appHost) !== 0) {
+                    return url($relative);
+                }
+
+                return $path;
+            }
+
+            return url('/' . ltrim($path, '/'));
+        }, $this->reviewImageList($raw))));
+    }
+
+    private function deleteReviewImageFile(string $imgUrl): void
+    {
+        $path = parse_url($imgUrl, PHP_URL_PATH) ?: $imgUrl;
+        $path = ltrim((string) $path, '/');
+
+        if (str_starts_with($path, 'storage/')) {
+            Storage::disk('public')->delete(substr($path, strlen('storage/')));
+        }
+
+        $legacy = public_path($path);
+        if (is_file($legacy)) {
+            @unlink($legacy);
+        }
     }
 
 }
