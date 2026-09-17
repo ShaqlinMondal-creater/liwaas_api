@@ -19,7 +19,7 @@ class HomepageContentController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'key' => 'required|string|in:hero,video_banner',
+            'key' => 'required|string|in:hero,video_banner,brand_story',
             'content' => 'required|array',
         ]);
 
@@ -46,6 +46,7 @@ class HomepageContentController extends Controller
         $defaults = [
             'hero' => $this->defaultsFor('hero'),
             'video_banner' => $this->defaultsFor('video_banner'),
+            'brand_story' => $this->defaultsFor('brand_story'),
         ];
 
         $path = config('homepage_content.file');
