@@ -21,6 +21,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\Analytic_viewController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\HomepageSectionController;
 
 
     // Public routes
@@ -62,6 +63,7 @@ use App\Http\Controllers\StockController;
     Route::post('/allBrands', [BrandController::class, 'getAllBrands']); //All brand showing
     Route::post('/allCategories', [CategoryController::class, 'getAllCategories']); //All category showing
     Route::post('/extras/getall', [ExtrasController::class, 'getAllExtras']);  //For Get Extras with Filter
+    Route::get('/homepage/sections', [HomepageSectionController::class, 'getSections']);
     Route::post('sections/getsections-products', [SectionViewController::class, 'getSectionsProducts']); 
 
     Route::prefix('cart')->group(function () {
@@ -162,6 +164,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 Route::delete('/delete/{id}', [ExtrasController::class, 'deleteExtras']); //For Delete Extras
                 Route::put('/update-status/{id}', [ExtrasController::class, 'updateStatus']); //For update Status
             });
+
+            Route::get('/homepage/sections', [HomepageSectionController::class, 'getSections']);
+            Route::post('/homepage/sections', [HomepageSectionController::class, 'updateSections']);
 
             // For Products
             Route::prefix('shiprocket')->group(function () {
