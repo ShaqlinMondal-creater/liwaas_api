@@ -76,4 +76,60 @@ return [
             'MADE BOLD',
         ],
     ],
+
+    'trending' => [
+        'tag' => 'Trending',
+        'title_line_1' => 'THE DROP',
+        'title_line_2' => 'RIGHT NOW',
+    ],
+
+    'collections' => [
+        'tag' => 'Featured Collections',
+        'title_line_1' => 'EVERY DROP',
+        'title_line_2' => 'DELIBERATE',
+        'cta_label' => 'View All',
+        'cta_url' => '/collections',
+        'items' => [
+            [
+                'name' => 'MONO SERIES',
+                'description' => 'Pure black essentials. Zero distraction.',
+                'items' => '12 Pieces',
+                'tag' => 'CORE',
+                'image' => 'https://images.pexels.com/photos/8532617/pexels-photo-8532617.jpeg?auto=compress&cs=tinysrgb&w=700&h=900&fit=crop',
+                'url' => '/collections',
+            ],
+            [
+                'name' => 'BLANC EDIT',
+                'description' => 'White canvas. Worn with intention.',
+                'items' => '8 Pieces',
+                'tag' => 'CLEAN',
+                'image' => 'https://images.pexels.com/photos/6311475/pexels-photo-6311475.jpeg?auto=compress&cs=tinysrgb&w=700&h=900&fit=crop',
+                'url' => '/collections',
+            ],
+            [
+                'name' => 'EARTH TONES',
+                'description' => 'Grounded. Warm. Effortless.',
+                'items' => '10 Pieces',
+                'tag' => 'SS25',
+                'image' => 'https://images.pexels.com/photos/7691069/pexels-photo-7691069.jpeg?auto=compress&cs=tinysrgb&w=700&h=900&fit=crop',
+                'url' => '/collections',
+            ],
+            [
+                'name' => 'SHADOW DROP',
+                'description' => 'Limited-run dark tones. Built to stand out.',
+                'items' => '6 Pieces',
+                'tag' => 'LIMITED',
+                'image' => 'https://images.pexels.com/photos/5709661/pexels-photo-5709661.jpeg?auto=compress&cs=tinysrgb&w=700&h=900&fit=crop',
+                'url' => '/collections',
+            ],
+            [
+                'name' => 'UTILITY GREY',
+                'description' => 'The everyday essential. Reinvented.',
+                'items' => '9 Pieces',
+                'tag' => 'STAPLE',
+                'image' => 'https://images.pexels.com/photos/8299174/pexels-photo-8299174.jpeg?auto=compress&cs=tinysrgb&w=700&h=900&fit=crop',
+                'url' => '/collections',
+            ],
+        ],
+    ],
 ];

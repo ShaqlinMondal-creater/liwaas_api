@@ -19,7 +19,7 @@ class HomepageContentController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'key' => 'required|string|in:hero,video_banner,brand_story,features,marquee',
+            'key' => 'required|string|in:hero,video_banner,brand_story,features,marquee,trending,collections',
             'content' => 'required|array',
         ]);
 
@@ -49,6 +49,8 @@ class HomepageContentController extends Controller
             'brand_story' => $this->defaultsFor('brand_story'),
             'features' => $this->defaultsFor('features'),
             'marquee' => $this->defaultsFor('marquee'),
+            'trending' => $this->defaultsFor('trending'),
+            'collections' => $this->defaultsFor('collections'),
         ];
 
         $path = config('homepage_content.file');
@@ -104,6 +106,14 @@ class HomepageContentController extends Controller
                 continue;
             }
 
+            if ($key === 'collections' && $field === 'items') {
+                $merged[$field] = $this->mergeItemRows(
+                    is_array($value) ? $value : [],
+                    is_array($fallback) ? $fallback : []
+                );
+                continue;
+            }
+
             $merged[$field] = $value === '' || $value === null ? $fallback : $value;
         }
 
@@ -147,6 +157,26 @@ class HomepageContentController extends Controller
         }
 
         return $words !== [] ? array_values($words) : $fallback;
+    }
+
+    private function mergeItemRows(array $incoming, array $fallback): array
+    {
+        $merged = [];
+
+        foreach ($fallback as $index => $item) {
+            $row = is_array($incoming[$index] ?? null) ? $incoming[$index] : [];
+            $next = [];
+
+            foreach ($item as $field => $default) {
+                $value = $row[$field] ?? null;
+                $value = is_string($value) ? trim($value) : $value;
+                $next[$field] = $value === '' || $value === null ? $default : $value;
+            }
+
+            $merged[] = $next;
+        }
+
+        return $merged;
     }
 
     private function defaultsFor(string $key): array
