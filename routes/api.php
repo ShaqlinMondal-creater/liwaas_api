@@ -24,6 +24,7 @@ use App\Http\Controllers\StockController;
 use App\Http\Controllers\HomepageSectionController;
 use App\Http\Controllers\HomepageContentController;
 use App\Http\Controllers\ContactInquiryController;
+use App\Http\Controllers\NewsletterSubscriberController;
 
 
     // Public routes
@@ -69,6 +70,7 @@ use App\Http\Controllers\ContactInquiryController;
     Route::get('/homepage/sections', [HomepageSectionController::class, 'getSections']);
     Route::get('/homepage/content', [HomepageContentController::class, 'show']);
     Route::post('/contact', [ContactInquiryController::class, 'store'])->middleware('throttle:8,1');
+    Route::post('/newsletter', [NewsletterSubscriberController::class, 'store'])->middleware('throttle:8,1');
     Route::post('sections/getsections-products', [SectionViewController::class, 'getSectionsProducts']); 
 
     Route::prefix('cart')->group(function () {
@@ -177,6 +179,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             Route::get('/contact', [ContactInquiryController::class, 'index']);
             Route::delete('/contact/{id}', [ContactInquiryController::class, 'destroy']);
+            Route::get('/newsletter', [NewsletterSubscriberController::class, 'index']);
+            Route::delete('/newsletter/{id}', [NewsletterSubscriberController::class, 'destroy']);
 
             // For Products
             Route::prefix('shiprocket')->group(function () {
