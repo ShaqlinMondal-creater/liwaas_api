@@ -65,4 +65,15 @@ return [
             ],
         ],
     ],
+
+    'marquee' => [
+        'words' => [
+            'WEAR CONFIDENCE',
+            'LIWAAS',
+            'PREMIUM COTTON',
+            'OVERSIZED FIT',
+            'CRAFTED IN INDIA',
+            'MADE BOLD',
+        ],
+    ],
 ];

@@ -19,7 +19,7 @@ class HomepageContentController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'key' => 'required|string|in:hero,video_banner,brand_story,features',
+            'key' => 'required|string|in:hero,video_banner,brand_story,features,marquee',
             'content' => 'required|array',
         ]);
 
@@ -48,6 +48,7 @@ class HomepageContentController extends Controller
             'video_banner' => $this->defaultsFor('video_banner'),
             'brand_story' => $this->defaultsFor('brand_story'),
             'features' => $this->defaultsFor('features'),
+            'marquee' => $this->defaultsFor('marquee'),
         ];
 
         $path = config('homepage_content.file');
@@ -95,6 +96,14 @@ class HomepageContentController extends Controller
                 continue;
             }
 
+            if ($key === 'marquee' && $field === 'words') {
+                $merged[$field] = $this->mergeMarqueeWords(
+                    is_array($value) ? $value : [],
+                    is_array($fallback) ? $fallback : []
+                );
+                continue;
+            }
+
             $merged[$field] = $value === '' || $value === null ? $fallback : $value;
         }
 
@@ -117,6 +126,27 @@ class HomepageContentController extends Controller
         }
 
         return $merged;
+    }
+
+    private function mergeMarqueeWords(array $incoming, array $fallback): array
+    {
+        $words = [];
+
+        foreach ($incoming as $word) {
+            if (!is_string($word)) {
+                continue;
+            }
+
+            $trimmed = trim($word);
+
+            if ($trimmed === '') {
+                continue;
+            }
+
+            $words[] = $trimmed;
+        }
+
+        return $words !== [] ? array_values($words) : $fallback;
     }
 
     private function defaultsFor(string $key): array
