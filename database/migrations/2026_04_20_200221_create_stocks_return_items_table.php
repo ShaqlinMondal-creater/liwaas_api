@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
+        if (Schema::hasTable('stocks_return_items')) {
+            return;
+        }
+
         Schema::create('stocks_return_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('sales_order_id')->nullable();

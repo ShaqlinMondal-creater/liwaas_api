@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('analytics_user_stats')) {
+            return;
+        }
+
         Schema::create('analytics_user_stats', function (Blueprint $table) {
             $table->foreignId('user_id')->primary()->constrained()->cascadeOnDelete();
             $table->integer('total_orders')->default(0);
