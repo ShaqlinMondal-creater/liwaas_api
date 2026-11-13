@@ -4,17 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Mail\NewsletterMessageMail;
 use App\Mail\NewsletterWelcomeMail;
+use App\Models\NewsletterSubscriber;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class NewsletterSubscriberController extends Controller
 {
     private const MAX_EMAILS_PER_MINUTE = 6;
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -22,28 +23,37 @@ class NewsletterSubscriberController extends Controller
         ]);
 
         $email = strtolower(trim($data['email']));
-        $items = $this->readAll();
+        $existing = NewsletterSubscriber::query()->where('email', $email)->first();
 
-        foreach ($items as $existing) {
-            if (strtolower((string) ($existing['email'] ?? '')) === $email) {
+        if ($existing) {
+            return response()->json([
+                'success' => true,
+                'message' => 'You are already on the list.',
+                'data' => [
+                    'id' => (string) $existing->id,
+                ],
+            ]);
+        }
+
+        try {
+            $subscriber = NewsletterSubscriber::query()->create([
+                'email' => $email,
+            ]);
+        } catch (QueryException) {
+            $subscriber = NewsletterSubscriber::query()->where('email', $email)->first();
+
+            if ($subscriber) {
                 return response()->json([
                     'success' => true,
                     'message' => 'You are already on the list.',
                     'data' => [
-                        'id' => $existing['id'] ?? null,
+                        'id' => (string) $subscriber->id,
                     ],
                 ]);
             }
+
+            throw new \RuntimeException('Unable to save this subscriber.');
         }
-
-        $item = [
-            'id' => (string) Str::uuid(),
-            'email' => $email,
-            'created_at' => now()->toIso8601String(),
-        ];
-
-        array_unshift($items, $item);
-        $this->writeAll($items);
 
         if ($this->reserveEmailSlots(1)) {
             $this->sendWelcome($email);
@@ -57,7 +67,7 @@ class NewsletterSubscriberController extends Controller
             'success' => true,
             'message' => 'You are in. Welcome to the circle.',
             'data' => [
-                'id' => $item['id'],
+                'id' => (string) $subscriber->id,
             ],
         ], 201);
     }
@@ -66,7 +76,7 @@ class NewsletterSubscriberController extends Controller
     {
         return response()->json([
             'success' => true,
-            'count' => count($this->readAll()),
+            'count' => NewsletterSubscriber::query()->count(),
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
@@ -75,7 +85,7 @@ class NewsletterSubscriberController extends Controller
         $data = $request->validate([
             'subject' => 'required|string|max:150',
             'message' => 'required|string|max:5000',
-            'subscriber_id' => 'nullable|string|max:80',
+            'subscriber_id' => 'nullable|integer|min:1',
         ]);
 
         $subject = trim(strip_tags($data['subject']));
@@ -88,51 +98,36 @@ class NewsletterSubscriberController extends Controller
             ], 422);
         }
 
-        $items = $this->readAll();
+        $query = NewsletterSubscriber::query()->orderByDesc('id');
 
         if (!empty($data['subscriber_id'])) {
-            $items = array_values(array_filter(
-                $items,
-                static fn ($item) => (string) ($item['id'] ?? '') === $data['subscriber_id']
-            ));
-
-            if ($items === []) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Subscriber not found.',
-                ], 404);
-            }
+            $query->whereKey($data['subscriber_id']);
         }
 
-        $recipients = [];
+        $recipients = $query
+            ->pluck('email')
+            ->map(static fn ($email) => strtolower(trim((string) $email)))
+            ->filter(static fn ($email) => $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL))
+            ->unique()
+            ->values();
 
-        foreach ($items as $item) {
-            $email = strtolower(trim((string) ($item['email'] ?? '')));
-
-            if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                continue;
-            }
-
-            $recipients[$email] = $email;
-        }
-
-        $recipients = array_values($recipients);
-
-        if ($recipients === []) {
+        if ($recipients->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'No valid subscriber email to send to.',
-            ], 422);
+                'message' => empty($data['subscriber_id'])
+                    ? 'No valid subscriber email to send to.'
+                    : 'Subscriber not found.',
+            ], empty($data['subscriber_id']) ? 422 : 404);
         }
 
-        if (count($recipients) > self::MAX_EMAILS_PER_MINUTE) {
+        if ($recipients->count() > self::MAX_EMAILS_PER_MINUTE) {
             return response()->json([
                 'success' => false,
                 'message' => 'You can send up to 6 emails per minute. Choose fewer people.',
             ], 422);
         }
 
-        if (!$this->reserveEmailSlots(count($recipients))) {
+        if (!$this->reserveEmailSlots($recipients->count())) {
             return response()->json([
                 'success' => false,
                 'message' => 'Limit reached. You can send 6 newsletter emails per minute. Wait a minute and try again.',
@@ -175,29 +170,33 @@ class NewsletterSubscriberController extends Controller
 
     public function index()
     {
+        $rows = NewsletterSubscriber::query()
+            ->orderByDesc('id')
+            ->get(['id', 'email', 'created_at'])
+            ->map(static fn (NewsletterSubscriber $row) => [
+                'id' => (string) $row->id,
+                'email' => $row->email,
+                'created_at' => optional($row->created_at)->toIso8601String(),
+            ])
+            ->values();
+
         return response()->json([
             'success' => true,
             'message' => 'Newsletter subscribers fetched successfully.',
-            'data' => $this->readAll(),
+            'data' => $rows,
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     public function destroy(string $id)
     {
-        $items = $this->readAll();
-        $remaining = array_values(array_filter(
-            $items,
-            static fn ($item) => (string) ($item['id'] ?? '') !== $id
-        ));
+        $deleted = NewsletterSubscriber::query()->whereKey($id)->delete();
 
-        if (count($remaining) === count($items)) {
+        if ($deleted === 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'Subscriber not found.',
             ], 404);
         }
-
-        $this->writeAll($remaining);
 
         return response()->json([
             'success' => true,
@@ -240,30 +239,5 @@ class NewsletterSubscriberController extends Controller
                 'error' => $exception->getMessage(),
             ]);
         }
-    }
-
-    private function readAll(): array
-    {
-        $path = config('newsletter_subscribers.file');
-
-        if (!Storage::disk('local')->exists($path)) {
-            return [];
-        }
-
-        $decoded = json_decode(Storage::disk('local')->get($path), true);
-
-        if (!is_array($decoded)) {
-            return [];
-        }
-
-        return array_values(array_filter($decoded, 'is_array'));
-    }
-
-    private function writeAll(array $items): void
-    {
-        Storage::disk('local')->put(
-            config('newsletter_subscribers.file'),
-            json_encode(array_values($items), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-        );
     }
 }
