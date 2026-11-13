@@ -72,7 +72,8 @@ use App\Http\Controllers\SitePageController;
     Route::get('/homepage/content', [HomepageContentController::class, 'show']);
     Route::get('/site/pages', [SitePageController::class, 'getPages']);
     Route::post('/contact', [ContactInquiryController::class, 'store'])->middleware('throttle:8,1');
-    Route::post('/newsletter', [NewsletterSubscriberController::class, 'store'])->middleware('throttle:8,1');
+    Route::post('/newsletter', [NewsletterSubscriberController::class, 'store'])->middleware('throttle:6,1');
+    Route::get('/newsletter/count', [NewsletterSubscriberController::class, 'count'])->middleware('throttle:30,1');
     Route::post('sections/getsections-products', [SectionViewController::class, 'getSectionsProducts']); 
 
     Route::prefix('cart')->group(function () {
@@ -184,6 +185,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/contact', [ContactInquiryController::class, 'index']);
             Route::delete('/contact/{id}', [ContactInquiryController::class, 'destroy']);
             Route::get('/newsletter', [NewsletterSubscriberController::class, 'index']);
+            Route::post('/newsletter/send', [NewsletterSubscriberController::class, 'sendMessage'])->middleware('throttle:6,1');
             Route::delete('/newsletter/{id}', [NewsletterSubscriberController::class, 'destroy']);
 
             // For Products
