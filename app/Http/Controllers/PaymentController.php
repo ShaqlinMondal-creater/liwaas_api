@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Razorpay\Api\Api;
 use App\Models\Orders;
+use App\Models\OrderItems;
 use App\Models\Payment;
 use App\Models\PaymentLog;
+use App\Models\ProductVariations;
 use Illuminate\Support\Facades\DB;
 
 
@@ -118,12 +120,40 @@ class PaymentController extends Controller
             $payment->response_ = json_encode($attributes);
             $payment->save();
 
-            // 🔄 Update Order Status ONLY
+            // 🔄 Update Order Status + decrement stock once on first confirm
             $order = Orders::find($payment->order_id);
 
             if ($order) {
+                $wasPending = $order->order_status === 'pending';
+
                 $order->order_status = 'confirmed';
                 $order->save();
+
+                if ($wasPending) {
+                    $orderItems = OrderItems::where('order_id', $order->id)->get();
+
+                    foreach ($orderItems as $item) {
+                        $quantity = (int) ($item->quantity ?? 0);
+                        if (!$item->uid || $quantity < 1) {
+                            continue;
+                        }
+
+                        $variation = ProductVariations::where('uid', $item->uid)->lockForUpdate()->first();
+
+                        if (!$variation) {
+                            throw new \Exception("Variation not found for UID: {$item->uid}");
+                        }
+
+                        $availableStock = (int) ($variation->stock ?? 0);
+
+                        if ($availableStock < $quantity) {
+                            throw new \Exception("Insufficient stock for UID: {$item->uid}");
+                        }
+
+                        $variation->stock = $availableStock - $quantity;
+                        $variation->save();
+                    }
+                }
             }
 
             // 📝 Save Payment Log

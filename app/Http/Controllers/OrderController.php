@@ -76,6 +76,20 @@ class OrderController extends Controller
                     ], 400);
                 }
 
+                $availableStock = (int) ($variation->stock ?? 0);
+
+                if ($availableStock <= 0) {
+                    return response()->json([
+                        'error' => "Out of stock for UID: {$item->uid}",
+                    ], 422);
+                }
+
+                if ($item->quantity > $availableStock) {
+                    return response()->json([
+                        'error' => "Only {$availableStock} left for UID: {$item->uid}",
+                    ], 422);
+                }
+
                 $lineTotal = $variation->sell_price * $item->quantity;
                 $subTotal += $lineTotal;
             }
@@ -213,6 +227,11 @@ class OrderController extends Controller
                 ]);
             }
 
+            // COD is confirmed at create. Prepaid waits for payment verify.
+            if (strtolower($request->payment_type) === 'cod') {
+                $this->decrementVariationStock($cartItems);
+            }
+
             // 🔸 Create Invoice
             // $invoice = Invoices::create([
             //     'invoice_no' => 'INV-' . strtoupper(Str::random(6)),
@@ -262,6 +281,37 @@ class OrderController extends Controller
                 'error' => 'Order creation failed',
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Decrement product_variations.stock for each cart/order line.
+     * Call only after a successful COD create or prepaid payment verify.
+     */
+    protected function decrementVariationStock($items): void
+    {
+        foreach ($items as $item) {
+            $uid = $item->uid ?? null;
+            $quantity = (int) ($item->quantity ?? 0);
+
+            if (!$uid || $quantity < 1) {
+                continue;
+            }
+
+            $variation = ProductVariations::where('uid', $uid)->lockForUpdate()->first();
+
+            if (!$variation) {
+                throw new \Exception("Variation not found for UID: {$uid}");
+            }
+
+            $availableStock = (int) ($variation->stock ?? 0);
+
+            if ($availableStock < $quantity) {
+                throw new \Exception("Insufficient stock for UID: {$uid}");
+            }
+
+            $variation->stock = $availableStock - $quantity;
+            $variation->save();
         }
     }
 

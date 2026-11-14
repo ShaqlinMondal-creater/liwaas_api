@@ -64,6 +64,8 @@ class CartController extends Controller
             ], 404);
         }
 
+        $availableStock = (int) ($variation->stock ?? 0);
+
         // ✅ Step 5: Check for existing cart item
         $existingCart = Cart::where('user_id', $userId)
                             ->where('products_id', $validated['products_id'])
@@ -71,7 +73,23 @@ class CartController extends Controller
                             ->first();
 
         if ($existingCart) {
-            $existingCart->quantity += $validated['quantity'];
+            $nextQuantity = $existingCart->quantity + $validated['quantity'];
+
+            if ($availableStock <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This size is out of stock.',
+                ], 422);
+            }
+
+            if ($nextQuantity > $availableStock) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Only {$availableStock} left for this size.",
+                ], 422);
+            }
+
+            $existingCart->quantity = $nextQuantity;
             $existingCart->total_price = $variation->sell_price * $existingCart->quantity;
             $existingCart->save();
 
@@ -81,6 +99,20 @@ class CartController extends Controller
                 'data'    => $existingCart,
                 'temp_id' => $isGuest ? $userId : null,
             ], 200);
+        }
+
+        if ($availableStock <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This size is out of stock.',
+            ], 422);
+        }
+
+        if ($validated['quantity'] > $availableStock) {
+            return response()->json([
+                'success' => false,
+                'message' => "Only {$availableStock} left for this size.",
+            ], 422);
         }
 
         // ✅ Step 6: Create cart item
@@ -119,6 +151,28 @@ class CartController extends Controller
                 'success' => false,
                 'message' => 'Cart item not found.',
             ], 404);
+        }
+
+        $variation = ProductVariations::where('uid', $cart->uid)
+            ->where('aid', $cart->aid)
+            ->first();
+
+        if ($variation) {
+            $availableStock = (int) ($variation->stock ?? 0);
+
+            if ($availableStock <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This size is out of stock.',
+                ], 422);
+            }
+
+            if ($validated['quantity'] > $availableStock) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Only {$availableStock} left for this size.",
+                ], 422);
+            }
         }
 
         // Update quantity and total price

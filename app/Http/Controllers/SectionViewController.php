@@ -186,14 +186,34 @@ class SectionViewController extends Controller
         ]);
 
         $uid = $request->input('uid');
-        $aid = $validated['aid'] ?? ($uid !== null && $uid !== '' ? (string) $uid : null);
+        $aid = $validated['aid'] ?? null;
+
+        // Admin marks by variation UID — resolve the real product aid.
+        if (($aid === null || $aid === '') && $uid !== null && $uid !== '') {
+            $variation = ProductVariations::where('uid', $uid)->first();
+
+            if (!$variation || empty($variation->aid)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No product variation found for this UID.',
+                ], 404);
+            }
+
+            $aid = (string) $variation->aid;
+        }
+
+        if ($aid === null || $aid === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product aid or variation uid is required.',
+            ], 422);
+        }
 
         $exists = SectionView::where('section_name', $validated['section_name'])
             ->where(function ($query) use ($uid, $aid) {
+                $query->where('aid', $aid);
                 if ($uid !== null && $uid !== '') {
-                    $query->where('uid', $uid)->orWhere('aid', (string) $uid);
-                } else {
-                    $query->where('aid', $aid);
+                    $query->orWhere('uid', $uid);
                 }
             })
             ->exists();
