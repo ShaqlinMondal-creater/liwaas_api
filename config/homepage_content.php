@@ -23,7 +23,7 @@ return [
         'tag' => 'Campaign',
         'title_line_1' => 'CRAFTED FOR',
         'title_line_2' => 'THE BOLD',
-        'subtext' => 'Upload a video or image from Admin → Store → Homepage.',
+        'subtext' => 'Oversized essentials made to be worn hard and remembered longer.',
         'cta_label' => 'Shop Now',
         'cta_url' => '/collections',
         'video' => '',
