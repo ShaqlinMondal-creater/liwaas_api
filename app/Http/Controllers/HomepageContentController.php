@@ -19,7 +19,7 @@ class HomepageContentController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'key' => 'required|string|in:hero,video_banner,brand_story,features,marquee,trending,collections',
+            'key' => 'required|string|in:hero,video_banner,media_feature,brand_story,features,marquee,trending,collections',
             'content' => 'required|array',
         ]);
 
@@ -46,6 +46,7 @@ class HomepageContentController extends Controller
         $defaults = [
             'hero' => $this->defaultsFor('hero'),
             'video_banner' => $this->defaultsFor('video_banner'),
+            'media_feature' => $this->defaultsFor('media_feature'),
             'brand_story' => $this->defaultsFor('brand_story'),
             'features' => $this->defaultsFor('features'),
             'marquee' => $this->defaultsFor('marquee'),
@@ -86,6 +87,11 @@ class HomepageContentController extends Controller
             $value = is_string($incoming[$field]) ? trim($incoming[$field]) : $incoming[$field];
 
             if ($key === 'video_banner' && $field === 'video') {
+                $merged[$field] = is_string($value) ? $value : $fallback;
+                continue;
+            }
+
+            if ($key === 'media_feature' && in_array($field, ['video', 'image'], true)) {
                 $merged[$field] = is_string($value) ? $value : $fallback;
                 continue;
             }

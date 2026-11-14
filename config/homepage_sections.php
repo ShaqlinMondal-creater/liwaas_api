@@ -14,9 +14,9 @@ return [
             'description' => 'Gold bar with scrolling brand words',
             'default' => true,
         ],
-        'showcase_3d' => [
-            'label' => '3D Showcase',
-            'description' => 'CRAFTED FOR THE BOLD — interactive 3D block',
+        'media_feature' => [
+            'label' => 'Media Feature',
+            'description' => 'Homepage video or image block — edit media in this panel',
             'default' => true,
         ],
         'trending' => [
