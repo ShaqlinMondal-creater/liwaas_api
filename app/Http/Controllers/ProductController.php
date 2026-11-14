@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\ProductSpecModel;
 use App\Models\ProductVariations;
+use App\Models\SectionView;
 use App\Models\Counter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -299,6 +300,27 @@ class ProductController extends Controller
 
             if ($request->filled('category')) {
                 $query->where('category_id', $request->category);
+            }
+
+            if ($request->filled('section_name')) {
+                $sectionAids = SectionView::query()
+                    ->where('section_name', $request->section_name)
+                    ->where('status', 1)
+                    ->pluck('aid')
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                if ($sectionAids->isEmpty()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'No products found in this section.',
+                        'total' => 0,
+                        'data' => [],
+                    ]);
+                }
+
+                $query->whereIn('aid', $sectionAids);
             }
 
             if ($request->filled('size')) {
