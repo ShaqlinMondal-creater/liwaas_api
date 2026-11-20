@@ -119,10 +119,8 @@ class OrderController extends Controller
             $taxableAmount = round($amountAfterDiscount / 1.05, 2);
             $tax = round($amountAfterDiscount - $taxableAmount, 2);
 
-            /* ---------------- SHIPPING ---------------- */
-            $minOrderPrice = (float) config('liwaas.min_order_price', 500);
-            $shippingFee = (float) config('liwaas.shipping_charge', 80);
-            $shippingCharge = $subTotal >= $minOrderPrice ? 0 : $shippingFee;
+            /* ---------------- SHIPPING (admin-managed; same rules as cart) ---------------- */
+            $shippingCharge = \App\Support\ShippingSettings::chargeForSubtotal((float) $subTotal);
 
             /* ---------------- GRAND TOTAL ---------------- */
             $grandTotal = round($amountAfterDiscount + $shippingCharge, 2);

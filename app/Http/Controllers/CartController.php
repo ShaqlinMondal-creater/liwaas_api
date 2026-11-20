@@ -228,10 +228,12 @@ class CartController extends Controller
         }
 
         $subtotal = $carts->sum('total_price');
+        $shippingSettings = \App\Support\ShippingSettings::all();
         $shipping = 0;
 
-        if ($shippingEnabled && $subtotal > 0 && $subtotal < 600) {
-            $shipping = 80;
+        // Use the same admin-managed rules as checkout (never hardcode 500/600/80 here).
+        if ($shippingEnabled && ($shippingSettings['enabled'] ?? true)) {
+            $shipping = \App\Support\ShippingSettings::chargeForSubtotal((float) $subtotal);
         }
 
         // ✅ Format response

@@ -26,6 +26,7 @@ use App\Http\Controllers\HomepageContentController;
 use App\Http\Controllers\ContactInquiryController;
 use App\Http\Controllers\NewsletterSubscriberController;
 use App\Http\Controllers\SitePageController;
+use App\Http\Controllers\ShippingSettingsController;
 
 
     // Public routes
@@ -71,6 +72,7 @@ use App\Http\Controllers\SitePageController;
     Route::get('/homepage/sections', [HomepageSectionController::class, 'getSections']);
     Route::get('/homepage/content', [HomepageContentController::class, 'show']);
     Route::get('/site/pages', [SitePageController::class, 'getPages']);
+    Route::get('/shipping/settings', [ShippingSettingsController::class, 'show']);
     Route::post('/contact', [ContactInquiryController::class, 'store'])->middleware('throttle:8,1');
     Route::post('/newsletter', [NewsletterSubscriberController::class, 'store'])->middleware('throttle:6,1');
     Route::get('/newsletter/count', [NewsletterSubscriberController::class, 'count'])->middleware('throttle:30,1');
@@ -183,6 +185,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/site/pages', [SitePageController::class, 'updatePages']);
             Route::get('/homepage/content', [HomepageContentController::class, 'show']);
             Route::post('/homepage/content', [HomepageContentController::class, 'update']);
+            Route::get('/shipping/settings', [ShippingSettingsController::class, 'show']);
+            Route::post('/shipping/settings', [ShippingSettingsController::class, 'update']);
 
             Route::get('/contact', [ContactInquiryController::class, 'index']);
             Route::delete('/contact/{id}', [ContactInquiryController::class, 'destroy']);
