@@ -153,6 +153,13 @@ class CartController extends Controller
             ], 404);
         }
 
+        if (!$this->callerOwnsCart($request, $cart)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden.',
+            ], 403);
+        }
+
         $variation = ProductVariations::where('uid', $cart->uid)
             ->where('aid', $cart->aid)
             ->first();
@@ -269,7 +276,7 @@ class CartController extends Controller
     }
 
     // Delete Cart according to cart id
-    public function deleteCart($cartId)
+    public function deleteCart(Request $request, $cartId)
     {
         // Find the cart item by ID
         $cart = Cart::find($cartId);
@@ -279,6 +286,13 @@ class CartController extends Controller
                 'success' => false,
                 'message' => 'Cart item not found.',
             ], 404);
+        }
+
+        if (!$this->callerOwnsCart($request, $cart)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden.',
+            ], 403);
         }
 
         // Delete the cart item
@@ -447,6 +461,34 @@ class CartController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Same owner resolution as getUserCart: Sanctum user, else guest temp_id.
+     */
+    private function callerOwnsCart(Request $request, Cart $cart): bool
+    {
+        $ownerId = null;
+
+        if ($request->bearerToken()) {
+            $user = auth('sanctum')->user();
+            if ($user) {
+                $ownerId = $user->id;
+            }
+        }
+
+        if ($ownerId === null) {
+            $tempId = $request->input('temp_id');
+            if (is_string($tempId) && $tempId !== '') {
+                $ownerId = $tempId;
+            }
+        }
+
+        if ($ownerId === null) {
+            return false;
+        }
+
+        return (string) $cart->user_id === (string) $ownerId;
     }
 
 }
