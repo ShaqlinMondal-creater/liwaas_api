@@ -83,7 +83,8 @@ use App\Http\Controllers\SitePageController;
         Route::delete('delete-cart/{id}', [CartController::class, 'deleteCart']);
     });
 
-    Route::post('/make_user', [AuthController::class, 'makeUser']);
+    // Disabled: leftover guest→account helper. Checkout uses normal auth / sign-in popup.
+    // Route::post('/make_user', [AuthController::class, 'makeUser']);
     Route::post('/coupons/validate-coupon', [CouponController::class, 'validateCoupon']); // validate/apply
 
     // Cron Job Routes (requires PAYMENT_CRON_SECRET via X-Cron-Secret / Bearer)
