@@ -255,10 +255,10 @@ class OrderController extends Controller
                 Mail::to($user->email)->send(new \App\Mail\OrderPlacedMail($order));
             }
 
-            // 🔸 Remove only ordered cart lines (keep other bag items)
-            Cart::where('user_id', $userId)
-                ->whereIn('id', $cartItems->pluck('id')->filter()->all())
-                ->delete();
+            // 🔸 Remove only the cart rows that were just ordered (keep other bag items)
+            foreach ($cartItems as $cartItem) {
+                $cartItem->delete();
+            }
 
             DB::commit();
 
