@@ -9,6 +9,7 @@ use App\Models\OrderItems;
 use App\Models\Payment;
 use App\Models\PaymentLog;
 use App\Models\ProductVariations;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 
@@ -305,16 +306,43 @@ class PaymentController extends Controller
             'razorpay_order_id' => 'required|string'
         ]);
 
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized.',
+            ], 401);
+        }
+
         $payment = Payment::where('genarate_order_id', $request->razorpay_order_id)->first();
 
         if (!$payment) {
-            return response()->json(['error' => 'Payment not found'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment not found',
+            ], 404);
+        }
+
+        $order = Orders::find($payment->order_id);
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found',
+            ], 404);
+        }
+
+        // Only the order owner can cancel this payment (blocks cancel-by-id guessing).
+        $ownerId = (string) ($payment->user_id ?? $order->user_id);
+        if ($ownerId === '' || $ownerId !== (string) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not allowed to cancel this payment.',
+            ], 403);
         }
 
         $payment->payment_status = 'failed';
         $payment->save();
 
-        $order = Orders::find($payment->order_id);
         $order->order_status = 'cancelled';
         $order->save();
 
