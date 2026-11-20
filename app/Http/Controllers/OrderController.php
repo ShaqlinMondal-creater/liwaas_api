@@ -680,9 +680,13 @@ class OrderController extends Controller
             });
         }
 
-        // ✅ 3. Generate invoice and save in t_invoice if shipping is not Pending and invoice not already created
-        if ($request->shipping !== 'Pending' && empty($order->invoice_id)) {
-
+        // ✅ 3. Generate invoice only when shipping moves past Pending and none exists yet.
+        // Require an explicit shipping value so order-only updates never invent an invoice.
+        if (
+            !empty($request->shipping)
+            && $request->shipping !== 'Pending'
+            && empty($order->invoice_id)
+        ) {
             $invoiceNo = $this->generateInvoiceNo($order);
 
             // Ensure directory exists
@@ -706,13 +710,23 @@ class OrderController extends Controller
 
             // Update order with new invoice_id
             $order->invoice_id = $invoice->id;
+            $order->setRelation('invoice', $invoice);
 
-            // Generate PDF and save
-            $pdfPath = storage_path('app/public/invoices/' . $pdfName);
-            Pdf::loadView('pdf.invoice', ['order' => $order])->save($pdfPath);
+            // Generate PDF and save (do not fail the status update if PDF rendering breaks)
+            try {
+                $pdfPath = storage_path('app/public/invoices/' . $pdfName);
+                Pdf::loadView('pdf.invoice', ['order' => $order])->save($pdfPath);
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
-        $order->save();
+        // Avoid double-save when restock path already persisted the order.
+        if (!$shouldRestock || $order->isDirty()) {
+            $order->save();
+        }
+
+        $order->load(['items.product', 'user', 'shipping.address', 'invoice', 'payment']);
 
         // ✅ 4. Attach image, color, and size info to each item
         foreach ($order->items as $item) {
@@ -729,10 +743,19 @@ class OrderController extends Controller
             }
         }
 
-        // ✅ 5. Send status update email to user
+        // ✅ 5. Send status update email to user (status already saved — never fail the API on mail)
         if ($order->user && !empty($order->user->email)) {
-            Mail::to($order->user->email)->send(new OrderStatusUpdated($order));
+            try {
+                Mail::to($order->user->email)->send(new OrderStatusUpdated($order));
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
+
+        $shipping = $order->shipping;
+        $address = $shipping?->address;
+        $invoice = $order->invoice;
+        $user = $order->user;
 
         // Response Structure:
         return response()->json([
@@ -750,6 +773,7 @@ class OrderController extends Controller
                 'coupon_id' => $order->coupon_id,
                 'coupon_discount' => $order->coupon_discount,
                 'other_text' => $order->other_text,
+                'order_status' => $order->order_status,
 
                 // Items
                 'items' => $order->items->map(function ($item) {
@@ -767,61 +791,61 @@ class OrderController extends Controller
                         // 'image_link' => basename($item->image_link),
                         'color' => $item->color,
                         'size' => $item->size,
-                        'product' => [
+                        'product' => $item->product ? [
                             'id' => $item->product->id,
                             'aid' => $item->product->aid,
-                            'name' => $item->product->name
-                        ]
+                            'name' => $item->product->name,
+                        ] : null,
                     ];
                 }),
 
                 // User
-                'user' => [
-                    'id' => $order->user->id,
-                    'name' => $order->user->name,
-                    'email' => $order->user->email,
-                    'mobile' => $order->user->mobile,
-                    'is_active' => $order->user->is_active,
-                    'is_logged_in' => $order->user->is_logged_in,
-                    'is_deleted' => $order->user->is_deleted
-                ],
+                'user' => $user ? [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'mobile' => $user->mobile,
+                    'is_active' => $user->is_active,
+                    'is_logged_in' => $user->is_logged_in,
+                    'is_deleted' => $user->is_deleted,
+                ] : null,
 
                 // Shipping
-                'shipping' => [
-                    'id' => $order->shipping->id,
-                    'shipping_status' => $order->shipping->shipping_status,
-                    'shipping_by' => $order->shipping->shipping_by,
-                    'shipping_type' => $order->shipping->shipping_type,
-                    'address_id' => $order->shipping->address_id,
-                    'shipping_charge' => $order->shipping->shipping_charge,
-                    'shipping_delivery_id' => $order->shipping->shipping_delivery_id,
-                    'response_' => $order->shipping->response_,
-                    'address' => [
-                        'id' => $order->shipping->address->id,
-                        'user_id' => $order->shipping->address->user_id,
-                        'name' => $order->shipping->address->name,
-                        'email' => $order->shipping->address->email,
-                        'address_type' => $order->shipping->address->address_type,
-                        'mobile' => $order->shipping->address->mobile,
-                        'state' => $order->shipping->address->state,
-                        'city' => $order->shipping->address->city,
-                        'country' => $order->shipping->address->country,
-                        'pincode' => $order->shipping->address->pincode,
-                        'address_line_1' => $order->shipping->address->address_line_1,
-                        'address_line_2' => $order->shipping->address->address_line_2
-                    ]
-                ],
+                'shipping' => $shipping ? [
+                    'id' => $shipping->id,
+                    'shipping_status' => $shipping->shipping_status,
+                    'shipping_by' => $shipping->shipping_by,
+                    'shipping_type' => $shipping->shipping_type,
+                    'address_id' => $shipping->address_id,
+                    'shipping_charge' => $shipping->shipping_charge,
+                    'shipping_delivery_id' => $shipping->shipping_delivery_id,
+                    'response_' => $shipping->response_,
+                    'address' => $address ? [
+                        'id' => $address->id,
+                        'user_id' => $address->user_id,
+                        'name' => $address->name,
+                        'email' => $address->email,
+                        'address_type' => $address->address_type,
+                        'mobile' => $address->mobile,
+                        'state' => $address->state,
+                        'city' => $address->city,
+                        'country' => $address->country,
+                        'pincode' => $address->pincode,
+                        'address_line_1' => $address->address_line_1,
+                        'address_line_2' => $address->address_line_2,
+                    ] : null,
+                ] : null,
 
-                // Invoice
-                'invoice' => [
-                    'id' => $order->invoice->id,
-                    'invoice_no' => $order->invoice->invoice_no,
-                    'invoice_link' => $order->invoice->invoice_link,
-                    'invoice_qr' => $order->invoice->invoice_qr,
-                    // 'invoice_qr' => url('qr/' . $order->invoice->invoice_qr),
-                    'date' => $order->invoice->date
-                ]
-            ]
+                // Invoice (null while shipping is still Pending — no invoice created yet)
+                'invoice' => $invoice ? [
+                    'id' => $invoice->id,
+                    'invoice_no' => $invoice->invoice_no,
+                    'invoice_link' => $invoice->invoice_link,
+                    'invoice_qr' => $invoice->invoice_qr,
+                    // 'invoice_qr' => url('qr/' . $invoice->invoice_qr),
+                    'date' => $invoice->date,
+                ] : null,
+            ],
         ]);
 
     }
