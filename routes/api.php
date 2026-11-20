@@ -86,8 +86,9 @@ use App\Http\Controllers\SitePageController;
     Route::post('/make_user', [AuthController::class, 'makeUser']);
     Route::post('/coupons/validate-coupon', [CouponController::class, 'validateCoupon']); // validate/apply
 
-    // Cron Job Routes
-    Route::post('/payments/checkPaymentCorn', [PaymentController::class, 'autoUpdatePendingOrders']); // Payment Verification
+    // Cron Job Routes (requires PAYMENT_CRON_SECRET via X-Cron-Secret / Bearer)
+    Route::post('/payments/checkPaymentCorn', [PaymentController::class, 'autoUpdatePendingOrders'])
+        ->middleware('cronSecret');
 
 
 Route::middleware(['auth:sanctum'])->group(function () {

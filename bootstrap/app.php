@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'adminOnly' => \App\Http\Middleware\AdminMiddleware::class,
             'customerOnly' => \App\Http\Middleware\CustomerMiddleware::class,
+            'cronSecret' => \App\Http\Middleware\VerifyCronSecret::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
