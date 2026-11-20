@@ -340,20 +340,51 @@ class PaymentController extends Controller
             ], 403);
         }
 
-        $payment->payment_status = 'failed';
-        $payment->save();
+        // Already cancelled (e.g. double Razorpay dismiss) — idempotent success.
+        if ($order->order_status === 'cancelled') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment already cancelled',
+            ]);
+        }
 
-        $order->order_status = 'cancelled';
-        $order->save();
+        // Stock is taken only after prepaid verify (confirmed). This endpoint is for
+        // abandoning Razorpay before pay — use customer cancel-order to cancel confirmed orders (restocks).
+        if (in_array($order->order_status, ['confirmed', 'completed'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order is already confirmed. Cancel it from your orders instead.',
+            ], 400);
+        }
 
-        PaymentLog::create([
-            'order_id' => $order->id,
-            'payment_id' => $payment->id,
-            'razorpay_order_id' => $request->razorpay_order_id,
-            'status' => 'cancelled',
-            'request_payload' => json_encode($request->all()),
-            'response_payload' => 'User cancelled payment',
-        ]);
+        DB::beginTransaction();
+
+        try {
+            $payment->payment_status = 'failed';
+            $payment->save();
+
+            $order->order_status = 'cancelled';
+            $order->save();
+
+            PaymentLog::create([
+                'order_id' => $order->id,
+                'payment_id' => $payment->id,
+                'razorpay_order_id' => $request->razorpay_order_id,
+                'status' => 'cancelled',
+                'request_payload' => json_encode($request->all()),
+                'response_payload' => 'User cancelled payment',
+            ]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment cancellation failed',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,

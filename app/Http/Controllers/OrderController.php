@@ -317,6 +317,44 @@ class OrderController extends Controller
         }
     }
 
+    /**
+     * Stock was taken for COD at create, and for Prepaid only after payment confirm.
+     */
+    protected function shouldRestockOnCancel(Orders $order): bool
+    {
+        $paymentType = strtolower((string) ($order->payment_type ?? ''));
+
+        if ($paymentType === 'cod') {
+            return true;
+        }
+
+        return in_array($order->order_status, ['confirmed', 'completed'], true);
+    }
+
+    /**
+     * Add order line quantities back to product_variations.stock.
+     */
+    protected function restockVariationStock($items): void
+    {
+        foreach ($items as $item) {
+            $uid = $item->uid ?? null;
+            $quantity = (int) ($item->quantity ?? 0);
+
+            if (!$uid || $quantity < 1) {
+                continue;
+            }
+
+            $variation = ProductVariations::where('uid', $uid)->lockForUpdate()->first();
+
+            if (!$variation) {
+                throw new \Exception("Variation not found for UID: {$uid}");
+            }
+
+            $variation->stock = (int) ($variation->stock ?? 0) + $quantity;
+            $variation->save();
+        }
+    }
+
     // Generate Order Code
     protected function generateOrderCode(): string
     {
@@ -612,6 +650,16 @@ class OrderController extends Controller
         // Get the order
         // $order = Orders::with('items')->findOrFail($id);
         $order = Orders::with(['items', 'payment'])->findOrFail($id);
+        $previousStatus = $order->order_status;
+        $shouldRestock = false;
+
+        if (
+            !empty($request->order_status)
+            && $request->order_status === 'cancelled'
+            && $previousStatus !== 'cancelled'
+        ) {
+            $shouldRestock = $this->shouldRestockOnCancel($order);
+        }
 
         // ✅ 1. Update shipping status in t_shipping
         if (!empty($request->shipping) && $order->shipping_id) {
@@ -624,6 +672,14 @@ class OrderController extends Controller
 
         if (!empty($request->order_status)) {
             $order->order_status = $request->order_status;
+        }
+
+        // Restock before save when admin cancels an order that already took stock.
+        if ($shouldRestock) {
+            DB::transaction(function () use ($order) {
+                $this->restockVariationStock($order->items);
+                $order->save();
+            });
         }
 
         // ✅ 3. Generate invoice and save in t_invoice if shipping is not Pending and invoice not already created
@@ -1002,24 +1058,30 @@ class OrderController extends Controller
         DB::beginTransaction();
 
         try {
+            $shouldRestock = $this->shouldRestockOnCancel($order);
 
-            // 1️⃣ Update order status
+            // 1️⃣ Restock product_variations.stock when qty was already taken
+            if ($shouldRestock) {
+                $this->restockVariationStock($order->items);
+            }
+
+            // 2️⃣ Update order status
             $order->order_status = 'cancelled';
             $order->save();
 
-            // 2️⃣ Update shipping status
+            // 3️⃣ Update shipping status
             if ($order->shipping) {
                 $order->shipping->shipping_status = 'Cancelled';
                 $order->shipping->save();
             }
 
-            // 3️⃣ Update payment status (optional but recommended)
+            // 4️⃣ Update payment status (optional but recommended)
             if ($order->payment) {
                 $order->payment->payment_status = 'return';
                 $order->payment->save();
             }
 
-            // 4️⃣ Attach image + color + size like admin function
+            // 5️⃣ Attach image + color + size like admin function
             foreach ($order->items as $item) {
 
                 $variation = \App\Models\ProductVariations::where('uid', $item->uid)->first();
@@ -1035,7 +1097,7 @@ class OrderController extends Controller
                 }
             }
 
-            // 5️⃣ Send email notification
+            // 6️⃣ Send email notification
             if ($order->user && !empty($order->user->email)) {
                 Mail::to($order->user->email)->send(new OrderStatusUpdated($order));
             }
