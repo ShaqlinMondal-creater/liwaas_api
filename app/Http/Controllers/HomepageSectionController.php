@@ -110,6 +110,7 @@ class HomepageSectionController extends Controller
                 'description' => $item['description'] ?? '',
                 'enabled' => (bool) ($enabled[$key] ?? ($item['default'] ?? true)),
                 'default' => (bool) ($item['default'] ?? true),
+                'page' => $item['page'] ?? 'brand',
             ];
         }
 
