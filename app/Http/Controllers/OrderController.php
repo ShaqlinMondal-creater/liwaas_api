@@ -712,6 +712,16 @@ class OrderController extends Controller
             $order->invoice_id = $invoice->id;
             $order->setRelation('invoice', $invoice);
 
+            // Load relations the invoice PDF needs (shipping charge lives on t_shipping, not orders).
+            $order->load(['items.product', 'items.variation', 'shipping.address', 'payment', 'invoice', 'user']);
+            foreach ($order->items as $item) {
+                $variation = $item->variation;
+                $color = ColorHelper::get(optional($variation)->color);
+                $item->color_name = is_array($color) ? ($color['name'] ?? null) : null;
+                $item->color_code = is_array($color) ? ($color['code'] ?? null) : null;
+                $item->size = optional($variation)->size;
+            }
+
             // Generate PDF and save (do not fail the status update if PDF rendering breaks)
             try {
                 $pdfPath = storage_path('app/public/invoices/' . $pdfName);

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Invoice {{ $order->invoice->invoice_no }}</title>
+    <title>Invoice {{ optional($order->invoice)->invoice_no }}</title>
     <style>
         @page {
             margin: 0;
@@ -42,25 +42,6 @@
             border-collapse: collapse;
             margin-bottom: 10px;
             padding: 0px 10px;
-        }
-        
-        .invoice-box {
-            width: 48%;
-            border: 1px solid #eee;
-            padding: 5px;
-            box-sizing: border-box;
-            vertical-align: top;
-        }
-
-        .invoice-box h4 {
-            /* margin-bottom: 10px; */
-            font-size: 12px;
-            color: #3b3b3b;
-        }
-
-        .invoice-box p {
-            margin: 0 0 6px;
-            font-size: 12px;
         }
 
         .item_table {
@@ -131,7 +112,6 @@
         }
 
         .folded-corner .label {
-            /* background-color: #e2ad07; */
             height: 50px;
             line-height: 40px;
             padding-left: 50px;
@@ -166,10 +146,6 @@
             text-align: right;
         }
 
-        .text-center {
-            text-align: center;
-        }
-
         .logo {
             height: 100px;
         }
@@ -180,38 +156,78 @@
     </style>
 </head>
 <body>
+@php
+    $address = optional(optional($order->shipping)->address);
+    $shippingCharge = (float) (optional($order->shipping)->shipping_charge ?? 0);
+    $taxPrice = (float) ($order->tax_price ?? 0);
+    $grandTotal = (float) ($order->grand_total ?? 0);
+    $discount = (float) ($order->coupon_discount ?? 0);
+    // Tax-exclusive merchandise = grand − tax − shipping (matches checkout GST-inclusive pricing).
+    $subtotalExTax = max(0, round($grandTotal - $taxPrice - $shippingCharge, 2));
 
-    {{-- Background image --}}
-    @php
-        $bgPath = public_path('logos/flower-removebg-preview.png');
+    $streetParts = array_values(array_filter([
+        trim((string) ($address->address_line_1 ?? '')),
+        trim((string) ($address->address_line_2 ?? '')),
+    ], static fn ($part) => $part !== ''));
+    $streetLine = implode(', ', $streetParts);
+    $cityStateLine = implode(', ', array_values(array_filter([
+        trim((string) ($address->city ?? '')),
+        trim((string) ($address->state ?? '')),
+    ], static fn ($part) => $part !== '')));
+    $pinCountryLine = implode(', ', array_values(array_filter([
+        trim((string) ($address->pincode ?? '')),
+        trim((string) ($address->country ?? '')),
+    ], static fn ($part) => $part !== '')));
+
+    $paymentStatus = (string) (optional($order->payment)->payment_status ?? 'Pending');
+    $paymentStatusLabel = $paymentStatus !== ''
+        ? strtoupper($paymentStatus[0]) . strtolower(substr($paymentStatus, 1))
+        : 'Pending';
+
+    $bgPath = public_path('logos/flower-removebg-preview.png');
+    $bgBase64 = null;
+    if (is_file($bgPath)) {
         $bgType = pathinfo($bgPath, PATHINFO_EXTENSION);
-        $bgData = file_get_contents($bgPath);
-        $bgBase64 = 'data:image/' . $bgType . ';base64,' . base64_encode($bgData);
-    @endphp
-    <img src="{{ $bgBase64 }}" class="bg-image" />
+        $bgBase64 = 'data:image/' . $bgType . ';base64,' . base64_encode((string) file_get_contents($bgPath));
+    }
 
-    {{-- Header --}}
+    $logoPath = public_path('logos/liwaas_logo_Black.jpg');
+    $logoBase64 = null;
+    if (is_file($logoPath)) {
+        $logoType = pathinfo($logoPath, PATHINFO_EXTENSION);
+        $logoBase64 = 'data:image/' . $logoType . ';base64,' . base64_encode((string) file_get_contents($logoPath));
+    }
+
+    $defaultImagePath = public_path('logos/default_liwass.png');
+    $defaultImageBase64 = null;
+    if (is_file($defaultImagePath)) {
+        $defaultType = pathinfo($defaultImagePath, PATHINFO_EXTENSION);
+        $defaultImageBase64 = 'data:image/' . $defaultType . ';base64,' . base64_encode((string) file_get_contents($defaultImagePath));
+    }
+@endphp
+
+    @if ($bgBase64)
+        <img src="{{ $bgBase64 }}" class="bg-image" />
+    @endif
+
     <div class="header">
         <table width="100%">
             <tr>
                 <td class="w-50">
-                    @php
-                        $logoPath = public_path('logos/liwaas_logo_Black.jpg');
-                        $logoType = pathinfo($logoPath, PATHINFO_EXTENSION);
-                        $logoData = file_get_contents($logoPath);
-                        $logoBase64 = 'data:image/' . $logoType . ';base64,' . base64_encode($logoData);
-                    @endphp
-                    <img src="{{ $logoBase64 }}" alt="Logo" class="logo">
+                    @if ($logoBase64)
+                        <img src="{{ $logoBase64 }}" alt="Logo" class="logo">
+                    @else
+                        <strong>LIWAAS</strong>
+                    @endif
                 </td>
                 <td class="w-50 text-right">
-                    <strong>INVOICE NUMBER:</strong> #{{ $order->invoice->invoice_no }}<br>
+                    <strong>INVOICE NUMBER:</strong> #{{ optional($order->invoice)->invoice_no }}<br>
                     <strong>INVOICE DATE:</strong> {{ \Carbon\Carbon::now()->setTimezone('Asia/Kolkata')->format('M d, Y, h:i A') }}
                 </td>
             </tr>
         </table>
     </div>
 
-    {{-- Invoice Label --}}
     <div class="content">
         <table class="invoice-title">
             <tr>
@@ -225,38 +241,40 @@
             </tr>
         </table>
 
-        {{-- Bill Details --}}
         <table width="100%" style="table-layout: fixed; margin-top: 5px; font-family: 'DejaVu Sans', sans-serif; font-size: 12px;">
             <tr>
-                <!-- Left Box -->
                 <td style="width: 50%; vertical-align: top; padding-right: 10px;">
-                    <div style="border: 0px solid #ccc; padding: 10px; line-height: 1.4;">
+                    <div style="padding: 10px; line-height: 1.45;">
                         <strong>Billed To:</strong><br>
-                        <strong>{{ $order->shipping->address->name ?? 'Customer' }}</strong>, 
-                        <strong>Tel: {{ $order->shipping->address->mobile ?? '+91 xxxxx-xxxxx' }}</strong>, <br>
-                        {{ $order->shipping->address->email ?? 'example@gmail.com' }} <br>
+                        <strong>{{ $address->name ?? 'Customer' }}</strong>,
+                        <strong>Tel: {{ $address->mobile ?? '+91 xxxxx-xxxxx' }}</strong><br>
+                        {{ $address->email ?? '' }}<br><br>
 
                         <strong>Ship To:</strong><br>
-                        {{ $order->shipping->address->address_line_1 }} , {{ $order->shipping->address->address_line_2 ?? '' }}<br>
-                        {{ $order->shipping->address->city }}, {{ $order->shipping->address->state }}, {{ $order->shipping->address->country }}, {{ $order->shipping->address->pincode }}
-                        
+                        @if ($streetLine !== '')
+                            {{ $streetLine }}<br>
+                        @endif
+                        @if ($cityStateLine !== '')
+                            {{ $cityStateLine }}<br>
+                        @endif
+                        @if ($pinCountryLine !== '')
+                            {{ $pinCountryLine }}
+                        @endif
                     </div>
                 </td>
 
-                <!-- Right Box -->
                 <td style="width: 50%; vertical-align: top; padding-left: 10px;">
-                    <div style="border: 0px solid #ccc; padding: 10px; line-height: 1.4; float: right; min-width: 220px;">
+                    <div style="padding: 10px; line-height: 1.45; float: right; min-width: 220px;">
                         <strong>ORDER:</strong> #{{ $order->order_code }}<br>
                         <strong>ORDER DATE:</strong> {{ \Carbon\Carbon::parse($order->created_at)->setTimezone('Asia/Kolkata')->format('M d, Y, h:i A') }}<br>
-                        <strong>Shipping:</strong> {{ $order->shipping->shipping_type ?? 'Home' }}<br>
+                        <strong>Shipping:</strong> {{ optional($order->shipping)->shipping_type ?? 'Home' }}<br>
                         <strong>Payment:</strong> {{ $order->payment_type ?? 'N/A' }}<br>
-                        <strong>Payment Status:</strong> {{ $order->payment->payment_status ?? 'Pending' }}
+                        <strong>Payment Status:</strong> {{ $paymentStatusLabel }}
                     </div>
                 </td>
             </tr>
         </table>
 
-        {{-- Items --}}
         <table class="item_table">
             <thead>
                 <tr>
@@ -271,17 +289,20 @@
             <tbody>
                 @foreach($order->items as $item)
                 @php
-                    $base64Image = null;
-                    
-                    $imagePath = public_path('logos/default_liwass.png');
-
-                    if (file_exists($imagePath)) {
-                        $type = pathinfo($imagePath, PATHINFO_EXTENSION);
-                        $data = file_get_contents($imagePath);
-                        $base64Image = 'data:image/' . $type . ';base64,' . base64_encode($data);
-                    } else {
-                        dd('File not found:', $imagePath);
-                    }
+                    $variation = $item->variation;
+                    $colorInfo = is_array($item->color ?? null)
+                        ? $item->color
+                        : \App\Helpers\ColorHelper::get($variation->color ?? ($item->color_name ?? null));
+                    $colorName = $item->color_name
+                        ?? ($colorInfo['name'] ?? null)
+                        ?? 'N/A';
+                    $colorCode = $item->color_code
+                        ?? ($colorInfo['code'] ?? null)
+                        ?? '#cccccc';
+                    $sizeLabel = $item->size
+                        ?? optional($variation)->size
+                        ?? 'N/A';
+                    $rowImage = $defaultImageBase64;
                 @endphp
                 <tr>
                     <td>{{ $loop->iteration }}</td>
@@ -289,12 +310,12 @@
                         <table width="100%">
                             <tr>
                                 <td style="width: 40px;">
-                                    @if ($base64Image)
-                                        <img src="{{ $base64Image }}" class="product-image">
+                                    @if ($rowImage)
+                                        <img src="{{ $rowImage }}" class="product-image">
                                     @endif
                                 </td>
                                 <td class="product-info" style="text-align: left;">
-                                    <strong>{{ $item->product->name ?? 'N/A' }}</strong><br>
+                                    <strong>{{ optional($item->product)->name ?? 'N/A' }}</strong><br>
                                     <span>
                                         <strong>AID:</strong> {{ $item->aid ?? 'N/A' }} &nbsp;&nbsp;
                                         <strong>UID:</strong> {{ $item->uid ?? 'N/A' }}
@@ -304,81 +325,71 @@
                         </table>
                     </td>
                     <td style="text-align:center;">
-                        Color: 
-                        <span style="display:inline-block;border-radius:50%;width:15px;height:15px;background-color:{{ $item->color_code ?? '#ffffff' }};"></span>
-                        {{ $item->color_name ?? 'N/A' }}
+                        Color:
+                        <span style="display:inline-block;border-radius:50%;width:12px;height:12px;background-color:{{ $colorCode }};border:1px solid #ddd;"></span>
+                        {{ $colorName }}
                         <br>
-                        Size: {{ $item->variation->size ?? 'N/A' }}
+                        Size: {{ $sizeLabel }}
                     </td>
                     <td>{{ $item->quantity }}</td>
                     <td>₹ 0.00</td>
-                    <td class="text-right">₹{{ number_format($item->total, 2) }}</td>
+                    <td class="text-right">₹{{ number_format((float) $item->total, 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
 
-        {{-- Summary --}}
         <div class="summary">
-            @php
-                $subtotal = $order->grand_total - $order->tax_price - $order->shipping_charge;
-            @endphp
-            <h4>SUBTOTAL: ₹{{ number_format($subtotal, 2) }}</h4>
-            <h4>TAX: ₹{{ number_format($order->tax_price, 2) }}</h4>
-            <h4>SHIPPING & HANDLING: ₹{{ number_format($order->shipping_charge, 2) }}</h4>
-            <h4>DISCOUNT: ₹ {{$order->coupon_discount}}</h4>
-            <h4 class="grand-total">GRAND TOTAL: ₹{{ number_format($order->grand_total, 2) }}</h4>
+            <h4>SUBTOTAL: ₹{{ number_format($subtotalExTax, 2) }}</h4>
+            <h4>TAX (5%): ₹{{ number_format($taxPrice, 2) }}</h4>
+            <h4>SHIPPING &amp; HANDLING: ₹{{ number_format($shippingCharge, 2) }}</h4>
+            <h4>DISCOUNT: ₹{{ number_format($discount, 2) }}</h4>
+            <h4 class="grand-total">GRAND TOTAL: ₹{{ number_format($grandTotal, 2) }}</h4>
         </div>
     </div>
 
-    {{-- Signature Section --}}
     @php
-        $invoiceUrl = $order->invoice_link;
+        $signLogoPath = public_path('logos/liwaas_logo.png');
+        $signLogoBase64 = null;
+        if (is_file($signLogoPath)) {
+            $signLogoType = pathinfo($signLogoPath, PATHINFO_EXTENSION);
+            $signLogoBase64 = 'data:image/' . $signLogoType . ';base64,' . base64_encode((string) file_get_contents($signLogoPath));
+        }
+
+        $qrBase64 = null;
+        if (!empty(optional($order->invoice)->invoice_qr)) {
+            $qrPath = storage_path('app/public/qr/' . $order->invoice->invoice_qr);
+            if (is_file($qrPath)) {
+                $qrBase64 = 'data:image/png;base64,' . base64_encode((string) file_get_contents($qrPath));
+            }
+        }
     @endphp
     <table width="100%" style="margin-top: 40px; padding: 20px 40px;">
-        @php
-            $signLogoPath = public_path('logos/liwaas_logo.png'); // same logo or a small variant
-            $signLogoType = pathinfo($signLogoPath, PATHINFO_EXTENSION);
-            $signLogoData = file_get_contents($signLogoPath);
-            $signLogoBase64 = 'data:image/' . $signLogoType . ';base64,' . base64_encode($signLogoData);
-        @endphp
         <tr>
-            <!-- Display the QR Code in the invoice -->
-            @php
-                $qrBase64 = null;
-                if (!empty($order->invoice->invoice_qr)) {
-                    $qrPath = storage_path('app/public/qr/' . $order->invoice->invoice_qr);
-                    if (file_exists($qrPath)) {
-                        $qrBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($qrPath));
-                    }
-                }
-            @endphp
             <td style="width: 50%; text-align: left;">
                 @if ($qrBase64)
                     <img src="{{ $qrBase64 }}" alt="QR Code" style="width: 120px; height: 120px;">
-                @else
-                    <div style="font-size: 10px; color: red;">QR code not available</div>
+                    <div style="font-size: 11px; margin-bottom: 5px;"><strong>Scan to View Invoice</strong></div>
                 @endif
-                <div style="font-size: 11px; margin-bottom: 5px;"><strong>Scan to View Invoice</strong></div>
             </td>
 
             <td style="width: 50%; text-align: right; vertical-align: bottom;">
                 <div style="border-top: 1px solid #333; width: 200px; margin-left: auto; margin-bottom: 5px;"></div>
                 <div style="margin-bottom: 10px; font-size: 12px;">Authorized Signatory</div>
-                <img src="{{ $signLogoBase64 }}" alt="Signature Logo" style="height: 40px;"><br>
+                @if ($signLogoBase64)
+                    <img src="{{ $signLogoBase64 }}" alt="Signature Logo" style="height: 40px;"><br>
+                @endif
                 <div style="font-size: 11px; margin-top: 2px;"><strong>LIWAAS Store</strong></div>
             </td>
         </tr>
     </table>
 
-    {{-- Footer Area --}}
     <div class="footer" style="font-size: 11px; line-height: 1.5;">
-        <strong>LIWAAS STORE</strong> &nbsp; | &nbsp; 
+        <strong>LIWAAS STORE</strong> &nbsp; | &nbsp;
         Azad nagar, Memari, Burdwan, WB - 713146<br>
         Email: <a href="mailto:business.liwaas@gmail.com" style="color: #fff; text-decoration: underline;">business.liwaas@gmail.com</a> &nbsp; | &nbsp;
         Phone: +91 8348381252
     </div>
-
 
 </body>
 </html>
