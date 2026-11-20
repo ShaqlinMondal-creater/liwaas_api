@@ -255,8 +255,10 @@ class OrderController extends Controller
                 Mail::to($user->email)->send(new \App\Mail\OrderPlacedMail($order));
             }
 
-            // 🔸 Clear Cart after successful order
-            Cart::where('user_id', $userId)->delete();
+            // 🔸 Remove only ordered cart lines (keep other bag items)
+            Cart::where('user_id', $userId)
+                ->whereIn('id', $cartItems->pluck('id')->filter()->all())
+                ->delete();
 
             DB::commit();
 
